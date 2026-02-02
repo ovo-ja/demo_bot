@@ -269,10 +269,18 @@
             <!-- Digit Frequency Grid -->
             <div class="card highlight">
                 <h3>🔢 Digit Frequency <span id="tickCount" style="float:right;color:var(--cyan)">0 ticks</span></h3>
-                <div style="display:flex;justify-content:center;align-items:center;gap:20px;margin-bottom:8px;padding:10px;background:var(--bg);border-radius:8px">
+                <div style="display:flex;justify-content:center;align-items:center;gap:15px;margin-bottom:8px;padding:10px;background:var(--bg);border-radius:8px;flex-wrap:wrap">
                     <div style="text-align:center">
                         <span style="font-size:9px;color:var(--muted)">BALANCE</span>
                         <div id="balanceDisplay" style="font-size:18px;font-weight:700;color:var(--green);font-family:monospace">$0.00</div>
+                    </div>
+                    <div style="text-align:center">
+                        <span style="font-size:9px;color:var(--muted)">STREAK</span>
+                        <div id="streakDisplay" style="font-size:18px;font-weight:700;color:var(--green);font-family:monospace">0 🔥</div>
+                    </div>
+                    <div style="text-align:center">
+                        <span style="font-size:9px;color:var(--muted)">BEST</span>
+                        <div id="bestStreakDisplay" style="font-size:18px;font-weight:700;color:var(--cyan);font-family:monospace">0</div>
                     </div>
                     <div style="text-align:center">
                         <span style="font-size:9px;color:var(--muted)">PRICE</span>
@@ -418,6 +426,10 @@ const state = {
     rapidLosses: 0,
     rapidPL: 0,
     
+    // Streak tracking
+    currentStreak: 0,
+    bestStreak: 0,
+    
     // Stats
     totalStats: { trades: 0, wins: 0, pl: 0 }
 };
@@ -478,7 +490,10 @@ window.onload = () => {
         const saved = JSON.parse(localStorage.getItem('coldDigitBot') || '{}');
         if (saved.token) document.getElementById('token').value = saved.token;
         if (saved.totalStats) state.totalStats = saved.totalStats;
+        if (saved.currentStreak !== undefined) state.currentStreak = saved.currentStreak;
+        if (saved.bestStreak !== undefined) state.bestStreak = saved.bestStreak;
         updateTotalStats();
+        updateStreakDisplay();
     } catch(e) {}
     
     document.getElementById('rapidCount').addEventListener('input', (e) => {
@@ -501,7 +516,9 @@ window.onload = () => {
 function saveSettings() {
     localStorage.setItem('coldDigitBot', JSON.stringify({
         token: document.getElementById('token').value,
-        totalStats: state.totalStats
+        totalStats: state.totalStats,
+        currentStreak: state.currentStreak,
+        bestStreak: state.bestStreak
     }));
 }
 
@@ -1274,6 +1291,17 @@ function handleResult(contract) {
     if (isWin) state.totalStats.wins++;
     state.totalStats.pl += profit;
     
+    // Update win streak
+    if (isWin) {
+        state.currentStreak++;
+        if (state.currentStreak > state.bestStreak) {
+            state.bestStreak = state.currentStreak;
+        }
+    } else {
+        state.currentStreak = 0;
+    }
+    updateStreakDisplay();
+    
     state.trades.push({
         time: getTimestamp(),
         digit: info.digit,
@@ -1333,6 +1361,24 @@ function updateTotalStats() {
     plEl.className = 'stat-val ' + (state.totalStats.pl >= 0 ? 'pos' : 'neg');
 }
 
+function updateStreakDisplay() {
+    const streakEl = document.getElementById('streakDisplay');
+    const bestEl = document.getElementById('bestStreakDisplay');
+    
+    // Current streak with fire emojis based on length
+    let fireEmoji = '';
+    if (state.currentStreak >= 10) fireEmoji = ' 🔥🔥🔥';
+    else if (state.currentStreak >= 5) fireEmoji = ' 🔥🔥';
+    else if (state.currentStreak >= 1) fireEmoji = ' 🔥';
+    
+    streakEl.textContent = state.currentStreak + fireEmoji;
+    streakEl.style.color = state.currentStreak >= 5 ? 'var(--green)' : 
+                          state.currentStreak >= 1 ? 'var(--yellow)' : 'var(--muted)';
+    
+    // Best streak
+    bestEl.textContent = state.bestStreak;
+}
+
 function updateTradeHistory() {
     document.getElementById('trades').innerHTML = state.trades.slice(-30).reverse().map(t => 
         `<div class="trade-row ${t.result.toLowerCase()}">
@@ -1369,8 +1415,11 @@ function resetStats() {
     state.trades = [];
     state.triggers = [];
     state.totalStats = { trades: 0, wins: 0, pl: 0 };
+    state.currentStreak = 0;
+    state.bestStreak = 0;
     saveSettings();
     updateTotalStats();
+    updateStreakDisplay();
     updateTradeHistory();
     updateTriggerHistory();
     log('Stats reset', 'info');
