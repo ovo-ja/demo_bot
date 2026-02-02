@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cold Digit Tracker - DIFFERS Bot</title>
+    <title>Two-Phase DIFFERS Bot</title>
     <style>
         :root{--bg:#0a0e17;--card:#1a2235;--border:#2a3549;--text:#f1f5f9;--muted:#64748b;--green:#10b981;--red:#ef4444;--cyan:#06b6d4;--yellow:#f59e0b;--purple:#a855f7;--orange:#f97316;--blue:#3b82f6}
         *{margin:0;padding:0;box-sizing:border-box}
@@ -56,8 +56,13 @@
         .digit-box.tripled{border-color:#a855f7!important;background:rgba(168,85,247,0.5)!important;box-shadow:0 0 40px rgba(168,85,247,0.9),0 0 80px rgba(168,85,247,0.5);transform:scale(1.15);animation:pulse-triple 0.3s ease-in-out infinite}
         .digit-box.tripled .digit-num{color:#a855f7;text-shadow:0 0 20px #a855f7}
         .digit-box.tripled .digit-status{color:#a855f7!important;font-weight:700;font-size:9px}
+        .digit-box.quadrupled{border-color:#ec4899!important;background:rgba(236,72,153,0.6)!important;box-shadow:0 0 50px rgba(236,72,153,1),0 0 100px rgba(236,72,153,0.6);transform:scale(1.2);animation:pulse-quad 0.2s ease-in-out infinite}
+        .digit-box.quadrupled .digit-num{color:#ec4899;text-shadow:0 0 25px #ec4899}
+        .digit-box.quadrupled .digit-status{color:#ec4899!important;font-weight:700;font-size:9px}
+        @keyframes pulse-quad{0%,100%{transform:scale(1.2);box-shadow:0 0 50px rgba(236,72,153,1)}50%{transform:scale(1.25);box-shadow:0 0 80px rgba(236,72,153,1)}}
         @keyframes pulse-triple{0%,100%{transform:scale(1.15);box-shadow:0 0 40px rgba(168,85,247,0.9)}50%{transform:scale(1.2);box-shadow:0 0 70px rgba(168,85,247,1)}}
         @keyframes pulse-double{0%,100%{transform:scale(1.1);box-shadow:0 0 30px rgba(239,68,68,0.8)}50%{transform:scale(1.15);box-shadow:0 0 50px rgba(239,68,68,1)}}
+        @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:0.8}}
         @keyframes flash-digit{0%{transform:scale(1.15);box-shadow:0 0 50px rgba(245,158,11,1)}100%{transform:scale(1.08);box-shadow:0 0 30px rgba(245,158,11,0.8)}}
         @keyframes glow{0%,100%{box-shadow:0 0 15px rgba(6,182,212,0.4)}50%{box-shadow:0 0 25px rgba(6,182,212,0.7)}}
         .digit-num{font-size:24px;font-weight:700;transition:all 0.2s}
@@ -127,7 +132,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>🎯 Cold Digit Tracker</h1>
+        <h1>🎯 Two-Phase DIFFERS Bot</h1>
         <div class="status">
             <span class="time" id="torontoTime">--:--:-- EST</span>
             <span class="balance" id="balance">$0.00</span>
@@ -197,53 +202,42 @@
                 <input type="number" id="ticksToAnalyze" value="100" min="30" max="500">
                 
                 <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-                    <label>🎯 Auto Trade Strategies (select multiple)</label>
+                    <label>🎯 TWO-PHASE AUTO STRATEGY</label>
                     
-                    <div class="strat-row" style="display:flex;align-items:center;gap:6px;margin:6px 0;padding:6px;background:var(--bg);border-radius:4px">
-                        <input type="checkbox" id="stratCold" style="width:auto;margin:0">
-                        <span style="flex:1">❄️ Cold Only</span>
-                        <span style="font-size:9px;color:var(--muted)">≤</span>
-                        <input type="number" id="coldThreshold" value="5.5" min="1" max="15" step="0.1" style="width:50px;padding:2px 4px;margin:0">
-                        <span style="font-size:9px;color:var(--muted)">%</span>
-                    </div>
-                    
-                    <div class="strat-row" style="display:flex;align-items:center;gap:6px;margin:6px 0;padding:6px;background:var(--bg);border-radius:4px">
-                        <input type="checkbox" id="stratDouble" style="width:auto;margin:0" onchange="toggleDoubleOptions()">
-                        <span style="flex:1">🔥 Double Only</span>
-                        <span style="font-size:9px;color:var(--muted)">any repeat</span>
-                    </div>
-                    
-                    <div class="strat-row" style="display:flex;align-items:center;gap:6px;margin:6px 0;padding:6px;background:var(--bg);border-radius:4px">
-                        <input type="checkbox" id="stratDoubleCold" style="width:auto;margin:0">
-                        <span style="flex:1">🔥❄️ Double + Cold</span>
-                        <span style="font-size:9px;color:var(--muted)">≤</span>
-                        <input type="number" id="doubleColdThreshold" value="7" min="1" max="15" step="0.1" style="width:50px;padding:2px 4px;margin:0">
-                        <span style="font-size:9px;color:var(--muted)">%</span>
-                    </div>
-                    
-                    <div class="strat-row" style="display:flex;align-items:center;gap:6px;margin:6px 0;padding:6px;background:var(--bg);border-radius:4px">
-                        <input type="checkbox" id="stratTripleCold" style="width:auto;margin:0">
-                        <span style="flex:1">🔥🔥🔥❄️ Triple + Cold</span>
-                        <span style="font-size:9px;color:var(--muted)">≤</span>
-                        <input type="number" id="tripleColdThreshold" value="9" min="1" max="15" step="0.1" style="width:50px;padding:2px 4px;margin:0">
-                        <span style="font-size:9px;color:var(--muted)">%</span>
-                    </div>
-                    
-                    <div id="doubleOptionsSection" style="margin-top:8px;padding:8px;background:rgba(239,68,68,0.1);border-radius:4px;display:none">
-                        <label style="font-size:10px">🔥 Double Options</label>
-                        <div style="display:flex;gap:4px;margin-top:4px">
-                            <button type="button" class="rapid-opt active" onclick="setDoubleRapid(1)">1x</button>
-                            <button type="button" class="rapid-opt" onclick="setDoubleRapid(2)">2x</button>
-                            <button type="button" class="rapid-opt" onclick="setDoubleRapid(3)">3x</button>
+                    <!-- PHASE 1: Triple + Cold -->
+                    <div style="margin:8px 0;padding:10px;background:rgba(6,182,212,0.15);border:2px solid var(--cyan);border-radius:6px">
+                        <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:6px">📍 PHASE 1: Wait for Triple + Cold</div>
+                        <div style="display:flex;align-items:center;gap:6px">
+                            <span style="font-size:10px;color:var(--muted)">Threshold ≤</span>
+                            <input type="number" id="tripleColdThreshold" value="9" min="1" max="15" step="0.5" style="width:55px;padding:4px;margin:0">
+                            <span style="font-size:10px;color:var(--muted)">%</span>
                         </div>
-                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:6px;font-size:10px">
-                            <input type="checkbox" id="enableTripleRecovery" checked style="width:auto;margin:0">
-                            <span>🔥🔥🔥 Triple Recovery (rapid 2 if triple)</span>
-                        </label>
+                        <div style="font-size:9px;color:var(--muted);margin-top:4px">Bot waits for a digit to appear 3x in a row AND be under this %</div>
                     </div>
                     
-                    <div id="strategyStatus" style="font-size:9px;color:var(--muted);margin-top:6px;padding:4px;background:var(--bg);border-radius:4px;text-align:center">
-                        Select at least one strategy
+                    <!-- PHASE 2: Double + Cold -->
+                    <div style="margin:8px 0;padding:10px;background:rgba(249,115,22,0.15);border:2px solid var(--orange);border-radius:6px">
+                        <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:6px">🔥 PHASE 2: Trade Double + Cold</div>
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                            <span style="font-size:10px;color:var(--muted)">Threshold ≤</span>
+                            <input type="number" id="doubleColdThreshold" value="7" min="1" max="15" step="0.5" style="width:55px;padding:4px;margin:0">
+                            <span style="font-size:10px;color:var(--muted)">%</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px">
+                            <span style="font-size:10px;color:var(--muted)">Trades per cycle:</span>
+                            <input type="number" id="tradesPerCycle" value="5" min="1" max="20" style="width:50px;padding:4px;margin:0">
+                        </div>
+                        <div style="font-size:9px;color:var(--muted);margin-top:4px">After triple triggers, trade X doubles then return to Phase 1</div>
+                    </div>
+                    
+                    <!-- Phase 2 behavior on new triple -->
+                    <div style="padding:8px;background:var(--bg);border-radius:4px;margin-top:6px">
+                        <div style="font-size:9px;color:var(--purple);font-weight:600">⚡ If new Triple during Phase 2:</div>
+                        <div style="font-size:9px;color:var(--muted)">Trade it & reset counter (Option 2)</div>
+                    </div>
+                    
+                    <div id="strategyStatus" style="font-size:9px;color:var(--muted);margin-top:8px;padding:6px;background:var(--bg);border-radius:4px;text-align:center">
+                        Two-Phase System Ready
                     </div>
                 </div>
             </div>
@@ -269,18 +263,10 @@
             <!-- Digit Frequency Grid -->
             <div class="card highlight">
                 <h3>🔢 Digit Frequency <span id="tickCount" style="float:right;color:var(--cyan)">0 ticks</span></h3>
-                <div style="display:flex;justify-content:center;align-items:center;gap:15px;margin-bottom:8px;padding:10px;background:var(--bg);border-radius:8px;flex-wrap:wrap">
+                <div style="display:flex;justify-content:center;align-items:center;gap:20px;margin-bottom:8px;padding:10px;background:var(--bg);border-radius:8px">
                     <div style="text-align:center">
                         <span style="font-size:9px;color:var(--muted)">BALANCE</span>
                         <div id="balanceDisplay" style="font-size:18px;font-weight:700;color:var(--green);font-family:monospace">$0.00</div>
-                    </div>
-                    <div style="text-align:center">
-                        <span style="font-size:9px;color:var(--muted)">STREAK</span>
-                        <div id="streakDisplay" style="font-size:18px;font-weight:700;color:var(--green);font-family:monospace">0 🔥</div>
-                    </div>
-                    <div style="text-align:center">
-                        <span style="font-size:9px;color:var(--muted)">BEST</span>
-                        <div id="bestStreakDisplay" style="font-size:18px;font-weight:700;color:var(--cyan);font-family:monospace">0</div>
                     </div>
                     <div style="text-align:center">
                         <span style="font-size:9px;color:var(--muted)">PRICE</span>
@@ -293,7 +279,7 @@
                 </div>
                 <div class="digit-grid" id="digitGrid"></div>
                 <div style="font-size:9px;color:var(--muted);margin-top:4px">
-                    🟡 Yellow = Just occurred | 🔴 Red = DOUBLED | 🟣 Purple = TRIPLED | 🟢 Green = Valid (<span id="thresholdDisplay">7</span>%) | ❄️ Cyan = Coldest
+                    🟡 Just occurred | 🔴 DOUBLE | 🟣 TRIPLE | 💗 QUAD | 🟢 Valid (<span id="thresholdDisplay">7</span>%) | ❄️ Coldest
                 </div>
             </div>
             
@@ -308,12 +294,31 @@
             
             <!-- Auto Mode Status -->
             <div id="autoSection">
+                <!-- Phase Indicator -->
+                <div id="phaseIndicator" style="background:var(--bg);border:2px solid var(--cyan);border-radius:8px;padding:15px;text-align:center;margin-bottom:10px">
+                    <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">CURRENT PHASE</div>
+                    <div id="phaseTitle" style="font-size:24px;font-weight:700;color:var(--cyan);margin:5px 0">📍 PHASE 1</div>
+                    <div id="phaseSubtitle" style="font-size:11px;color:var(--muted)">Waiting for Triple + Cold signal...</div>
+                    <div id="tradeCounter" style="display:none;margin-top:10px">
+                        <div style="display:flex;justify-content:center;gap:6px" id="tradeDots"></div>
+                        <div style="font-size:10px;color:var(--orange);margin-top:5px" id="tradeProgress">0/5 trades</div>
+                    </div>
+                </div>
+                
+                <!-- Stats Row -->
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
+                    <div class="stat"><div class="stat-val" style="color:var(--cyan)" id="streakDisplay">0 🔥</div><div class="stat-label">Streak</div></div>
+                    <div class="stat"><div class="stat-val" style="color:var(--orange)" id="bestStreakDisplay">0</div><div class="stat-label">Best</div></div>
+                    <div class="stat"><div class="stat-val" style="color:var(--purple)" id="triplesCaughtDisplay">0</div><div class="stat-label">Triples</div></div>
+                    <div class="stat"><div class="stat-val" id="cyclesDisplay">0</div><div class="stat-label">Cycles</div></div>
+                </div>
+                
                 <div class="auto-status" id="autoStatus">
                     <div class="auto-icon">⏳</div>
                     <div class="auto-text">Collecting ticks...</div>
                     <div class="auto-sub">Need 100 ticks to start scanning</div>
                 </div>
-                <button class="btn-green" id="startAutoBtn" onclick="startAuto()" style="width:100%;padding:12px;display:none">▶️ START AUTO MODE</button>
+                <button class="btn-green" id="startAutoBtn" onclick="startAuto()" style="width:100%;padding:12px;display:none">▶️ START TWO-PHASE AUTO</button>
                 <button class="btn-red" id="stopAutoBtn" onclick="stopAuto()" style="width:100%;padding:12px;display:none;margin-top:6px">⏹️ STOP AUTO MODE</button>
             </div>
             
@@ -373,7 +378,8 @@
             
             <div class="card">
                 <h3>📥 Export</h3>
-                <button class="btn-blue" onclick="exportCSV()" style="margin-bottom:6px">Export CSV</button>
+                <button class="btn-blue" onclick="exportCSV()" style="margin-bottom:6px">Export Trades CSV</button>
+                <button class="btn-blue" onclick="exportLog()" style="margin-bottom:6px;background:linear-gradient(135deg,var(--purple),#7c3aed)">Export Activity Log</button>
                 <button class="btn-blue" onclick="resetStats()">Reset Stats</button>
             </div>
         </div>
@@ -412,10 +418,22 @@ const state = {
     doubleDigit: null,        // Which digit just doubled
     doubleRapidCount: 1,      // How many trades to place on double (1, 2, or 3)
     
-    // Triple recovery
+    // Consecutive count (for triple/quadruple detection)
     consecutiveCount: 1,      // How many times current digit appeared in a row
     lastTradedDigit: null,    // Which digit we just traded on (for triple detection)
     waitingForTriple: false,  // Are we watching for triple after a double trade?
+    
+    // TWO-PHASE SYSTEM
+    currentPhase: 1,          // 1 = Waiting for Triple, 2 = Active (trading doubles)
+    phase2TradeCount: 0,      // Current trade count in Phase 2 (0 to tradesPerCycle)
+    phase2TradeResults: [],   // Results of trades in current cycle ['win', 'loss', ...]
+    cyclesCompleted: 0,       // Total cycles completed
+    triplesCaught: 0,         // Total triples that triggered Phase 2
+    currentStreak: 0,         // Current win streak
+    bestStreak: 0,            // Best win streak ever
+    
+    // Activity log (for export)
+    activityLog: [],          // Full log of all events
     
     // Rapid fire
     rapidCount: 5,
@@ -425,10 +443,6 @@ const state = {
     rapidWins: 0,
     rapidLosses: 0,
     rapidPL: 0,
-    
-    // Streak tracking
-    currentStreak: 0,
-    bestStreak: 0,
     
     // Stats
     totalStats: { trades: 0, wins: 0, pl: 0 }
@@ -460,6 +474,18 @@ function extractDigit(quote, pipSize) {
 function log(msg, type = '') {
     const el = document.getElementById('log');
     const time = new Date().toLocaleTimeString('en-US', { timeZone: 'America/Toronto' });
+    const fullTime = new Date().toLocaleString('en-US', { timeZone: 'America/Toronto' });
+    
+    // Store in activity log for export
+    state.activityLog.push({
+        time: fullTime,
+        message: msg,
+        type: type
+    });
+    
+    // Keep log from getting too large
+    if (state.activityLog.length > 5000) state.activityLog.shift();
+    
     el.innerHTML = `<div class="${type}">[${time}] ${msg}</div>` + el.innerHTML;
     if (el.children.length > 100) el.removeChild(el.lastChild);
 }
@@ -490,10 +516,7 @@ window.onload = () => {
         const saved = JSON.parse(localStorage.getItem('coldDigitBot') || '{}');
         if (saved.token) document.getElementById('token').value = saved.token;
         if (saved.totalStats) state.totalStats = saved.totalStats;
-        if (saved.currentStreak !== undefined) state.currentStreak = saved.currentStreak;
-        if (saved.bestStreak !== undefined) state.bestStreak = saved.bestStreak;
         updateTotalStats();
-        updateStreakDisplay();
     } catch(e) {}
     
     document.getElementById('rapidCount').addEventListener('input', (e) => {
@@ -516,9 +539,7 @@ window.onload = () => {
 function saveSettings() {
     localStorage.setItem('coldDigitBot', JSON.stringify({
         token: document.getElementById('token').value,
-        totalStats: state.totalStats,
-        currentStreak: state.currentStreak,
-        bestStreak: state.bestStreak
+        totalStats: state.totalStats
     }));
 }
 
@@ -649,58 +670,57 @@ function handleTick(tick) {
     
     const isDouble = (state.consecutiveCount === 2);
     const isTriple = (state.consecutiveCount === 3);
+    const isQuadruple = (state.consecutiveCount === 4);
     
     // Clear previous states
     document.querySelectorAll('.digit-box').forEach(box => {
-        box.classList.remove('just-occurred', 'doubled', 'tripled');
+        box.classList.remove('just-occurred', 'doubled', 'tripled', 'quadrupled');
     });
     
     // Update digit status text
     for (let i = 0; i < 10; i++) {
         const statusEl = document.getElementById(`status-${i}`);
-        if (statusEl && (statusEl.textContent === '🔥 DOUBLED!' || statusEl.textContent === '🔥🔥🔥 TRIPLED!')) {
+        if (statusEl && (statusEl.textContent === '🔥 DOUBLED!' || statusEl.textContent === '🔥🔥🔥 TRIPLED!' || statusEl.textContent === '💥 QUADRUPLED!')) {
             statusEl.textContent = '';
         }
     }
     
-    if (isTriple) {
-        // TRIPLE DETECTED! - Calculate cold percentage for logging
-        const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
-        const recent = state.ticks.slice(-ticksToAnalyze);
-        let tripleFreq = 0;
-        let coldStatus = '';
-        
-        if (recent.length >= 50) {
-            const counts = [0,0,0,0,0,0,0,0,0,0];
-            recent.forEach(t => counts[t.digit]++);
-            tripleFreq = counts[digit] / recent.length * 100;
-            coldStatus = tripleFreq <= tripleColdThreshold ? ` ❄️ COLD (≤${tripleColdThreshold}%)` : ` (>${tripleColdThreshold}%)`;
-        }
-        
+    // Calculate frequency for logging
+    const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
+    const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
+    const recent = state.ticks.slice(-ticksToAnalyze);
+    let digitFreq = 0;
+    
+    if (recent.length >= 50) {
+        const counts = [0,0,0,0,0,0,0,0,0,0];
+        recent.forEach(t => counts[t.digit]++);
+        digitFreq = counts[digit] / recent.length * 100;
+    }
+    
+    if (isQuadruple) {
+        // QUADRUPLE DETECTED!
+        const coldStatus = digitFreq <= tripleColdThreshold ? ` ❄️ COLD (≤${tripleColdThreshold}%)` : ` (>${tripleColdThreshold}%)`;
+        state.doubleDetected = false;
+        state.doubleDigit = null;
+        document.getElementById(`digit-${digit}`).classList.add('quadrupled');
+        document.getElementById(`status-${digit}`).textContent = '💥 QUADRUPLED!';
+        log(`💥💥💥💥 QUADRUPLE: Digit ${digit} appeared 4x! Freq: ${digitFreq.toFixed(1)}%${coldStatus}`, 'alert');
+    } else if (isTriple) {
+        // TRIPLE DETECTED!
+        const coldStatus = digitFreq <= tripleColdThreshold ? ` ❄️ COLD (≤${tripleColdThreshold}%)` : ` (>${tripleColdThreshold}%)`;
         state.doubleDetected = false;
         state.doubleDigit = null;
         document.getElementById(`digit-${digit}`).classList.add('tripled');
         document.getElementById(`status-${digit}`).textContent = '🔥🔥🔥 TRIPLED!';
-        log(`🔥🔥🔥 TRIPLE: Digit ${digit} appeared 3x! Freq: ${tripleFreq.toFixed(1)}%${coldStatus}`, 'alert');
+        log(`🔥🔥🔥 TRIPLE: Digit ${digit} appeared 3x! Freq: ${digitFreq.toFixed(1)}%${coldStatus}`, 'alert');
     } else if (isDouble) {
-        // DOUBLE DETECTED! - Calculate frequency for logging
-        const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
-        const recent = state.ticks.slice(-ticksToAnalyze);
-        let doubleFreq = 0;
-        let coldStatus = '';
-        
-        if (recent.length >= 50) {
-            const counts = [0,0,0,0,0,0,0,0,0,0];
-            recent.forEach(t => counts[t.digit]++);
-            doubleFreq = counts[digit] / recent.length * 100;
-            coldStatus = doubleFreq <= doubleColdThreshold ? ` ❄️ (≤${doubleColdThreshold}%)` : '';
-        }
-        
+        // DOUBLE DETECTED!
+        const coldStatus = digitFreq <= doubleColdThreshold ? ` ❄️ (≤${doubleColdThreshold}%)` : '';
         state.doubleDetected = true;
         state.doubleDigit = digit;
         document.getElementById(`digit-${digit}`).classList.add('doubled');
         document.getElementById(`status-${digit}`).textContent = '🔥 DOUBLED!';
-        log(`🔥 DOUBLE: Digit ${digit} (${doubleFreq.toFixed(1)}%${coldStatus})`, 'alert');
+        log(`🔥 DOUBLE: Digit ${digit} (${digitFreq.toFixed(1)}%${coldStatus})`, 'alert');
     } else {
         state.doubleDetected = false;
         state.doubleDigit = null;
@@ -712,100 +732,48 @@ function handleTick(tick) {
     
     analyzeDigits();
     
-    // Get enabled strategies
-    const stratCold = document.getElementById('stratCold')?.checked;
-    const stratDouble = document.getElementById('stratDouble')?.checked;
-    const stratDoubleCold = document.getElementById('stratDoubleCold')?.checked;
-    const stratTripleCold = document.getElementById('stratTripleCold')?.checked;
-    const enableTripleRecovery = document.getElementById('enableTripleRecovery')?.checked;
-    
-    // TRIPLE RECOVERY: Check if we should recover after a triple (only for Double Only strategy)
-    if (state.autoRunning && !state.tradePending && isTriple && state.waitingForTriple && enableTripleRecovery && stratDouble) {
-        // Triple occurred and we were waiting for it (our double trade just lost)
-        state.waitingForTriple = false;
-        log(`💥 Triple recovery triggered! Digit ${digit} - Rapid 2 to recover...`, 'trade');
+    // TWO-PHASE AUTO TRADING LOGIC
+    if (state.autoRunning && !state.tradePending && recent.length >= ticksToAnalyze) {
         
-        state.triggers.push({
-            time: getTimestamp(),
-            digit: digit,
-            freq: 0,
-            reason: '🔥🔥🔥 Triple Recovery'
-        });
-        updateTriggerHistory();
-        
-        // Rapid 2 trades for recovery
-        state.tradePending = true;
-        placeTrade(digit);
-        setTimeout(() => {
-            placeTrade(digit);
-            log(`🔥 Recovery trade 2/2 on digit ${digit}`, 'trade');
-        }, 300);
-        
-        setTimeout(() => {
-            state.tradePending = false;
-            if (state.autoRunning) updateAutoStatus();
-        }, 2500);
-        
-        return; // Don't process normal auto trading
-    }
-    
-    // AUTO TRADING LOGIC - Check all enabled strategies
-    if (state.autoRunning && !state.tradePending) {
-        // Get individual thresholds
-        const coldThreshold = parseFloat(document.getElementById('coldThreshold').value) || 5.5;
-        const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
-        const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
-        
-        const recent = state.ticks.slice(-ticksToAnalyze);
-        
-        if (recent.length >= ticksToAnalyze) {
-            // Calculate frequency of the digit that just occurred
-            const counts = [0,0,0,0,0,0,0,0,0,0];
-            recent.forEach(t => counts[t.digit]++);
-            const digitFreq = counts[digit] / recent.length * 100;
-            
-            let shouldTrade = false;
-            let tradeReason = '';
-            let useDoubleRapid = false;
-            
-            // Check strategies in priority order (each with its own threshold)
-            
-            // 1. Triple + Cold (most specific)
-            if (!shouldTrade && stratTripleCold && isTriple && digitFreq <= tripleColdThreshold) {
-                shouldTrade = true;
-                tradeReason = `🔥🔥🔥❄️ Triple+Cold (${digitFreq.toFixed(1)}% ≤ ${tripleColdThreshold}%)`;
-            }
-            
-            // 2. Double + Cold
-            if (!shouldTrade && stratDoubleCold && isDouble && digitFreq <= doubleColdThreshold) {
-                shouldTrade = true;
-                tradeReason = `🔥❄️ Double+Cold (${digitFreq.toFixed(1)}% ≤ ${doubleColdThreshold}%)`;
-            }
-            
-            // 3. Double Only (any double, ignore frequency)
-            if (!shouldTrade && stratDouble && isDouble) {
-                shouldTrade = true;
-                useDoubleRapid = true;
-                tradeReason = `🔥 Double (${digitFreq.toFixed(1)}%)`;
-                if (state.doubleRapidCount > 1) {
-                    tradeReason += ` x${state.doubleRapidCount}`;
-                }
-            }
-            
-            // 4. Cold Only
-            if (!shouldTrade && stratCold && digitFreq <= coldThreshold) {
-                shouldTrade = true;
-                tradeReason = `❄️ Cold (${digitFreq.toFixed(1)}% ≤ ${coldThreshold}%)`;
-            }
-            
-            if (shouldTrade) {
+        // PHASE 1: Waiting for Triple + Cold
+        if (state.currentPhase === 1) {
+            if (isTriple && digitFreq <= tripleColdThreshold) {
+                // Triple + Cold detected! Trade it and activate Phase 2
+                state.triplesCaught++;
+                document.getElementById('triplesCaughtDisplay').textContent = state.triplesCaught;
+                
+                log(`🎯 PHASE 1 TRIGGER: Triple+Cold (${digitFreq.toFixed(1)}% ≤ ${tripleColdThreshold}%)! Digit ${digit}`, 'trade');
+                
                 state.currentTarget = digit;
-                triggerAutoTrade(digit, digitFreq, tradeReason, useDoubleRapid);
+                triggerTwoPhaseTripleTrade(digit, digitFreq);
+            }
+        }
+        // PHASE 2: Trading Double + Cold (up to X trades)
+        else if (state.currentPhase === 2) {
+            const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
+            
+            // Check for new Triple + Cold (Option 2: Reset counter)
+            if (isTriple && digitFreq <= tripleColdThreshold) {
+                // New triple during Phase 2! Trade it and RESET counter
+                state.triplesCaught++;
+                document.getElementById('triplesCaughtDisplay').textContent = state.triplesCaught;
+                
+                log(`⚡ NEW TRIPLE during Phase 2! Trading & resetting counter...`, 'trade');
+                log(`🎯 Triple+Cold (${digitFreq.toFixed(1)}% ≤ ${tripleColdThreshold}%)! Digit ${digit}`, 'trade');
+                
+                state.currentTarget = digit;
+                triggerTwoPhaseTripleTrade(digit, digitFreq, true); // true = reset counter
+            }
+            // Normal Double + Cold trade
+            else if (isDouble && digitFreq <= doubleColdThreshold && state.phase2TradeCount < tradesPerCycle) {
+                log(`🔔 Phase 2 (${state.phase2TradeCount + 1}/${tradesPerCycle}): Double+Cold (${digitFreq.toFixed(1)}% ≤ ${doubleColdThreshold}%)! Digit ${digit}`, 'trade');
+                
+                state.currentTarget = digit;
+                triggerTwoPhaseDoubleTrade(digit, digitFreq);
             }
         }
     }
 }
-
 function analyzeDigits() {
     const threshold = parseFloat(document.getElementById('threshold').value) || 7;
     const ticksToAnalyze = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
@@ -908,31 +876,19 @@ function updateAutoStatus() {
     const startBtn = document.getElementById('startAutoBtn');
     const stopBtn = document.getElementById('stopAutoBtn');
     const ticksToAnalyze = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
-    const coldThreshold = parseFloat(document.getElementById('coldThreshold').value) || 5.5;
-    
-    // Get enabled strategies
-    const stratCold = document.getElementById('stratCold')?.checked;
-    const stratDouble = document.getElementById('stratDouble')?.checked;
-    const stratDoubleCold = document.getElementById('stratDoubleCold')?.checked;
-    const stratTripleCold = document.getElementById('stratTripleCold')?.checked;
+    const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
+    const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
     
     // Update strategy status display
     const strategyStatusEl = document.getElementById('strategyStatus');
-    const enabledStrategies = [];
-    if (stratCold) enabledStrategies.push('❄️ Cold');
-    if (stratDouble) enabledStrategies.push('🔥 Double');
-    if (stratDoubleCold) enabledStrategies.push('🔥❄️ Dbl+Cold');
-    if (stratTripleCold) enabledStrategies.push('🔥🔥🔥❄️ Trpl+Cold');
-    
     if (strategyStatusEl) {
-        if (enabledStrategies.length === 0) {
-            strategyStatusEl.textContent = 'Select at least one strategy';
-            strategyStatusEl.style.color = 'var(--red)';
-        } else {
-            strategyStatusEl.textContent = `Active: ${enabledStrategies.join(' | ')}`;
-            strategyStatusEl.style.color = 'var(--green)';
-        }
+        strategyStatusEl.textContent = `Phase 1: Triple ≤${tripleColdThreshold}% | Phase 2: Double ≤${doubleColdThreshold}% (${tradesPerCycle} trades)`;
+        strategyStatusEl.style.color = 'var(--green)';
     }
+    
+    // Update phase indicator
+    updatePhaseIndicator();
     
     if (state.ticks.length < ticksToAnalyze) {
         statusEl.className = 'auto-status';
@@ -946,40 +902,14 @@ function updateAutoStatus() {
         return;
     }
     
-    // Check how many digits are under cold threshold (use coldThreshold for display)
-    const recent = state.ticks.slice(-ticksToAnalyze);
-    const counts = [0,0,0,0,0,0,0,0,0,0];
-    recent.forEach(t => counts[t.digit]++);
-    const coldDigits = [];
-    for (let i = 0; i < 10; i++) {
-        const freq = counts[i] / recent.length * 100;
-        if (freq <= coldThreshold) {
-            coldDigits.push({ digit: i, freq: freq });
-        }
-    }
-    
     if (!state.autoRunning) {
-        let readyText = '';
-        if (enabledStrategies.length === 0) {
-            readyText = 'Select strategies above';
-        } else {
-            const parts = [];
-            if (stratCold || stratDoubleCold || stratTripleCold) {
-                parts.push(`${coldDigits.length} cold digit(s)`);
-            }
-            if (stratDouble) {
-                parts.push('watching doubles');
-            }
-            readyText = parts.join(' + ') || 'Ready';
-        }
-        
         statusEl.className = 'auto-status ready';
         statusEl.innerHTML = `
             <div class="auto-icon">✅</div>
             <div class="auto-text">Ready</div>
-            <div class="auto-sub">${readyText}</div>
+            <div class="auto-sub">Two-Phase System: Triple → Double burst</div>
         `;
-        startBtn.style.display = enabledStrategies.length > 0 ? 'block' : 'none';
+        startBtn.style.display = 'block';
         stopBtn.style.display = 'none';
     } else {
         if (state.tradePending) {
@@ -989,19 +919,21 @@ function updateAutoStatus() {
                 <div class="auto-text">Trade Pending...</div>
                 <div class="auto-sub">Processing DIFFERS on digit ${state.currentTarget}</div>
             `;
-        } else if (state.doubleDetected && (stratDouble || stratDoubleCold)) {
-            statusEl.className = 'auto-status watching';
+        } else if (state.currentPhase === 1) {
+            statusEl.className = 'auto-status';
+            statusEl.style.borderColor = 'var(--cyan)';
             statusEl.innerHTML = `
-                <div class="auto-icon">🔥</div>
-                <div class="auto-text">DOUBLE DETECTED!</div>
-                <div class="auto-sub">Digit ${state.doubleDigit} appeared twice</div>
+                <div class="auto-icon">👁️</div>
+                <div class="auto-text">Phase 1: Watching...</div>
+                <div class="auto-sub">Looking for Triple + Cold (≤${tripleColdThreshold}%)</div>
             `;
         } else {
             statusEl.className = 'auto-status watching';
+            statusEl.style.borderColor = 'var(--orange)';
             statusEl.innerHTML = `
-                <div class="auto-icon">👁️</div>
-                <div class="auto-text">Watching...</div>
-                <div class="auto-sub">${enabledStrategies.join(' | ')}</div>
+                <div class="auto-icon">🔥</div>
+                <div class="auto-text">Phase 2: Active!</div>
+                <div class="auto-sub">Trading Double + Cold (${state.phase2TradeCount}/${tradesPerCycle})</div>
             `;
         }
         startBtn.style.display = 'none';
@@ -1009,48 +941,75 @@ function updateAutoStatus() {
     }
 }
 
+function updatePhaseIndicator() {
+    const indicator = document.getElementById('phaseIndicator');
+    const title = document.getElementById('phaseTitle');
+    const subtitle = document.getElementById('phaseSubtitle');
+    const counter = document.getElementById('tradeCounter');
+    const dots = document.getElementById('tradeDots');
+    const progress = document.getElementById('tradeProgress');
+    
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
+    const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
+    const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
+    
+    if (state.currentPhase === 1) {
+        indicator.style.borderColor = 'var(--cyan)';
+        title.style.color = 'var(--cyan)';
+        title.textContent = '📍 PHASE 1';
+        subtitle.textContent = `Waiting for Triple + Cold (≤${tripleColdThreshold}%)...`;
+        counter.style.display = 'none';
+    } else {
+        indicator.style.borderColor = 'var(--orange)';
+        title.style.color = 'var(--orange)';
+        title.textContent = '🔥 PHASE 2';
+        subtitle.textContent = `Trading Double + Cold (≤${doubleColdThreshold}%)`;
+        counter.style.display = 'block';
+        
+        // Build trade dots
+        let dotsHtml = '';
+        for (let i = 0; i < tradesPerCycle; i++) {
+            let dotClass = '';
+            let dotContent = i + 1;
+            
+            if (i < state.phase2TradeResults.length) {
+                dotClass = state.phase2TradeResults[i] === 'win' ? 'background:var(--green);color:white' : 'background:var(--red);color:white';
+                dotContent = state.phase2TradeResults[i] === 'win' ? '✓' : '✗';
+            } else if (i === state.phase2TradeCount) {
+                dotClass = 'background:var(--orange);color:black;animation:pulse 1s infinite';
+            } else {
+                dotClass = 'background:var(--border)';
+            }
+            
+            dotsHtml += `<div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;${dotClass}">${dotContent}</div>`;
+        }
+        dots.innerHTML = dotsHtml;
+        progress.textContent = `${state.phase2TradeCount}/${tradesPerCycle} trades`;
+    }
+}
+
 function startAuto() {
     const ticksToAnalyze = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
-    
-    // Get individual thresholds
-    const coldThreshold = parseFloat(document.getElementById('coldThreshold').value) || 5.5;
-    const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
     const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
-    
-    // Get enabled strategies
-    const stratCold = document.getElementById('stratCold')?.checked;
-    const stratDouble = document.getElementById('stratDouble')?.checked;
-    const stratDoubleCold = document.getElementById('stratDoubleCold')?.checked;
-    const stratTripleCold = document.getElementById('stratTripleCold')?.checked;
-    const enableTripleRecovery = document.getElementById('enableTripleRecovery')?.checked;
-    
-    // Validate at least one strategy
-    if (!stratCold && !stratDouble && !stratDoubleCold && !stratTripleCold) {
-        return log('❌ Select at least one strategy!', 'loss');
-    }
+    const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
     
     if (state.ticks.length < ticksToAnalyze) return log(`Need ${ticksToAnalyze} ticks first!`, 'loss');
     
     state.autoRunning = true;
     state.tradePending = false;
-    state.lastPriceDigit = null; // Reset for fresh double detection
+    state.currentPhase = 1;
+    state.phase2TradeCount = 0;
+    state.phase2TradeResults = [];
+    state.lastPriceDigit = null;
     state.consecutiveCount = 1;
-    state.waitingForTriple = false;
-    state.lastTradedDigit = null;
     
-    // Build strategy list for log with individual thresholds
-    const strategies = [];
-    if (stratCold) strategies.push(`❄️ Cold (≤${coldThreshold}%)`);
-    if (stratDouble) {
-        let doubleText = `🔥 Double (${state.doubleRapidCount}x)`;
-        if (enableTripleRecovery) doubleText += ' +Recovery';
-        strategies.push(doubleText);
-    }
-    if (stratDoubleCold) strategies.push(`🔥❄️ Dbl+Cold (≤${doubleColdThreshold}%)`);
-    if (stratTripleCold) strategies.push(`🔥🔥🔥❄️ Trpl+Cold (≤${tripleColdThreshold}%)`);
+    log(`🤖 TWO-PHASE AUTO STARTED`, 'info');
+    log(`📍 Phase 1: Triple+Cold (≤${tripleColdThreshold}%)`, 'info');
+    log(`🔥 Phase 2: Double+Cold (≤${doubleColdThreshold}%) x${tradesPerCycle} trades`, 'info');
     
-    log(`🤖 Auto started: ${strategies.join(' | ')}`, 'info');
     updateAutoStatus();
+    updatePhaseIndicator();
 }
 
 function stopAuto() {
@@ -1060,97 +1019,103 @@ function stopAuto() {
     state.doubleDetected = false;
     state.doubleDigit = null;
     state.consecutiveCount = 1;
-    state.waitingForTriple = false;
-    state.lastTradedDigit = null;
+    state.currentPhase = 1;
+    state.phase2TradeCount = 0;
+    state.phase2TradeResults = [];
+    
     log('⏹️ Auto stopped', 'info');
     updateAutoStatus();
+    updatePhaseIndicator();
 }
 
 function updateStrategyDisplay() {
-    // No longer needed - individual thresholds are now inline
     updateAutoStatus();
 }
 
-function toggleDoubleOptions() {
-    const stratDouble = document.getElementById('stratDouble')?.checked;
-    const optionsSection = document.getElementById('doubleOptionsSection');
-    if (optionsSection) {
-        optionsSection.style.display = stratDouble ? 'block' : 'none';
-    }
-    updateAutoStatus();
-}
+// TWO-PHASE TRADE FUNCTIONS
 
-function setDoubleRapid(count) {
-    state.doubleRapidCount = count;
-    
-    // Update button states
-    document.querySelectorAll('.rapid-opt').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.textContent.includes(count)) {
-            btn.classList.add('active');
-        }
-    });
-    
-    updateAutoStatus();
-    log(`🔥 Double rapid set to ${count} trade(s)`, 'info');
-}
-
-function triggerAutoTrade(digit, freq, reason, useDoubleRapid = false) {
+function triggerTwoPhaseTripleTrade(digit, freq, resetCounter = false) {
     state.tradePending = true;
     
-    const stratDouble = document.getElementById('stratDouble')?.checked;
-    const enableTripleRecovery = document.getElementById('enableTripleRecovery')?.checked;
-    const rapidCount = useDoubleRapid ? state.doubleRapidCount : 1;
-    
-    // If double strategy trade and triple recovery enabled, watch for triple
-    if (useDoubleRapid && stratDouble && enableTripleRecovery) {
-        state.waitingForTriple = true;
-        state.lastTradedDigit = digit;
-    }
-    
-    log(`🔔 ${reason}! Digit ${digit} - Trading DIFFERS...`, 'trade');
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
     
     state.triggers.push({
         time: getTimestamp(),
         digit: digit,
         freq: freq,
-        reason: reason
+        reason: resetCounter ? '⚡ Triple Reset' : '🎯 Triple Trigger'
     });
     updateTriggerHistory();
     
-    // Place trades (rapid if double strategy with count > 1)
-    if (rapidCount > 1) {
-        // Rapid fire trades for double strategy
-        for (let i = 0; i < rapidCount; i++) {
-            setTimeout(() => {
-                placeTrade(digit);
-                if (i > 0) log(`🔥 Rapid trade ${i + 1}/${rapidCount} on digit ${digit}`, 'trade');
-            }, i * 300); // 300ms between trades
+    // Place the trade
+    placeTrade(digit);
+    
+    // After trade, switch to Phase 2
+    setTimeout(() => {
+        state.tradePending = false;
+        state.currentPhase = 2;
+        
+        if (resetCounter) {
+            // Reset counter, but the triple trade counts as trade 1
+            state.phase2TradeCount = 1;
+            state.phase2TradeResults = ['pending']; // Will be updated by handleResult
+            log(`🔄 Counter reset! Now at 1/${tradesPerCycle}`, 'info');
+        } else {
+            // Fresh start - triple trade counts as trade 1
+            state.phase2TradeCount = 1;
+            state.phase2TradeResults = ['pending'];
+            log(`📍 → 🔥 Switching to PHASE 2 (1/${tradesPerCycle})`, 'info');
         }
         
-        // Reset tradePending after all trades (but keep waitingForTriple!)
-        setTimeout(() => {
-            state.tradePending = false;
-            state.doubleDetected = false;
-            state.doubleDigit = null;
-            if (state.autoRunning) {
-                updateAutoStatus();
-            }
-        }, rapidCount * 300 + 2000);
-    } else {
-        // Single trade
-        placeTrade(digit);
+        updateAutoStatus();
+        updatePhaseIndicator();
+    }, 2000);
+}
+
+function triggerTwoPhaseDoubleTrade(digit, freq) {
+    state.tradePending = true;
+    
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
+    
+    state.triggers.push({
+        time: getTimestamp(),
+        digit: digit,
+        freq: freq,
+        reason: `🔥 Double (${state.phase2TradeCount + 1}/${tradesPerCycle})`
+    });
+    updateTriggerHistory();
+    
+    // Place the trade
+    placeTrade(digit);
+    
+    // Increment counter
+    state.phase2TradeCount++;
+    state.phase2TradeResults.push('pending');
+    
+    // After trade processes
+    setTimeout(() => {
+        state.tradePending = false;
+        state.doubleDetected = false;
+        state.doubleDigit = null;
         
-        // Reset tradePending after trade processes (but keep waitingForTriple!)
-        setTimeout(() => {
-            state.tradePending = false;
-            state.doubleDetected = false;
-            state.doubleDigit = null;
-            if (state.autoRunning) {
-                updateAutoStatus();
-            }
-        }, 2000);
-    }
+        // Check if cycle complete
+        if (state.phase2TradeCount >= tradesPerCycle) {
+            // Cycle complete! Return to Phase 1
+            state.cyclesCompleted++;
+            document.getElementById('cyclesDisplay').textContent = state.cyclesCompleted;
+            
+            log(`✅ Cycle complete! (${state.phase2TradeCount}/${tradesPerCycle}) Returning to Phase 1...`, 'info');
+            
+            state.currentPhase = 1;
+            state.phase2TradeCount = 0;
+            state.phase2TradeResults = [];
+        }
+        
+        if (state.autoRunning) {
+            updateAutoStatus();
+            updatePhaseIndicator();
+        }
+    }, 2000);
 }
 
 // =============================================
@@ -1291,17 +1256,6 @@ function handleResult(contract) {
     if (isWin) state.totalStats.wins++;
     state.totalStats.pl += profit;
     
-    // Update win streak
-    if (isWin) {
-        state.currentStreak++;
-        if (state.currentStreak > state.bestStreak) {
-            state.bestStreak = state.currentStreak;
-        }
-    } else {
-        state.currentStreak = 0;
-    }
-    updateStreakDisplay();
-    
     state.trades.push({
         time: getTimestamp(),
         digit: info.digit,
@@ -1309,6 +1263,39 @@ function handleResult(contract) {
         result: isWin ? 'WIN' : 'LOSS',
         profit: profit
     });
+    
+    // Update win streak
+    if (isWin) {
+        state.currentStreak++;
+        if (state.currentStreak > state.bestStreak) {
+            state.bestStreak = state.currentStreak;
+            document.getElementById('bestStreakDisplay').textContent = state.bestStreak;
+        }
+    } else {
+        state.currentStreak = 0;
+    }
+    
+    // Update streak display
+    const streakEl = document.getElementById('streakDisplay');
+    if (state.currentStreak >= 5) {
+        streakEl.textContent = `${state.currentStreak} 🔥🔥`;
+        streakEl.style.color = 'var(--orange)';
+    } else if (state.currentStreak >= 3) {
+        streakEl.textContent = `${state.currentStreak} 🔥`;
+        streakEl.style.color = 'var(--green)';
+    } else {
+        streakEl.textContent = state.currentStreak;
+        streakEl.style.color = 'var(--cyan)';
+    }
+    
+    // Update Phase 2 trade results
+    if (state.currentPhase === 2 && state.phase2TradeResults.length > 0) {
+        const pendingIdx = state.phase2TradeResults.indexOf('pending');
+        if (pendingIdx >= 0) {
+            state.phase2TradeResults[pendingIdx] = isWin ? 'win' : 'loss';
+            updatePhaseIndicator();
+        }
+    }
     
     if (info.isRapid && state.rapidInProgress) {
         if (isWin) state.rapidWins++;
@@ -1361,24 +1348,6 @@ function updateTotalStats() {
     plEl.className = 'stat-val ' + (state.totalStats.pl >= 0 ? 'pos' : 'neg');
 }
 
-function updateStreakDisplay() {
-    const streakEl = document.getElementById('streakDisplay');
-    const bestEl = document.getElementById('bestStreakDisplay');
-    
-    // Current streak with fire emojis based on length
-    let fireEmoji = '';
-    if (state.currentStreak >= 10) fireEmoji = ' 🔥🔥🔥';
-    else if (state.currentStreak >= 5) fireEmoji = ' 🔥🔥';
-    else if (state.currentStreak >= 1) fireEmoji = ' 🔥';
-    
-    streakEl.textContent = state.currentStreak + fireEmoji;
-    streakEl.style.color = state.currentStreak >= 5 ? 'var(--green)' : 
-                          state.currentStreak >= 1 ? 'var(--yellow)' : 'var(--muted)';
-    
-    // Best streak
-    bestEl.textContent = state.bestStreak;
-}
-
 function updateTradeHistory() {
     document.getElementById('trades').innerHTML = state.trades.slice(-30).reverse().map(t => 
         `<div class="trade-row ${t.result.toLowerCase()}">
@@ -1410,16 +1379,36 @@ function exportCSV() {
     a.click();
 }
 
+function exportLog() {
+    if (!state.activityLog.length) return alert('No activity log!');
+    let txt = 'TWO-PHASE DIFFERS BOT - ACTIVITY LOG\n';
+    txt += '=====================================\n';
+    txt += `Exported: ${new Date().toLocaleString('en-US', { timeZone: 'America/Toronto' })}\n`;
+    txt += `Total Entries: ${state.activityLog.length}\n`;
+    txt += `Triples Caught: ${state.triplesCaught}\n`;
+    txt += `Cycles Completed: ${state.cyclesCompleted}\n`;
+    txt += `Best Streak: ${state.bestStreak}\n`;
+    txt += '=====================================\n\n';
+    
+    state.activityLog.forEach(entry => {
+        txt += `[${entry.time}] ${entry.message}\n`;
+    });
+    
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
+    a.download = `activity_log_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    
+    log('📥 Activity log exported!', 'info');
+}
+
 function resetStats() {
     if (!confirm('Reset stats?')) return;
     state.trades = [];
     state.triggers = [];
     state.totalStats = { trades: 0, wins: 0, pl: 0 };
-    state.currentStreak = 0;
-    state.bestStreak = 0;
     saveSettings();
     updateTotalStats();
-    updateStreakDisplay();
     updateTradeHistory();
     updateTriggerHistory();
     log('Stats reset', 'info');
