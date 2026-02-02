@@ -206,59 +206,79 @@
                 <input type="number" id="ticksToAnalyze" value="100" min="30" max="500">
                 
                 <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-                    <label>🎯 TWO-PHASE AUTO STRATEGY</label>
+                    <label>🎯 AUTO STRATEGIES (select one or both)</label>
                     
-                    <!-- PHASE 1: Triple/Quad/Quint Detector -->
-                    <div style="margin:8px 0;padding:10px;background:rgba(6,182,212,0.15);border:2px solid var(--cyan);border-radius:6px">
-                        <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:8px">📍 PHASE 1: Detector (No Trading)</div>
-                        
-                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-                            <span style="font-size:10px;width:100px">🔥🔥🔥 Triple (3x)</span>
-                            <span style="font-size:9px;color:var(--muted)">≤</span>
-                            <input type="number" id="tripleThreshold" value="7" min="1" max="15" step="0.5" style="width:50px;padding:4px;margin:0">
-                            <span style="font-size:9px;color:var(--muted)">%</span>
+                    <!-- STRATEGY 1: Two-Phase -->
+                    <div style="margin:8px 0;padding:10px;background:var(--bg);border:2px solid var(--border);border-radius:6px" id="strat1Container">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                            <input type="checkbox" id="strat1Enabled" checked style="width:auto;margin:0" onchange="toggleStrat1()">
+                            <span style="font-size:11px;font-weight:700;color:var(--cyan)">Strategy 1: Two-Phase</span>
                         </div>
                         
-                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-                            <span style="font-size:10px;width:100px">💥 Quad (4x)</span>
-                            <span style="font-size:9px;color:var(--muted)">≤</span>
-                            <input type="number" id="quadThreshold" value="9" min="1" max="15" step="0.5" style="width:50px;padding:4px;margin:0">
-                            <span style="font-size:9px;color:var(--muted)">%</span>
+                        <div id="strat1Settings">
+                            <!-- PHASE 1: Detector -->
+                            <div style="padding:8px;background:rgba(6,182,212,0.1);border-radius:4px;margin-bottom:6px">
+                                <div style="font-size:9px;color:var(--cyan);font-weight:600;margin-bottom:6px">📍 Phase 1: Detect (no trade)</div>
+                                <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
+                                    <span style="font-size:9px;width:70px">🔥🔥🔥 Triple</span>
+                                    <span style="font-size:8px;color:var(--muted)">≤</span>
+                                    <input type="number" id="tripleThreshold" value="7" min="1" max="15" step="0.5" style="width:45px;padding:2px;margin:0;font-size:10px">
+                                    <span style="font-size:8px;color:var(--muted)">%</span>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
+                                    <span style="font-size:9px;width:70px">💥 Quad</span>
+                                    <span style="font-size:8px;color:var(--muted)">≤</span>
+                                    <input type="number" id="quadThreshold" value="9" min="1" max="15" step="0.5" style="width:45px;padding:2px;margin:0;font-size:10px">
+                                    <span style="font-size:8px;color:var(--muted)">%</span>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:4px">
+                                    <span style="font-size:9px;width:70px">⭐ Quint</span>
+                                    <span style="font-size:8px;color:var(--muted)">≤</span>
+                                    <input type="number" id="quintThreshold" value="11" min="1" max="20" step="0.5" style="width:45px;padding:2px;margin:0;font-size:10px">
+                                    <span style="font-size:8px;color:var(--muted)">%</span>
+                                </div>
+                            </div>
+                            
+                            <!-- PHASE 2: Trade -->
+                            <div style="padding:8px;background:rgba(249,115,22,0.1);border-radius:4px">
+                                <div style="font-size:9px;color:var(--orange);font-weight:600;margin-bottom:6px">🔥 Phase 2: Trade Doubles</div>
+                                <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
+                                    <span style="font-size:9px;color:var(--muted)">Threshold ≤</span>
+                                    <input type="number" id="doubleColdThreshold" value="7" min="1" max="15" step="0.5" style="width:45px;padding:2px;margin:0;font-size:10px">
+                                    <span style="font-size:8px;color:var(--muted)">%</span>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:4px">
+                                    <span style="font-size:9px;color:var(--muted)">Trades/cycle:</span>
+                                    <input type="number" id="tradesPerCycle" value="5" min="1" max="20" style="width:45px;padding:2px;margin:0;font-size:10px">
+                                </div>
+                            </div>
                         </div>
-                        
-                        <div style="display:flex;align-items:center;gap:6px">
-                            <span style="font-size:10px;width:100px">⭐ Quint (5x)</span>
-                            <span style="font-size:9px;color:var(--muted)">≤</span>
-                            <input type="number" id="quintThreshold" value="11" min="1" max="20" step="0.5" style="width:50px;padding:4px;margin:0">
-                            <span style="font-size:9px;color:var(--muted)">%</span>
-                        </div>
-                        
-                        <div style="font-size:9px;color:var(--muted);margin-top:6px">Detects rare event + cold → Activates Phase 2 (no trade)</div>
                     </div>
                     
-                    <!-- PHASE 2: Double + Cold -->
-                    <div style="margin:8px 0;padding:10px;background:rgba(249,115,22,0.15);border:2px solid var(--orange);border-radius:6px">
-                        <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:6px">🔥 PHASE 2: Trade Double + Cold</div>
-                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-                            <span style="font-size:10px;color:var(--muted)">Threshold ≤</span>
-                            <input type="number" id="doubleColdThreshold" value="7" min="1" max="15" step="0.5" style="width:55px;padding:4px;margin:0">
-                            <span style="font-size:10px;color:var(--muted)">%</span>
+                    <!-- STRATEGY 2: Lowest Confidence + Confirm -->
+                    <div style="margin:8px 0;padding:10px;background:var(--bg);border:2px solid var(--border);border-radius:6px" id="strat2Container">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                            <input type="checkbox" id="strat2Enabled" style="width:auto;margin:0" onchange="toggleStrat2()">
+                            <span style="font-size:11px;font-weight:700;color:var(--green)">Strategy 2: Coldest + Confirm</span>
                         </div>
-                        <div style="display:flex;align-items:center;gap:6px">
-                            <span style="font-size:10px;color:var(--muted)">Trades per cycle:</span>
-                            <input type="number" id="tradesPerCycle" value="5" min="1" max="20" style="width:50px;padding:4px;margin:0">
+                        
+                        <div id="strat2Settings" style="display:none">
+                            <div style="padding:8px;background:rgba(16,185,129,0.1);border-radius:4px">
+                                <div style="font-size:9px;color:var(--green);font-weight:600;margin-bottom:6px">❄️ Track coldest digit</div>
+                                <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">
+                                    <span style="font-size:9px;color:var(--muted)">Threshold ≤</span>
+                                    <input type="number" id="strat2Threshold" value="5" min="1" max="10" step="0.5" style="width:45px;padding:2px;margin:0;font-size:10px">
+                                    <span style="font-size:8px;color:var(--muted)">%</span>
+                                </div>
+                                <div style="font-size:8px;color:var(--muted)">
+                                    When coldest digit appears, wait for it to change, then trade
+                                </div>
+                            </div>
                         </div>
-                        <div style="font-size:9px;color:var(--muted);margin-top:4px">After signal, trade X doubles then return to Phase 1</div>
-                    </div>
-                    
-                    <!-- Phase 2 behavior on new signal -->
-                    <div style="padding:8px;background:var(--bg);border-radius:4px;margin-top:6px">
-                        <div style="font-size:9px;color:var(--purple);font-weight:600">⚡ If new Triple/Quad/Quint during Phase 2:</div>
-                        <div style="font-size:9px;color:var(--muted)">Reset counter to 0 (don't trade the signal)</div>
                     </div>
                     
                     <div id="strategyStatus" style="font-size:9px;color:var(--muted);margin-top:8px;padding:6px;background:var(--bg);border-radius:4px;text-align:center">
-                        Two-Phase System Ready
+                        Select at least one strategy
                     </div>
                 </div>
             </div>
@@ -315,15 +335,22 @@
             
             <!-- Auto Mode Status -->
             <div id="autoSection">
-                <!-- Phase Indicator -->
-                <div id="phaseIndicator" style="background:var(--bg);border:2px solid var(--cyan);border-radius:8px;padding:15px;text-align:center;margin-bottom:10px">
-                    <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">CURRENT PHASE</div>
-                    <div id="phaseTitle" style="font-size:24px;font-weight:700;color:var(--cyan);margin:5px 0">📍 PHASE 1</div>
-                    <div id="phaseSubtitle" style="font-size:11px;color:var(--muted)">Waiting for Triple + Cold signal...</div>
-                    <div id="tradeCounter" style="display:none;margin-top:10px">
-                        <div style="display:flex;justify-content:center;gap:6px" id="tradeDots"></div>
-                        <div style="font-size:10px;color:var(--orange);margin-top:5px" id="tradeProgress">0/5 trades</div>
+                <!-- Strategy 1 Phase Indicator -->
+                <div id="strat1Indicator" style="background:var(--bg);border:2px solid var(--cyan);border-radius:8px;padding:12px;text-align:center;margin-bottom:8px">
+                    <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">STRATEGY 1: TWO-PHASE</div>
+                    <div id="strat1Title" style="font-size:18px;font-weight:700;color:var(--cyan);margin:4px 0">📍 PHASE 1</div>
+                    <div id="strat1Subtitle" style="font-size:10px;color:var(--muted)">Detecting signals...</div>
+                    <div id="tradeCounter" style="display:none;margin-top:8px">
+                        <div style="display:flex;justify-content:center;gap:5px" id="tradeDots"></div>
+                        <div style="font-size:9px;color:var(--orange);margin-top:4px" id="tradeProgress">0/5 trades</div>
                     </div>
+                </div>
+                
+                <!-- Strategy 2 Status Indicator -->
+                <div id="strat2Indicator" style="background:var(--bg);border:2px solid var(--border);border-radius:8px;padding:12px;text-align:center;margin-bottom:8px;display:none">
+                    <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">STRATEGY 2: COLDEST + CONFIRM</div>
+                    <div id="strat2Title" style="font-size:18px;font-weight:700;color:var(--green);margin:4px 0">👁️ WATCHING</div>
+                    <div id="strat2Subtitle" style="font-size:10px;color:var(--muted)">Looking for coldest digit...</div>
                 </div>
                 
                 <!-- Stats Row -->
@@ -339,8 +366,8 @@
                     <div class="auto-text">Collecting ticks...</div>
                     <div class="auto-sub">Need 100 ticks to start scanning</div>
                 </div>
-                <button class="btn-green" id="startAutoBtn" onclick="startAuto()" style="width:100%;padding:12px;display:none">▶️ START TWO-PHASE AUTO</button>
-                <button class="btn-red" id="stopAutoBtn" onclick="stopAuto()" style="width:100%;padding:12px;display:none;margin-top:6px">⏹️ STOP AUTO MODE</button>
+                <button class="btn-green" id="startAutoBtn" onclick="startAuto()" style="width:100%;padding:12px;display:none">▶️ START AUTO</button>
+                <button class="btn-red" id="stopAutoBtn" onclick="stopAuto()" style="width:100%;padding:12px;display:none;margin-top:6px">⏹️ STOP AUTO</button>
             </div>
             
             <!-- Manual Mode Controls -->
@@ -444,12 +471,22 @@ const state = {
     lastTradedDigit: null,    // Which digit we just traded on (for triple detection)
     waitingForTriple: false,  // Are we watching for triple after a double trade?
     
-    // TWO-PHASE SYSTEM
+    // TWO-PHASE SYSTEM (Strategy 1)
     currentPhase: 1,          // 1 = Waiting for Triple, 2 = Active (trading doubles)
     phase2TradeCount: 0,      // Current trade count in Phase 2 (0 to tradesPerCycle)
     phase2TradeResults: [],   // Results of trades in current cycle ['win', 'loss', ...]
     cyclesCompleted: 0,       // Total cycles completed
     triplesCaught: 0,         // Total triples that triggered Phase 2
+    
+    // LOWEST CONFIDENCE + CONFIRM (Strategy 2)
+    strat2: {
+        trackedDigit: null,       // Which cold digit we're tracking
+        trackedFreq: null,        // Its frequency when we started tracking
+        waitingForChange: false,  // Are we waiting for a different digit?
+        tradesPlaced: 0           // Total trades placed by Strategy 2
+    },
+    
+    // Win streaks
     currentStreak: 0,         // Current win streak
     bestStreak: 0,            // Best win streak ever
     
@@ -764,89 +801,159 @@ function handleTick(tick) {
     
     analyzeDigits();
     
-    // TWO-PHASE AUTO TRADING LOGIC
+    // AUTO TRADING LOGIC - Process both strategies
     if (state.autoRunning && !state.tradePending && recent.length >= ticksToAnalyze) {
         
-        // Check if any signal condition is met (with separate thresholds)
-        let signalDetected = false;
-        let signalType = '';
+        const strat1Enabled = document.getElementById('strat1Enabled').checked;
+        const strat2Enabled = document.getElementById('strat2Enabled').checked;
         
-        if (isQuintuple && digitFreq <= quintThreshold) {
-            signalDetected = true;
-            signalType = 'Quintuple';
-        } else if (isQuadruple && digitFreq <= quadThreshold) {
-            signalDetected = true;
-            signalType = 'Quadruple';
-        } else if (isTriple && digitFreq <= tripleThreshold) {
-            signalDetected = true;
-            signalType = 'Triple';
-        }
-        
-        // PHASE 1: Detector Only - Looking for Triple/Quad/Quint + Cold
-        if (state.currentPhase === 1) {
-            if (signalDetected) {
-                // Signal detected! DON'T TRADE - just activate Phase 2
-                state.triplesCaught++;
-                document.getElementById('triplesCaughtDisplay').textContent = state.triplesCaught;
-                
-                const thresholdUsed = isQuintuple ? quintThreshold : (isQuadruple ? quadThreshold : tripleThreshold);
-                log(`🎯 PHASE 1 SIGNAL: ${signalType}+Cold (${digitFreq.toFixed(1)}% ≤ ${thresholdUsed}%)! Digit ${digit}`, 'trade');
-                log(`📍 → 🔥 Activating PHASE 2 (no trade placed)`, 'info');
-                
-                state.triggers.push({
-                    time: getTimestamp(),
-                    digit: digit,
-                    freq: digitFreq,
-                    reason: `🎯 ${signalType} Signal (detector)`
-                });
-                updateTriggerHistory();
-                
-                // Switch to Phase 2 - counter starts at 0
-                state.currentPhase = 2;
-                state.phase2TradeCount = 0;
-                state.phase2TradeResults = [];
-                
-                updateAutoStatus();
-                updatePhaseIndicator();
-            }
-        }
-        // PHASE 2: Active Trading - Double + Cold
-        else if (state.currentPhase === 2) {
-            const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
+        // ==========================================
+        // STRATEGY 1: TWO-PHASE SYSTEM
+        // ==========================================
+        if (strat1Enabled) {
+            // Check if any signal condition is met (with separate thresholds)
+            let signalDetected = false;
+            let signalType = '';
             
-            // Check for new Triple/Quad/Quint + Cold (Reset counter, but DON'T trade)
-            if (signalDetected) {
-                // New signal during Phase 2! DON'T TRADE - just reset counter
-                state.triplesCaught++;
-                document.getElementById('triplesCaughtDisplay').textContent = state.triplesCaught;
-                
-                const thresholdUsed = isQuintuple ? quintThreshold : (isQuadruple ? quadThreshold : tripleThreshold);
-                log(`⚡ NEW ${signalType.toUpperCase()} during Phase 2! (${digitFreq.toFixed(1)}% ≤ ${thresholdUsed}%) Digit ${digit}`, 'alert');
-                log(`🔄 Resetting counter to 0/${tradesPerCycle} (no trade placed)`, 'info');
-                
-                state.triggers.push({
-                    time: getTimestamp(),
-                    digit: digit,
-                    freq: digitFreq,
-                    reason: `⚡ ${signalType} Reset (detector)`
-                });
-                updateTriggerHistory();
-                
-                // Reset counter to 0
-                state.phase2TradeCount = 0;
-                state.phase2TradeResults = [];
-                
-                updateAutoStatus();
-                updatePhaseIndicator();
+            if (isQuintuple && digitFreq <= quintThreshold) {
+                signalDetected = true;
+                signalType = 'Quintuple';
+            } else if (isQuadruple && digitFreq <= quadThreshold) {
+                signalDetected = true;
+                signalType = 'Quadruple';
+            } else if (isTriple && digitFreq <= tripleThreshold) {
+                signalDetected = true;
+                signalType = 'Triple';
             }
-            // Normal Double + Cold trade
-            else if (isDouble && digitFreq <= doubleColdThreshold && state.phase2TradeCount < tradesPerCycle) {
-                log(`🔔 Phase 2 (${state.phase2TradeCount + 1}/${tradesPerCycle}): Double+Cold (${digitFreq.toFixed(1)}% ≤ ${doubleColdThreshold}%)! Digit ${digit}`, 'trade');
+            
+            // PHASE 1: Detector Only
+            if (state.currentPhase === 1) {
+                if (signalDetected) {
+                    state.triplesCaught++;
+                    document.getElementById('triplesCaughtDisplay').textContent = state.triplesCaught;
+                    
+                    const thresholdUsed = isQuintuple ? quintThreshold : (isQuadruple ? quadThreshold : tripleThreshold);
+                    log(`🎯 S1 SIGNAL: ${signalType}+Cold (${digitFreq.toFixed(1)}% ≤ ${thresholdUsed}%)! Digit ${digit}`, 'trade');
+                    log(`📍 → 🔥 Activating Phase 2`, 'info');
+                    
+                    state.triggers.push({
+                        time: getTimestamp(),
+                        digit: digit,
+                        freq: digitFreq,
+                        reason: `🎯 S1: ${signalType} Signal`
+                    });
+                    updateTriggerHistory();
+                    
+                    state.currentPhase = 2;
+                    state.phase2TradeCount = 0;
+                    state.phase2TradeResults = [];
+                    
+                    updateAutoStatus();
+                    updateStrat1Indicator();
+                }
+            }
+            // PHASE 2: Active Trading
+            else if (state.currentPhase === 2) {
+                const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
                 
-                state.currentTarget = digit;
-                triggerTwoPhaseDoubleTrade(digit, digitFreq);
+                // Check for new signal (Reset counter)
+                if (signalDetected) {
+                    state.triplesCaught++;
+                    document.getElementById('triplesCaughtDisplay').textContent = state.triplesCaught;
+                    
+                    const thresholdUsed = isQuintuple ? quintThreshold : (isQuadruple ? quadThreshold : tripleThreshold);
+                    log(`⚡ S1: NEW ${signalType.toUpperCase()} (${digitFreq.toFixed(1)}%) - Resetting counter`, 'alert');
+                    
+                    state.triggers.push({
+                        time: getTimestamp(),
+                        digit: digit,
+                        freq: digitFreq,
+                        reason: `⚡ S1: ${signalType} Reset`
+                    });
+                    updateTriggerHistory();
+                    
+                    state.phase2TradeCount = 0;
+                    state.phase2TradeResults = [];
+                    
+                    updateAutoStatus();
+                    updateStrat1Indicator();
+                }
+                // Normal Double + Cold trade
+                else if (isDouble && digitFreq <= doubleColdThreshold && state.phase2TradeCount < tradesPerCycle) {
+                    log(`🔔 S1 Phase2 (${state.phase2TradeCount + 1}/${tradesPerCycle}): Double+Cold (${digitFreq.toFixed(1)}%)! Digit ${digit}`, 'trade');
+                    
+                    state.currentTarget = digit;
+                    triggerTwoPhaseDoubleTrade(digit, digitFreq);
+                    return; // Exit to prevent Strategy 2 from also trading
+                }
             }
         }
+        
+        // ==========================================
+        // STRATEGY 2: LOWEST CONFIDENCE + CONFIRM
+        // ==========================================
+        if (strat2Enabled && !state.tradePending) {
+            const strat2Threshold = parseFloat(document.getElementById('strat2Threshold').value) || 5;
+            
+            // Find the coldest digit
+            const counts = [0,0,0,0,0,0,0,0,0,0];
+            recent.forEach(t => counts[t.digit]++);
+            
+            let coldestDigit = 0;
+            let coldestFreq = 100;
+            for (let i = 0; i < 10; i++) {
+                const freq = counts[i] / recent.length * 100;
+                if (freq < coldestFreq) {
+                    coldestFreq = freq;
+                    coldestDigit = i;
+                }
+            }
+            
+            // State machine for Strategy 2
+            if (!state.strat2.waitingForChange) {
+                // Not tracking yet - check if coldest digit appeared AND is under threshold
+                if (digit === coldestDigit && coldestFreq <= strat2Threshold) {
+                    // Start tracking!
+                    state.strat2.trackedDigit = digit;
+                    state.strat2.trackedFreq = coldestFreq;
+                    state.strat2.waitingForChange = true;
+                    
+                    log(`🎯 S2: Coldest digit ${digit} (${coldestFreq.toFixed(1)}%) tapped! Waiting for change...`, 'info');
+                    updateStrat2Indicator();
+                }
+            } else {
+                // We ARE tracking - check if digit changed
+                if (digit !== state.strat2.trackedDigit) {
+                    // Different digit! Trade on the tracked digit
+                    log(`✅ S2: Digit changed to ${digit}! Trading DIFFERS on ${state.strat2.trackedDigit}`, 'trade');
+                    
+                    state.triggers.push({
+                        time: getTimestamp(),
+                        digit: state.strat2.trackedDigit,
+                        freq: state.strat2.trackedFreq,
+                        reason: `🎯 S2: Coldest+Confirm`
+                    });
+                    updateTriggerHistory();
+                    
+                    state.currentTarget = state.strat2.trackedDigit;
+                    triggerStrat2Trade(state.strat2.trackedDigit, state.strat2.trackedFreq);
+                    
+                    // Reset tracking
+                    state.strat2.trackedDigit = null;
+                    state.strat2.trackedFreq = null;
+                    state.strat2.waitingForChange = false;
+                } else {
+                    // Same digit repeated - keep waiting
+                    log(`🔄 S2: Digit ${digit} repeated (${state.consecutiveCount}x). Still waiting...`, 'alert');
+                    updateStrat2Indicator();
+                }
+            }
+        }
+    }
+    
+    // Update Strategy 2 indicator even when not trading
+    if (state.autoRunning && document.getElementById('strat2Enabled').checked) {
+        updateStrat2Indicator();
     }
 }
 function analyzeDigits() {
@@ -951,21 +1058,13 @@ function updateAutoStatus() {
     const startBtn = document.getElementById('startAutoBtn');
     const stopBtn = document.getElementById('stopAutoBtn');
     const ticksToAnalyze = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
-    const tripleThreshold = parseFloat(document.getElementById('tripleThreshold').value) || 7;
-    const quadThreshold = parseFloat(document.getElementById('quadThreshold').value) || 9;
-    const quintThreshold = parseFloat(document.getElementById('quintThreshold').value) || 11;
-    const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
-    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
     
-    // Update strategy status display
-    const strategyStatusEl = document.getElementById('strategyStatus');
-    if (strategyStatusEl) {
-        strategyStatusEl.textContent = `Detect: 3x≤${tripleThreshold}% | 4x≤${quadThreshold}% | 5x≤${quintThreshold}% → Trade: 2x≤${doubleColdThreshold}%`;
-        strategyStatusEl.style.color = 'var(--green)';
-    }
+    const strat1Enabled = document.getElementById('strat1Enabled').checked;
+    const strat2Enabled = document.getElementById('strat2Enabled').checked;
     
-    // Update phase indicator
-    updatePhaseIndicator();
+    // Update indicators
+    updateStrat1Indicator();
+    updateStrat2Indicator();
     
     if (state.ticks.length < ticksToAnalyze) {
         statusEl.className = 'auto-status';
@@ -980,13 +1079,14 @@ function updateAutoStatus() {
     }
     
     if (!state.autoRunning) {
+        const anyEnabled = strat1Enabled || strat2Enabled;
         statusEl.className = 'auto-status ready';
         statusEl.innerHTML = `
-            <div class="auto-icon">✅</div>
-            <div class="auto-text">Ready</div>
-            <div class="auto-sub">Phase 1: Detect signal → Phase 2: Trade doubles</div>
+            <div class="auto-icon">${anyEnabled ? '✅' : '⚠️'}</div>
+            <div class="auto-text">${anyEnabled ? 'Ready' : 'No Strategy Selected'}</div>
+            <div class="auto-sub">${anyEnabled ? 'Click START to begin' : 'Enable at least one strategy'}</div>
         `;
-        startBtn.style.display = 'block';
+        startBtn.style.display = anyEnabled ? 'block' : 'none';
         stopBtn.style.display = 'none';
     } else {
         if (state.tradePending) {
@@ -996,21 +1096,21 @@ function updateAutoStatus() {
                 <div class="auto-text">Trade Pending...</div>
                 <div class="auto-sub">Processing DIFFERS on digit ${state.currentTarget}</div>
             `;
-        } else if (state.currentPhase === 1) {
-            statusEl.className = 'auto-status';
-            statusEl.style.borderColor = 'var(--cyan)';
-            statusEl.innerHTML = `
-                <div class="auto-icon">👁️</div>
-                <div class="auto-text">Phase 1: Detecting...</div>
-                <div class="auto-sub">3x≤${tripleThreshold}% | 4x≤${quadThreshold}% | 5x≤${quintThreshold}%</div>
-            `;
         } else {
+            // Build status based on active strategies
+            let statusParts = [];
+            if (strat1Enabled) {
+                statusParts.push(state.currentPhase === 1 ? 'S1: Detecting' : `S1: Phase 2 (${state.phase2TradeCount}/X)`);
+            }
+            if (strat2Enabled) {
+                statusParts.push(state.strat2.waitingForChange ? `S2: Tracking ${state.strat2.trackedDigit}` : 'S2: Watching');
+            }
+            
             statusEl.className = 'auto-status watching';
-            statusEl.style.borderColor = 'var(--orange)';
             statusEl.innerHTML = `
-                <div class="auto-icon">🔥</div>
-                <div class="auto-text">Phase 2: Trading!</div>
-                <div class="auto-sub">Double + Cold (${state.phase2TradeCount}/${tradesPerCycle})</div>
+                <div class="auto-icon">🤖</div>
+                <div class="auto-text">Auto Running</div>
+                <div class="auto-sub">${statusParts.join(' | ')}</div>
             `;
         }
         startBtn.style.display = 'none';
@@ -1018,79 +1118,52 @@ function updateAutoStatus() {
     }
 }
 
-function updatePhaseIndicator() {
-    const indicator = document.getElementById('phaseIndicator');
-    const title = document.getElementById('phaseTitle');
-    const subtitle = document.getElementById('phaseSubtitle');
-    const counter = document.getElementById('tradeCounter');
-    const dots = document.getElementById('tradeDots');
-    const progress = document.getElementById('tradeProgress');
-    
-    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
-    const tripleThreshold = parseFloat(document.getElementById('tripleThreshold').value) || 7;
-    const quadThreshold = parseFloat(document.getElementById('quadThreshold').value) || 9;
-    const quintThreshold = parseFloat(document.getElementById('quintThreshold').value) || 11;
-    const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
-    
-    if (state.currentPhase === 1) {
-        indicator.style.borderColor = 'var(--cyan)';
-        title.style.color = 'var(--cyan)';
-        title.textContent = '📍 PHASE 1';
-        subtitle.textContent = `Detecting: 3x≤${tripleThreshold}% | 4x≤${quadThreshold}% | 5x≤${quintThreshold}%`;
-        counter.style.display = 'none';
-    } else {
-        indicator.style.borderColor = 'var(--orange)';
-        title.style.color = 'var(--orange)';
-        title.textContent = '🔥 PHASE 2';
-        subtitle.textContent = `Trading Double + Cold (≤${doubleColdThreshold}%)`;
-        counter.style.display = 'block';
-        
-        // Build trade dots
-        let dotsHtml = '';
-        for (let i = 0; i < tradesPerCycle; i++) {
-            let dotClass = '';
-            let dotContent = i + 1;
-            
-            if (i < state.phase2TradeResults.length) {
-                dotClass = state.phase2TradeResults[i] === 'win' ? 'background:var(--green);color:white' : 'background:var(--red);color:white';
-                dotContent = state.phase2TradeResults[i] === 'win' ? '✓' : '✗';
-            } else if (i === state.phase2TradeCount) {
-                dotClass = 'background:var(--orange);color:black;animation:pulse 1s infinite';
-            } else {
-                dotClass = 'background:var(--border)';
-            }
-            
-            dotsHtml += `<div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;${dotClass}">${dotContent}</div>`;
-        }
-        dots.innerHTML = dotsHtml;
-        progress.textContent = `${state.phase2TradeCount}/${tradesPerCycle} trades`;
-    }
-}
-
 function startAuto() {
     const ticksToAnalyze = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
-    const tripleThreshold = parseFloat(document.getElementById('tripleThreshold').value) || 7;
-    const quadThreshold = parseFloat(document.getElementById('quadThreshold').value) || 9;
-    const quintThreshold = parseFloat(document.getElementById('quintThreshold').value) || 11;
-    const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
-    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
+    const strat1Enabled = document.getElementById('strat1Enabled').checked;
+    const strat2Enabled = document.getElementById('strat2Enabled').checked;
+    
+    // Validate at least one strategy
+    if (!strat1Enabled && !strat2Enabled) {
+        return log('❌ Select at least one strategy!', 'loss');
+    }
     
     if (state.ticks.length < ticksToAnalyze) return log(`Need ${ticksToAnalyze} ticks first!`, 'loss');
     
     state.autoRunning = true;
     state.tradePending = false;
-    state.currentPhase = 1;
-    state.phase2TradeCount = 0;
-    state.phase2TradeResults = [];
     state.lastPriceDigit = null;
     state.consecutiveCount = 1;
     
-    log(`🤖 TWO-PHASE AUTO STARTED`, 'info');
-    log(`📍 Phase 1 DETECT: Triple≤${tripleThreshold}% | Quad≤${quadThreshold}% | Quint≤${quintThreshold}%`, 'info');
-    log(`🔥 Phase 2 TRADE: Double+Cold (≤${doubleColdThreshold}%) x${tradesPerCycle} trades`, 'info');
+    // Reset Strategy 1 state
+    state.currentPhase = 1;
+    state.phase2TradeCount = 0;
+    state.phase2TradeResults = [];
+    
+    // Reset Strategy 2 state
+    state.strat2.trackedDigit = null;
+    state.strat2.trackedFreq = null;
+    state.strat2.waitingForChange = false;
+    
+    log(`🤖 AUTO STARTED`, 'info');
+    
+    if (strat1Enabled) {
+        const tripleThreshold = parseFloat(document.getElementById('tripleThreshold').value) || 7;
+        const quadThreshold = parseFloat(document.getElementById('quadThreshold').value) || 9;
+        const quintThreshold = parseFloat(document.getElementById('quintThreshold').value) || 11;
+        const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
+        const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
+        
+        log(`📍 S1: Detect 3x≤${tripleThreshold}% | 4x≤${quadThreshold}% | 5x≤${quintThreshold}%`, 'info');
+        log(`🔥 S1: Trade Double+Cold (≤${doubleColdThreshold}%) x${tradesPerCycle}`, 'info');
+    }
+    
+    if (strat2Enabled) {
+        const strat2Threshold = parseFloat(document.getElementById('strat2Threshold').value) || 5;
+        log(`❄️ S2: Coldest+Confirm (≤${strat2Threshold}%)`, 'info');
+    }
     
     updateAutoStatus();
-    updatePhaseIndicator();
 }
 
 function stopAuto() {
@@ -1100,17 +1173,67 @@ function stopAuto() {
     state.doubleDetected = false;
     state.doubleDigit = null;
     state.consecutiveCount = 1;
+    
+    // Reset Strategy 1 state
     state.currentPhase = 1;
     state.phase2TradeCount = 0;
     state.phase2TradeResults = [];
     
+    // Reset Strategy 2 state
+    state.strat2.trackedDigit = null;
+    state.strat2.trackedFreq = null;
+    state.strat2.waitingForChange = false;
+    
     log('⏹️ Auto stopped', 'info');
     updateAutoStatus();
-    updatePhaseIndicator();
 }
 
 function updateStrategyDisplay() {
     updateAutoStatus();
+}
+
+// STRATEGY TOGGLE FUNCTIONS
+function toggleStrat1() {
+    const enabled = document.getElementById('strat1Enabled').checked;
+    const container = document.getElementById('strat1Container');
+    const settings = document.getElementById('strat1Settings');
+    const indicator = document.getElementById('strat1Indicator');
+    
+    container.style.borderColor = enabled ? 'var(--cyan)' : 'var(--border)';
+    settings.style.display = enabled ? 'block' : 'none';
+    indicator.style.display = enabled ? 'block' : 'none';
+    
+    updateStrategyStatus();
+}
+
+function toggleStrat2() {
+    const enabled = document.getElementById('strat2Enabled').checked;
+    const container = document.getElementById('strat2Container');
+    const settings = document.getElementById('strat2Settings');
+    const indicator = document.getElementById('strat2Indicator');
+    
+    container.style.borderColor = enabled ? 'var(--green)' : 'var(--border)';
+    settings.style.display = enabled ? 'block' : 'none';
+    indicator.style.display = enabled ? 'block' : 'none';
+    
+    updateStrategyStatus();
+}
+
+function updateStrategyStatus() {
+    const strat1 = document.getElementById('strat1Enabled').checked;
+    const strat2 = document.getElementById('strat2Enabled').checked;
+    const statusEl = document.getElementById('strategyStatus');
+    
+    if (!strat1 && !strat2) {
+        statusEl.textContent = 'Select at least one strategy';
+        statusEl.style.color = 'var(--red)';
+    } else {
+        const active = [];
+        if (strat1) active.push('Two-Phase');
+        if (strat2) active.push('Coldest+Confirm');
+        statusEl.textContent = `Active: ${active.join(' + ')}`;
+        statusEl.style.color = 'var(--green)';
+    }
 }
 
 // TWO-PHASE TRADE FUNCTIONS
@@ -1126,7 +1249,7 @@ function triggerTwoPhaseDoubleTrade(digit, freq) {
         time: getTimestamp(),
         digit: digit,
         freq: freq,
-        reason: `🔥 Double (${state.phase2TradeCount + 1}/${tradesPerCycle})`
+        reason: `🔥 S1 Double (${state.phase2TradeCount + 1}/${tradesPerCycle})`
     });
     updateTriggerHistory();
     
@@ -1144,12 +1267,13 @@ function triggerTwoPhaseDoubleTrade(digit, freq) {
         state.doubleDigit = null;
         
         // Check if cycle complete
+        const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
         if (state.phase2TradeCount >= tradesPerCycle) {
             // Cycle complete! Return to Phase 1
             state.cyclesCompleted++;
             document.getElementById('cyclesDisplay').textContent = state.cyclesCompleted;
             
-            log(`✅ Cycle complete! (${state.phase2TradeCount}/${tradesPerCycle}) Returning to Phase 1...`, 'info');
+            log(`✅ S1: Cycle complete! Returning to Phase 1...`, 'info');
             
             state.currentPhase = 1;
             state.phase2TradeCount = 0;
@@ -1158,9 +1282,114 @@ function triggerTwoPhaseDoubleTrade(digit, freq) {
         
         if (state.autoRunning) {
             updateAutoStatus();
-            updatePhaseIndicator();
+            updateStrat1Indicator();
         }
     }, 2000);
+}
+
+function triggerStrat2Trade(digit, freq) {
+    state.tradePending = true;
+    state.strat2.tradesPlaced++;
+    
+    // Place the trade
+    placeTrade(digit);
+    
+    // After trade processes
+    setTimeout(() => {
+        state.tradePending = false;
+        
+        if (state.autoRunning) {
+            updateAutoStatus();
+            updateStrat2Indicator();
+        }
+    }, 2000);
+}
+
+// INDICATOR UPDATE FUNCTIONS
+function updateStrat1Indicator() {
+    const indicator = document.getElementById('strat1Indicator');
+    const title = document.getElementById('strat1Title');
+    const subtitle = document.getElementById('strat1Subtitle');
+    const counter = document.getElementById('tradeCounter');
+    const dots = document.getElementById('tradeDots');
+    const progress = document.getElementById('tradeProgress');
+    
+    if (!document.getElementById('strat1Enabled').checked) {
+        indicator.style.display = 'none';
+        return;
+    }
+    indicator.style.display = 'block';
+    
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
+    const tripleThreshold = parseFloat(document.getElementById('tripleThreshold').value) || 7;
+    const quadThreshold = parseFloat(document.getElementById('quadThreshold').value) || 9;
+    const quintThreshold = parseFloat(document.getElementById('quintThreshold').value) || 11;
+    const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
+    
+    if (state.currentPhase === 1) {
+        indicator.style.borderColor = 'var(--cyan)';
+        title.style.color = 'var(--cyan)';
+        title.textContent = '📍 PHASE 1';
+        subtitle.textContent = `Detect: 3x≤${tripleThreshold}% | 4x≤${quadThreshold}% | 5x≤${quintThreshold}%`;
+        counter.style.display = 'none';
+    } else {
+        indicator.style.borderColor = 'var(--orange)';
+        title.style.color = 'var(--orange)';
+        title.textContent = '🔥 PHASE 2';
+        subtitle.textContent = `Trading Double+Cold (≤${doubleColdThreshold}%)`;
+        counter.style.display = 'block';
+        
+        // Build trade dots
+        let dotsHtml = '';
+        for (let i = 0; i < tradesPerCycle; i++) {
+            let dotClass = '';
+            let dotContent = i + 1;
+            
+            if (i < state.phase2TradeResults.length) {
+                dotClass = state.phase2TradeResults[i] === 'win' ? 'background:var(--green);color:white' : (state.phase2TradeResults[i] === 'loss' ? 'background:var(--red);color:white' : 'background:var(--yellow);color:black');
+                dotContent = state.phase2TradeResults[i] === 'win' ? '✓' : (state.phase2TradeResults[i] === 'loss' ? '✗' : '?');
+            } else if (i === state.phase2TradeCount) {
+                dotClass = 'background:var(--orange);color:black';
+            } else {
+                dotClass = 'background:var(--border)';
+            }
+            
+            dotsHtml += `<div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;${dotClass}">${dotContent}</div>`;
+        }
+        dots.innerHTML = dotsHtml;
+        progress.textContent = `${state.phase2TradeCount}/${tradesPerCycle} trades`;
+    }
+}
+
+function updateStrat2Indicator() {
+    const indicator = document.getElementById('strat2Indicator');
+    const title = document.getElementById('strat2Title');
+    const subtitle = document.getElementById('strat2Subtitle');
+    
+    if (!document.getElementById('strat2Enabled').checked) {
+        indicator.style.display = 'none';
+        return;
+    }
+    indicator.style.display = 'block';
+    
+    const strat2Threshold = parseFloat(document.getElementById('strat2Threshold').value) || 5;
+    
+    if (state.strat2.waitingForChange) {
+        indicator.style.borderColor = 'var(--yellow)';
+        title.style.color = 'var(--yellow)';
+        title.textContent = `🎯 TRACKING: ${state.strat2.trackedDigit}`;
+        subtitle.textContent = `${state.strat2.trackedFreq.toFixed(1)}% - Waiting for change...`;
+    } else {
+        indicator.style.borderColor = 'var(--green)';
+        title.style.color = 'var(--green)';
+        title.textContent = '👁️ WATCHING';
+        subtitle.textContent = `Looking for coldest digit ≤${strat2Threshold}%`;
+    }
+}
+
+// Keep old function name for compatibility
+function updatePhaseIndicator() {
+    updateStrat1Indicator();
 }
 
 // =============================================
