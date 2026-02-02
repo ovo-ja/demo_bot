@@ -59,6 +59,10 @@
         .digit-box.quadrupled{border-color:#ec4899!important;background:rgba(236,72,153,0.6)!important;box-shadow:0 0 50px rgba(236,72,153,1),0 0 100px rgba(236,72,153,0.6);transform:scale(1.2);animation:pulse-quad 0.2s ease-in-out infinite}
         .digit-box.quadrupled .digit-num{color:#ec4899;text-shadow:0 0 25px #ec4899}
         .digit-box.quadrupled .digit-status{color:#ec4899!important;font-weight:700;font-size:9px}
+        .digit-box.quintupled{border-color:#fbbf24!important;background:rgba(251,191,36,0.6)!important;box-shadow:0 0 60px rgba(251,191,36,1),0 0 120px rgba(251,191,36,0.7);transform:scale(1.25);animation:pulse-quint 0.15s ease-in-out infinite}
+        .digit-box.quintupled .digit-num{color:#fbbf24;text-shadow:0 0 30px #fbbf24}
+        .digit-box.quintupled .digit-status{color:#fbbf24!important;font-weight:700;font-size:9px}
+        @keyframes pulse-quint{0%,100%{transform:scale(1.25);box-shadow:0 0 60px rgba(251,191,36,1)}50%{transform:scale(1.3);box-shadow:0 0 100px rgba(251,191,36,1)}}
         @keyframes pulse-quad{0%,100%{transform:scale(1.2);box-shadow:0 0 50px rgba(236,72,153,1)}50%{transform:scale(1.25);box-shadow:0 0 80px rgba(236,72,153,1)}}
         @keyframes pulse-triple{0%,100%{transform:scale(1.15);box-shadow:0 0 40px rgba(168,85,247,0.9)}50%{transform:scale(1.2);box-shadow:0 0 70px rgba(168,85,247,1)}}
         @keyframes pulse-double{0%,100%{transform:scale(1.1);box-shadow:0 0 30px rgba(239,68,68,0.8)}50%{transform:scale(1.15);box-shadow:0 0 50px rgba(239,68,68,1)}}
@@ -204,15 +208,32 @@
                 <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
                     <label>🎯 TWO-PHASE AUTO STRATEGY</label>
                     
-                    <!-- PHASE 1: Triple + Cold -->
+                    <!-- PHASE 1: Triple/Quad/Quint Detector -->
                     <div style="margin:8px 0;padding:10px;background:rgba(6,182,212,0.15);border:2px solid var(--cyan);border-radius:6px">
-                        <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:6px">📍 PHASE 1: Wait for Triple + Cold</div>
-                        <div style="display:flex;align-items:center;gap:6px">
-                            <span style="font-size:10px;color:var(--muted)">Threshold ≤</span>
-                            <input type="number" id="tripleColdThreshold" value="9" min="1" max="15" step="0.5" style="width:55px;padding:4px;margin:0">
-                            <span style="font-size:10px;color:var(--muted)">%</span>
+                        <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:8px">📍 PHASE 1: Detector (No Trading)</div>
+                        
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                            <span style="font-size:10px;width:100px">🔥🔥🔥 Triple (3x)</span>
+                            <span style="font-size:9px;color:var(--muted)">≤</span>
+                            <input type="number" id="tripleThreshold" value="7" min="1" max="15" step="0.5" style="width:50px;padding:4px;margin:0">
+                            <span style="font-size:9px;color:var(--muted)">%</span>
                         </div>
-                        <div style="font-size:9px;color:var(--muted);margin-top:4px">Bot waits for a digit to appear 3x in a row AND be under this %</div>
+                        
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                            <span style="font-size:10px;width:100px">💥 Quad (4x)</span>
+                            <span style="font-size:9px;color:var(--muted)">≤</span>
+                            <input type="number" id="quadThreshold" value="9" min="1" max="15" step="0.5" style="width:50px;padding:4px;margin:0">
+                            <span style="font-size:9px;color:var(--muted)">%</span>
+                        </div>
+                        
+                        <div style="display:flex;align-items:center;gap:6px">
+                            <span style="font-size:10px;width:100px">⭐ Quint (5x)</span>
+                            <span style="font-size:9px;color:var(--muted)">≤</span>
+                            <input type="number" id="quintThreshold" value="11" min="1" max="20" step="0.5" style="width:50px;padding:4px;margin:0">
+                            <span style="font-size:9px;color:var(--muted)">%</span>
+                        </div>
+                        
+                        <div style="font-size:9px;color:var(--muted);margin-top:6px">Detects rare event + cold → Activates Phase 2 (no trade)</div>
                     </div>
                     
                     <!-- PHASE 2: Double + Cold -->
@@ -227,13 +248,13 @@
                             <span style="font-size:10px;color:var(--muted)">Trades per cycle:</span>
                             <input type="number" id="tradesPerCycle" value="5" min="1" max="20" style="width:50px;padding:4px;margin:0">
                         </div>
-                        <div style="font-size:9px;color:var(--muted);margin-top:4px">After triple triggers, trade X doubles then return to Phase 1</div>
+                        <div style="font-size:9px;color:var(--muted);margin-top:4px">After signal, trade X doubles then return to Phase 1</div>
                     </div>
                     
-                    <!-- Phase 2 behavior on new triple -->
+                    <!-- Phase 2 behavior on new signal -->
                     <div style="padding:8px;background:var(--bg);border-radius:4px;margin-top:6px">
-                        <div style="font-size:9px;color:var(--purple);font-weight:600">⚡ If new Triple during Phase 2:</div>
-                        <div style="font-size:9px;color:var(--muted)">Trade it & reset counter (Option 2)</div>
+                        <div style="font-size:9px;color:var(--purple);font-weight:600">⚡ If new Triple/Quad/Quint during Phase 2:</div>
+                        <div style="font-size:9px;color:var(--muted)">Reset counter to 0 (don't trade the signal)</div>
                     </div>
                     
                     <div id="strategyStatus" style="font-size:9px;color:var(--muted);margin-top:8px;padding:6px;background:var(--bg);border-radius:4px;text-align:center">
@@ -279,7 +300,7 @@
                 </div>
                 <div class="digit-grid" id="digitGrid"></div>
                 <div style="font-size:9px;color:var(--muted);margin-top:4px">
-                    🟡 Just occurred | 🔴 DOUBLE | 🟣 TRIPLE | 💗 QUAD | 🟢 Valid (<span id="thresholdDisplay">7</span>%) | ❄️ Coldest
+                    🟡 Just occurred | 🔴 DOUBLE | 🟣 TRIPLE | 💗 QUAD | ⭐ QUINT | 🟢 Valid (<span id="thresholdDisplay">7</span>%) | ❄️ Coldest
                 </div>
             </div>
             
@@ -309,7 +330,7 @@
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
                     <div class="stat"><div class="stat-val" style="color:var(--cyan)" id="streakDisplay">0 🔥</div><div class="stat-label">Streak</div></div>
                     <div class="stat"><div class="stat-val" style="color:var(--orange)" id="bestStreakDisplay">0</div><div class="stat-label">Best</div></div>
-                    <div class="stat"><div class="stat-val" style="color:var(--purple)" id="triplesCaughtDisplay">0</div><div class="stat-label">Triples</div></div>
+                    <div class="stat"><div class="stat-val" style="color:var(--purple)" id="triplesCaughtDisplay">0</div><div class="stat-label">Signals</div></div>
                     <div class="stat"><div class="stat-val" id="cyclesDisplay">0</div><div class="stat-label">Cycles</div></div>
                 </div>
                 
@@ -671,22 +692,25 @@ function handleTick(tick) {
     const isDouble = (state.consecutiveCount === 2);
     const isTriple = (state.consecutiveCount === 3);
     const isQuadruple = (state.consecutiveCount === 4);
+    const isQuintuple = (state.consecutiveCount === 5);
     
     // Clear previous states
     document.querySelectorAll('.digit-box').forEach(box => {
-        box.classList.remove('just-occurred', 'doubled', 'tripled', 'quadrupled');
+        box.classList.remove('just-occurred', 'doubled', 'tripled', 'quadrupled', 'quintupled');
     });
     
     // Update digit status text
     for (let i = 0; i < 10; i++) {
         const statusEl = document.getElementById(`status-${i}`);
-        if (statusEl && (statusEl.textContent === '🔥 DOUBLED!' || statusEl.textContent === '🔥🔥🔥 TRIPLED!' || statusEl.textContent === '💥 QUADRUPLED!')) {
+        if (statusEl && (statusEl.textContent === '🔥 DOUBLED!' || statusEl.textContent === '🔥🔥🔥 TRIPLED!' || statusEl.textContent === '💥 QUADRUPLED!' || statusEl.textContent === '⭐ QUINTUPLED!')) {
             statusEl.textContent = '';
         }
     }
     
-    // Calculate frequency for logging
-    const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
+    // Get thresholds
+    const tripleThreshold = parseFloat(document.getElementById('tripleThreshold').value) || 7;
+    const quadThreshold = parseFloat(document.getElementById('quadThreshold').value) || 9;
+    const quintThreshold = parseFloat(document.getElementById('quintThreshold').value) || 11;
     const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
     const recent = state.ticks.slice(-ticksToAnalyze);
     let digitFreq = 0;
@@ -697,9 +721,17 @@ function handleTick(tick) {
         digitFreq = counts[digit] / recent.length * 100;
     }
     
-    if (isQuadruple) {
+    if (isQuintuple) {
+        // QUINTUPLE DETECTED!
+        const coldStatus = digitFreq <= quintThreshold ? ` ❄️ COLD (≤${quintThreshold}%)` : ` (>${quintThreshold}%)`;
+        state.doubleDetected = false;
+        state.doubleDigit = null;
+        document.getElementById(`digit-${digit}`).classList.add('quintupled');
+        document.getElementById(`status-${digit}`).textContent = '⭐ QUINTUPLED!';
+        log(`⭐⭐⭐⭐⭐ QUINTUPLE: Digit ${digit} appeared 5x! Freq: ${digitFreq.toFixed(1)}%${coldStatus}`, 'alert');
+    } else if (isQuadruple) {
         // QUADRUPLE DETECTED!
-        const coldStatus = digitFreq <= tripleColdThreshold ? ` ❄️ COLD (≤${tripleColdThreshold}%)` : ` (>${tripleColdThreshold}%)`;
+        const coldStatus = digitFreq <= quadThreshold ? ` ❄️ COLD (≤${quadThreshold}%)` : ` (>${quadThreshold}%)`;
         state.doubleDetected = false;
         state.doubleDigit = null;
         document.getElementById(`digit-${digit}`).classList.add('quadrupled');
@@ -707,7 +739,7 @@ function handleTick(tick) {
         log(`💥💥💥💥 QUADRUPLE: Digit ${digit} appeared 4x! Freq: ${digitFreq.toFixed(1)}%${coldStatus}`, 'alert');
     } else if (isTriple) {
         // TRIPLE DETECTED!
-        const coldStatus = digitFreq <= tripleColdThreshold ? ` ❄️ COLD (≤${tripleColdThreshold}%)` : ` (>${tripleColdThreshold}%)`;
+        const coldStatus = digitFreq <= tripleThreshold ? ` ❄️ COLD (≤${tripleThreshold}%)` : ` (>${tripleThreshold}%)`;
         state.doubleDetected = false;
         state.doubleDigit = null;
         document.getElementById(`digit-${digit}`).classList.add('tripled');
@@ -735,34 +767,77 @@ function handleTick(tick) {
     // TWO-PHASE AUTO TRADING LOGIC
     if (state.autoRunning && !state.tradePending && recent.length >= ticksToAnalyze) {
         
-        // PHASE 1: Waiting for Triple + Cold
+        // Check if any signal condition is met (with separate thresholds)
+        let signalDetected = false;
+        let signalType = '';
+        
+        if (isQuintuple && digitFreq <= quintThreshold) {
+            signalDetected = true;
+            signalType = 'Quintuple';
+        } else if (isQuadruple && digitFreq <= quadThreshold) {
+            signalDetected = true;
+            signalType = 'Quadruple';
+        } else if (isTriple && digitFreq <= tripleThreshold) {
+            signalDetected = true;
+            signalType = 'Triple';
+        }
+        
+        // PHASE 1: Detector Only - Looking for Triple/Quad/Quint + Cold
         if (state.currentPhase === 1) {
-            if (isTriple && digitFreq <= tripleColdThreshold) {
-                // Triple + Cold detected! Trade it and activate Phase 2
+            if (signalDetected) {
+                // Signal detected! DON'T TRADE - just activate Phase 2
                 state.triplesCaught++;
                 document.getElementById('triplesCaughtDisplay').textContent = state.triplesCaught;
                 
-                log(`🎯 PHASE 1 TRIGGER: Triple+Cold (${digitFreq.toFixed(1)}% ≤ ${tripleColdThreshold}%)! Digit ${digit}`, 'trade');
+                const thresholdUsed = isQuintuple ? quintThreshold : (isQuadruple ? quadThreshold : tripleThreshold);
+                log(`🎯 PHASE 1 SIGNAL: ${signalType}+Cold (${digitFreq.toFixed(1)}% ≤ ${thresholdUsed}%)! Digit ${digit}`, 'trade');
+                log(`📍 → 🔥 Activating PHASE 2 (no trade placed)`, 'info');
                 
-                state.currentTarget = digit;
-                triggerTwoPhaseTripleTrade(digit, digitFreq);
+                state.triggers.push({
+                    time: getTimestamp(),
+                    digit: digit,
+                    freq: digitFreq,
+                    reason: `🎯 ${signalType} Signal (detector)`
+                });
+                updateTriggerHistory();
+                
+                // Switch to Phase 2 - counter starts at 0
+                state.currentPhase = 2;
+                state.phase2TradeCount = 0;
+                state.phase2TradeResults = [];
+                
+                updateAutoStatus();
+                updatePhaseIndicator();
             }
         }
-        // PHASE 2: Trading Double + Cold (up to X trades)
+        // PHASE 2: Active Trading - Double + Cold
         else if (state.currentPhase === 2) {
             const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
             
-            // Check for new Triple + Cold (Option 2: Reset counter)
-            if (isTriple && digitFreq <= tripleColdThreshold) {
-                // New triple during Phase 2! Trade it and RESET counter
+            // Check for new Triple/Quad/Quint + Cold (Reset counter, but DON'T trade)
+            if (signalDetected) {
+                // New signal during Phase 2! DON'T TRADE - just reset counter
                 state.triplesCaught++;
                 document.getElementById('triplesCaughtDisplay').textContent = state.triplesCaught;
                 
-                log(`⚡ NEW TRIPLE during Phase 2! Trading & resetting counter...`, 'trade');
-                log(`🎯 Triple+Cold (${digitFreq.toFixed(1)}% ≤ ${tripleColdThreshold}%)! Digit ${digit}`, 'trade');
+                const thresholdUsed = isQuintuple ? quintThreshold : (isQuadruple ? quadThreshold : tripleThreshold);
+                log(`⚡ NEW ${signalType.toUpperCase()} during Phase 2! (${digitFreq.toFixed(1)}% ≤ ${thresholdUsed}%) Digit ${digit}`, 'alert');
+                log(`🔄 Resetting counter to 0/${tradesPerCycle} (no trade placed)`, 'info');
                 
-                state.currentTarget = digit;
-                triggerTwoPhaseTripleTrade(digit, digitFreq, true); // true = reset counter
+                state.triggers.push({
+                    time: getTimestamp(),
+                    digit: digit,
+                    freq: digitFreq,
+                    reason: `⚡ ${signalType} Reset (detector)`
+                });
+                updateTriggerHistory();
+                
+                // Reset counter to 0
+                state.phase2TradeCount = 0;
+                state.phase2TradeResults = [];
+                
+                updateAutoStatus();
+                updatePhaseIndicator();
             }
             // Normal Double + Cold trade
             else if (isDouble && digitFreq <= doubleColdThreshold && state.phase2TradeCount < tradesPerCycle) {
@@ -876,14 +951,16 @@ function updateAutoStatus() {
     const startBtn = document.getElementById('startAutoBtn');
     const stopBtn = document.getElementById('stopAutoBtn');
     const ticksToAnalyze = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
-    const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
+    const tripleThreshold = parseFloat(document.getElementById('tripleThreshold').value) || 7;
+    const quadThreshold = parseFloat(document.getElementById('quadThreshold').value) || 9;
+    const quintThreshold = parseFloat(document.getElementById('quintThreshold').value) || 11;
     const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
     const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
     
     // Update strategy status display
     const strategyStatusEl = document.getElementById('strategyStatus');
     if (strategyStatusEl) {
-        strategyStatusEl.textContent = `Phase 1: Triple ≤${tripleColdThreshold}% | Phase 2: Double ≤${doubleColdThreshold}% (${tradesPerCycle} trades)`;
+        strategyStatusEl.textContent = `Detect: 3x≤${tripleThreshold}% | 4x≤${quadThreshold}% | 5x≤${quintThreshold}% → Trade: 2x≤${doubleColdThreshold}%`;
         strategyStatusEl.style.color = 'var(--green)';
     }
     
@@ -907,7 +984,7 @@ function updateAutoStatus() {
         statusEl.innerHTML = `
             <div class="auto-icon">✅</div>
             <div class="auto-text">Ready</div>
-            <div class="auto-sub">Two-Phase System: Triple → Double burst</div>
+            <div class="auto-sub">Phase 1: Detect signal → Phase 2: Trade doubles</div>
         `;
         startBtn.style.display = 'block';
         stopBtn.style.display = 'none';
@@ -924,16 +1001,16 @@ function updateAutoStatus() {
             statusEl.style.borderColor = 'var(--cyan)';
             statusEl.innerHTML = `
                 <div class="auto-icon">👁️</div>
-                <div class="auto-text">Phase 1: Watching...</div>
-                <div class="auto-sub">Looking for Triple + Cold (≤${tripleColdThreshold}%)</div>
+                <div class="auto-text">Phase 1: Detecting...</div>
+                <div class="auto-sub">3x≤${tripleThreshold}% | 4x≤${quadThreshold}% | 5x≤${quintThreshold}%</div>
             `;
         } else {
             statusEl.className = 'auto-status watching';
             statusEl.style.borderColor = 'var(--orange)';
             statusEl.innerHTML = `
                 <div class="auto-icon">🔥</div>
-                <div class="auto-text">Phase 2: Active!</div>
-                <div class="auto-sub">Trading Double + Cold (${state.phase2TradeCount}/${tradesPerCycle})</div>
+                <div class="auto-text">Phase 2: Trading!</div>
+                <div class="auto-sub">Double + Cold (${state.phase2TradeCount}/${tradesPerCycle})</div>
             `;
         }
         startBtn.style.display = 'none';
@@ -950,14 +1027,16 @@ function updatePhaseIndicator() {
     const progress = document.getElementById('tradeProgress');
     
     const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
-    const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
+    const tripleThreshold = parseFloat(document.getElementById('tripleThreshold').value) || 7;
+    const quadThreshold = parseFloat(document.getElementById('quadThreshold').value) || 9;
+    const quintThreshold = parseFloat(document.getElementById('quintThreshold').value) || 11;
     const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
     
     if (state.currentPhase === 1) {
         indicator.style.borderColor = 'var(--cyan)';
         title.style.color = 'var(--cyan)';
         title.textContent = '📍 PHASE 1';
-        subtitle.textContent = `Waiting for Triple + Cold (≤${tripleColdThreshold}%)...`;
+        subtitle.textContent = `Detecting: 3x≤${tripleThreshold}% | 4x≤${quadThreshold}% | 5x≤${quintThreshold}%`;
         counter.style.display = 'none';
     } else {
         indicator.style.borderColor = 'var(--orange)';
@@ -990,7 +1069,9 @@ function updatePhaseIndicator() {
 
 function startAuto() {
     const ticksToAnalyze = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
-    const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
+    const tripleThreshold = parseFloat(document.getElementById('tripleThreshold').value) || 7;
+    const quadThreshold = parseFloat(document.getElementById('quadThreshold').value) || 9;
+    const quintThreshold = parseFloat(document.getElementById('quintThreshold').value) || 11;
     const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
     const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
     
@@ -1005,8 +1086,8 @@ function startAuto() {
     state.consecutiveCount = 1;
     
     log(`🤖 TWO-PHASE AUTO STARTED`, 'info');
-    log(`📍 Phase 1: Triple+Cold (≤${tripleColdThreshold}%)`, 'info');
-    log(`🔥 Phase 2: Double+Cold (≤${doubleColdThreshold}%) x${tradesPerCycle} trades`, 'info');
+    log(`📍 Phase 1 DETECT: Triple≤${tripleThreshold}% | Quad≤${quadThreshold}% | Quint≤${quintThreshold}%`, 'info');
+    log(`🔥 Phase 2 TRADE: Double+Cold (≤${doubleColdThreshold}%) x${tradesPerCycle} trades`, 'info');
     
     updateAutoStatus();
     updatePhaseIndicator();
@@ -1033,44 +1114,8 @@ function updateStrategyDisplay() {
 }
 
 // TWO-PHASE TRADE FUNCTIONS
-
-function triggerTwoPhaseTripleTrade(digit, freq, resetCounter = false) {
-    state.tradePending = true;
-    
-    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 5;
-    
-    state.triggers.push({
-        time: getTimestamp(),
-        digit: digit,
-        freq: freq,
-        reason: resetCounter ? '⚡ Triple Reset' : '🎯 Triple Trigger'
-    });
-    updateTriggerHistory();
-    
-    // Place the trade
-    placeTrade(digit);
-    
-    // After trade, switch to Phase 2
-    setTimeout(() => {
-        state.tradePending = false;
-        state.currentPhase = 2;
-        
-        if (resetCounter) {
-            // Reset counter, but the triple trade counts as trade 1
-            state.phase2TradeCount = 1;
-            state.phase2TradeResults = ['pending']; // Will be updated by handleResult
-            log(`🔄 Counter reset! Now at 1/${tradesPerCycle}`, 'info');
-        } else {
-            // Fresh start - triple trade counts as trade 1
-            state.phase2TradeCount = 1;
-            state.phase2TradeResults = ['pending'];
-            log(`📍 → 🔥 Switching to PHASE 2 (1/${tradesPerCycle})`, 'info');
-        }
-        
-        updateAutoStatus();
-        updatePhaseIndicator();
-    }, 2000);
-}
+// Phase 1 is detection-only (no trade function needed)
+// Only Phase 2 Double trades
 
 function triggerTwoPhaseDoubleTrade(digit, freq) {
     state.tradePending = true;
