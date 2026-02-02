@@ -53,6 +53,10 @@
         .digit-box.doubled{border-color:var(--red)!important;background:rgba(239,68,68,0.4)!important;box-shadow:0 0 30px rgba(239,68,68,0.8),0 0 60px rgba(239,68,68,0.4);transform:scale(1.1);animation:pulse-double 0.5s ease-in-out infinite}
         .digit-box.doubled .digit-num{color:var(--red);text-shadow:0 0 15px var(--red)}
         .digit-box.doubled .digit-status{color:var(--red)!important;font-weight:700;font-size:9px}
+        .digit-box.tripled{border-color:#a855f7!important;background:rgba(168,85,247,0.5)!important;box-shadow:0 0 40px rgba(168,85,247,0.9),0 0 80px rgba(168,85,247,0.5);transform:scale(1.15);animation:pulse-triple 0.3s ease-in-out infinite}
+        .digit-box.tripled .digit-num{color:#a855f7;text-shadow:0 0 20px #a855f7}
+        .digit-box.tripled .digit-status{color:#a855f7!important;font-weight:700;font-size:9px}
+        @keyframes pulse-triple{0%,100%{transform:scale(1.15);box-shadow:0 0 40px rgba(168,85,247,0.9)}50%{transform:scale(1.2);box-shadow:0 0 70px rgba(168,85,247,1)}}
         @keyframes pulse-double{0%,100%{transform:scale(1.1);box-shadow:0 0 30px rgba(239,68,68,0.8)}50%{transform:scale(1.15);box-shadow:0 0 50px rgba(239,68,68,1)}}
         @keyframes flash-digit{0%{transform:scale(1.15);box-shadow:0 0 50px rgba(245,158,11,1)}100%{transform:scale(1.08);box-shadow:0 0 30px rgba(245,158,11,0.8)}}
         @keyframes glow{0%,100%{box-shadow:0 0 15px rgba(6,182,212,0.4)}50%{box-shadow:0 0 25px rgba(6,182,212,0.7)}}
@@ -189,29 +193,57 @@
                 </div>
                 <label>Valid Threshold (under %)</label>
                 <input type="number" id="threshold" value="7" min="1" max="10">
-                <label>Auto Trade Threshold (%)</label>
-                <input type="number" id="autoThreshold" value="5.5" min="1" max="10" step="0.1" onchange="updateStrategyDesc()">
                 <label>Ticks to Analyze</label>
                 <input type="number" id="ticksToAnalyze" value="100" min="30" max="500">
                 
                 <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-                    <label>🎯 Auto Trade Strategy</label>
-                    <select id="autoStrategy" onchange="updateStrategyDesc()">
-                        <option value="cold">❄️ Cold Only - Trade when digit ≤ threshold%</option>
-                        <option value="double">🔥 Double Only - Trade when digit repeats</option>
-                        <option value="both">❄️+🔥 Cold + Double - Both required</option>
-                        <option value="either">⚡ Either - Cold OR Double triggers</option>
-                    </select>
-                    <div id="strategyDesc" style="font-size:9px;color:var(--muted);margin-top:4px">Trade when any digit falls below threshold and appears</div>
+                    <label>🎯 Auto Trade Strategies (select multiple)</label>
                     
-                    <div id="doubleRapidSection" style="margin-top:8px;display:none">
-                        <label>🔥 Trades per Double</label>
-                        <div style="display:flex;gap:4px">
-                            <button type="button" class="rapid-opt active" onclick="setDoubleRapid(1)">1</button>
-                            <button type="button" class="rapid-opt" onclick="setDoubleRapid(2)">2</button>
-                            <button type="button" class="rapid-opt" onclick="setDoubleRapid(3)">3</button>
+                    <div class="strat-row" style="display:flex;align-items:center;gap:6px;margin:6px 0;padding:6px;background:var(--bg);border-radius:4px">
+                        <input type="checkbox" id="stratCold" style="width:auto;margin:0">
+                        <span style="flex:1">❄️ Cold Only</span>
+                        <span style="font-size:9px;color:var(--muted)">≤</span>
+                        <input type="number" id="coldThreshold" value="5.5" min="1" max="15" step="0.1" style="width:50px;padding:2px 4px;margin:0">
+                        <span style="font-size:9px;color:var(--muted)">%</span>
+                    </div>
+                    
+                    <div class="strat-row" style="display:flex;align-items:center;gap:6px;margin:6px 0;padding:6px;background:var(--bg);border-radius:4px">
+                        <input type="checkbox" id="stratDouble" style="width:auto;margin:0" onchange="toggleDoubleOptions()">
+                        <span style="flex:1">🔥 Double Only</span>
+                        <span style="font-size:9px;color:var(--muted)">any repeat</span>
+                    </div>
+                    
+                    <div class="strat-row" style="display:flex;align-items:center;gap:6px;margin:6px 0;padding:6px;background:var(--bg);border-radius:4px">
+                        <input type="checkbox" id="stratDoubleCold" style="width:auto;margin:0">
+                        <span style="flex:1">🔥❄️ Double + Cold</span>
+                        <span style="font-size:9px;color:var(--muted)">≤</span>
+                        <input type="number" id="doubleColdThreshold" value="7" min="1" max="15" step="0.1" style="width:50px;padding:2px 4px;margin:0">
+                        <span style="font-size:9px;color:var(--muted)">%</span>
+                    </div>
+                    
+                    <div class="strat-row" style="display:flex;align-items:center;gap:6px;margin:6px 0;padding:6px;background:var(--bg);border-radius:4px">
+                        <input type="checkbox" id="stratTripleCold" style="width:auto;margin:0">
+                        <span style="flex:1">🔥🔥🔥❄️ Triple + Cold</span>
+                        <span style="font-size:9px;color:var(--muted)">≤</span>
+                        <input type="number" id="tripleColdThreshold" value="9" min="1" max="15" step="0.1" style="width:50px;padding:2px 4px;margin:0">
+                        <span style="font-size:9px;color:var(--muted)">%</span>
+                    </div>
+                    
+                    <div id="doubleOptionsSection" style="margin-top:8px;padding:8px;background:rgba(239,68,68,0.1);border-radius:4px;display:none">
+                        <label style="font-size:10px">🔥 Double Options</label>
+                        <div style="display:flex;gap:4px;margin-top:4px">
+                            <button type="button" class="rapid-opt active" onclick="setDoubleRapid(1)">1x</button>
+                            <button type="button" class="rapid-opt" onclick="setDoubleRapid(2)">2x</button>
+                            <button type="button" class="rapid-opt" onclick="setDoubleRapid(3)">3x</button>
                         </div>
-                        <div style="font-size:9px;color:var(--muted);margin-top:2px">Rapid fire trades when double detected</div>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:6px;font-size:10px">
+                            <input type="checkbox" id="enableTripleRecovery" checked style="width:auto;margin:0">
+                            <span>🔥🔥🔥 Triple Recovery (rapid 2 if triple)</span>
+                        </label>
+                    </div>
+                    
+                    <div id="strategyStatus" style="font-size:9px;color:var(--muted);margin-top:6px;padding:4px;background:var(--bg);border-radius:4px;text-align:center">
+                        Select at least one strategy
                     </div>
                 </div>
             </div>
@@ -253,7 +285,7 @@
                 </div>
                 <div class="digit-grid" id="digitGrid"></div>
                 <div style="font-size:9px;color:var(--muted);margin-top:4px">
-                    🟡 Yellow = Just occurred | 🔴 Red = DOUBLED | 🟢 Green = Valid (<span id="thresholdDisplay">7</span>%) | ❄️ Cyan = Coldest
+                    🟡 Yellow = Just occurred | 🔴 Red = DOUBLED | 🟣 Purple = TRIPLED | 🟢 Green = Valid (<span id="thresholdDisplay">7</span>%) | ❄️ Cyan = Coldest
                 </div>
             </div>
             
@@ -371,6 +403,11 @@ const state = {
     doubleDetected: false,    // True when same digit appears twice
     doubleDigit: null,        // Which digit just doubled
     doubleRapidCount: 1,      // How many trades to place on double (1, 2, or 3)
+    
+    // Triple recovery
+    consecutiveCount: 1,      // How many times current digit appeared in a row
+    lastTradedDigit: null,    // Which digit we just traded on (for triple detection)
+    waitingForTriple: false,  // Are we watching for triple after a double trade?
     
     // Rapid fire
     rapidCount: 5,
@@ -560,6 +597,9 @@ function changePair() {
         state.lastPriceDigit = null;
         state.doubleDetected = false;
         state.doubleDigit = null;
+        state.consecutiveCount = 1;
+        state.waitingForTriple = false;
+        state.lastTradedDigit = null;
         subscribeToPair();
         updateAutoStatus();
     }
@@ -582,29 +622,68 @@ function handleTick(tick) {
     document.getElementById('priceDisplay').textContent = tick.quote.toFixed(state.pipSize);
     document.getElementById('lastDigitDisplay').textContent = digit;
     
-    // DOUBLE DETECTION: Check if same digit appeared twice in a row
-    const isDouble = (state.lastPriceDigit !== null && digit === state.lastPriceDigit);
+    // CONSECUTIVE COUNT: Track how many times same digit in a row
+    if (state.lastPriceDigit !== null && digit === state.lastPriceDigit) {
+        state.consecutiveCount++;
+    } else {
+        state.consecutiveCount = 1;
+        state.waitingForTriple = false; // Reset when different digit appears
+    }
+    
+    const isDouble = (state.consecutiveCount === 2);
+    const isTriple = (state.consecutiveCount === 3);
     
     // Clear previous states
     document.querySelectorAll('.digit-box').forEach(box => {
-        box.classList.remove('just-occurred', 'doubled');
+        box.classList.remove('just-occurred', 'doubled', 'tripled');
     });
     
     // Update digit status text
     for (let i = 0; i < 10; i++) {
         const statusEl = document.getElementById(`status-${i}`);
-        if (statusEl && statusEl.textContent === '🔥 DOUBLED!') {
+        if (statusEl && (statusEl.textContent === '🔥 DOUBLED!' || statusEl.textContent === '🔥🔥🔥 TRIPLED!')) {
             statusEl.textContent = '';
         }
     }
     
-    if (isDouble) {
-        // DOUBLE DETECTED!
+    if (isTriple) {
+        // TRIPLE DETECTED! - Calculate cold percentage for logging
+        const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
+        const recent = state.ticks.slice(-ticksToAnalyze);
+        let tripleFreq = 0;
+        let coldStatus = '';
+        
+        if (recent.length >= 50) {
+            const counts = [0,0,0,0,0,0,0,0,0,0];
+            recent.forEach(t => counts[t.digit]++);
+            tripleFreq = counts[digit] / recent.length * 100;
+            coldStatus = tripleFreq <= tripleColdThreshold ? ` ❄️ COLD (≤${tripleColdThreshold}%)` : ` (>${tripleColdThreshold}%)`;
+        }
+        
+        state.doubleDetected = false;
+        state.doubleDigit = null;
+        document.getElementById(`digit-${digit}`).classList.add('tripled');
+        document.getElementById(`status-${digit}`).textContent = '🔥🔥🔥 TRIPLED!';
+        log(`🔥🔥🔥 TRIPLE: Digit ${digit} appeared 3x! Freq: ${tripleFreq.toFixed(1)}%${coldStatus}`, 'alert');
+    } else if (isDouble) {
+        // DOUBLE DETECTED! - Calculate frequency for logging
+        const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
+        const recent = state.ticks.slice(-ticksToAnalyze);
+        let doubleFreq = 0;
+        let coldStatus = '';
+        
+        if (recent.length >= 50) {
+            const counts = [0,0,0,0,0,0,0,0,0,0];
+            recent.forEach(t => counts[t.digit]++);
+            doubleFreq = counts[digit] / recent.length * 100;
+            coldStatus = doubleFreq <= doubleColdThreshold ? ` ❄️ (≤${doubleColdThreshold}%)` : '';
+        }
+        
         state.doubleDetected = true;
         state.doubleDigit = digit;
         document.getElementById(`digit-${digit}`).classList.add('doubled');
         document.getElementById(`status-${digit}`).textContent = '🔥 DOUBLED!';
-        log(`🔥 DOUBLE DETECTED: Digit ${digit} appeared twice!`, 'alert');
+        log(`🔥 DOUBLE: Digit ${digit} (${doubleFreq.toFixed(1)}%${coldStatus})`, 'alert');
     } else {
         state.doubleDetected = false;
         state.doubleDigit = null;
@@ -616,10 +695,50 @@ function handleTick(tick) {
     
     analyzeDigits();
     
-    // AUTO TRADING LOGIC
+    // Get enabled strategies
+    const stratCold = document.getElementById('stratCold')?.checked;
+    const stratDouble = document.getElementById('stratDouble')?.checked;
+    const stratDoubleCold = document.getElementById('stratDoubleCold')?.checked;
+    const stratTripleCold = document.getElementById('stratTripleCold')?.checked;
+    const enableTripleRecovery = document.getElementById('enableTripleRecovery')?.checked;
+    
+    // TRIPLE RECOVERY: Check if we should recover after a triple (only for Double Only strategy)
+    if (state.autoRunning && !state.tradePending && isTriple && state.waitingForTriple && enableTripleRecovery && stratDouble) {
+        // Triple occurred and we were waiting for it (our double trade just lost)
+        state.waitingForTriple = false;
+        log(`💥 Triple recovery triggered! Digit ${digit} - Rapid 2 to recover...`, 'trade');
+        
+        state.triggers.push({
+            time: getTimestamp(),
+            digit: digit,
+            freq: 0,
+            reason: '🔥🔥🔥 Triple Recovery'
+        });
+        updateTriggerHistory();
+        
+        // Rapid 2 trades for recovery
+        state.tradePending = true;
+        placeTrade(digit);
+        setTimeout(() => {
+            placeTrade(digit);
+            log(`🔥 Recovery trade 2/2 on digit ${digit}`, 'trade');
+        }, 300);
+        
+        setTimeout(() => {
+            state.tradePending = false;
+            if (state.autoRunning) updateAutoStatus();
+        }, 2500);
+        
+        return; // Don't process normal auto trading
+    }
+    
+    // AUTO TRADING LOGIC - Check all enabled strategies
     if (state.autoRunning && !state.tradePending) {
-        const autoThreshold = parseFloat(document.getElementById('autoThreshold').value) || 5.5;
-        const strategy = document.getElementById('autoStrategy').value;
+        // Get individual thresholds
+        const coldThreshold = parseFloat(document.getElementById('coldThreshold').value) || 5.5;
+        const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
+        const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
+        
         const recent = state.ticks.slice(-ticksToAnalyze);
         
         if (recent.length >= ticksToAnalyze) {
@@ -627,55 +746,44 @@ function handleTick(tick) {
             const counts = [0,0,0,0,0,0,0,0,0,0];
             recent.forEach(t => counts[t.digit]++);
             const digitFreq = counts[digit] / recent.length * 100;
-            const isCold = digitFreq <= autoThreshold;
             
             let shouldTrade = false;
             let tradeReason = '';
+            let useDoubleRapid = false;
             
-            switch (strategy) {
-                case 'cold':
-                    // Cold Only: Trade when digit is cold
-                    if (isCold) {
-                        shouldTrade = true;
-                        tradeReason = `❄️ Cold (${digitFreq.toFixed(1)}%)`;
-                    }
-                    break;
-                    
-                case 'double':
-                    // Double Only: Trade when digit repeats (ignore frequency)
-                    if (isDouble) {
-                        shouldTrade = true;
-                        tradeReason = `🔥 Doubled (${digitFreq.toFixed(1)}%)`;
-                        // Use rapid count for double strategy
-                        if (state.doubleRapidCount > 1) {
-                            tradeReason += ` x${state.doubleRapidCount}`;
-                        }
-                    }
-                    break;
-                    
-                case 'both':
-                    // Cold + Double: Must be both cold AND doubled
-                    if (isCold && isDouble) {
-                        shouldTrade = true;
-                        tradeReason = `❄️+🔥 Cold (${digitFreq.toFixed(1)}%) + Doubled`;
-                    }
-                    break;
-                    
-                case 'either':
-                    // Either: Cold OR Double triggers trade
-                    if (isCold) {
-                        shouldTrade = true;
-                        tradeReason = `❄️ Cold (${digitFreq.toFixed(1)}%)`;
-                    } else if (isDouble) {
-                        shouldTrade = true;
-                        tradeReason = `🔥 Doubled (${digitFreq.toFixed(1)}%)`;
-                    }
-                    break;
+            // Check strategies in priority order (each with its own threshold)
+            
+            // 1. Triple + Cold (most specific)
+            if (!shouldTrade && stratTripleCold && isTriple && digitFreq <= tripleColdThreshold) {
+                shouldTrade = true;
+                tradeReason = `🔥🔥🔥❄️ Triple+Cold (${digitFreq.toFixed(1)}% ≤ ${tripleColdThreshold}%)`;
+            }
+            
+            // 2. Double + Cold
+            if (!shouldTrade && stratDoubleCold && isDouble && digitFreq <= doubleColdThreshold) {
+                shouldTrade = true;
+                tradeReason = `🔥❄️ Double+Cold (${digitFreq.toFixed(1)}% ≤ ${doubleColdThreshold}%)`;
+            }
+            
+            // 3. Double Only (any double, ignore frequency)
+            if (!shouldTrade && stratDouble && isDouble) {
+                shouldTrade = true;
+                useDoubleRapid = true;
+                tradeReason = `🔥 Double (${digitFreq.toFixed(1)}%)`;
+                if (state.doubleRapidCount > 1) {
+                    tradeReason += ` x${state.doubleRapidCount}`;
+                }
+            }
+            
+            // 4. Cold Only
+            if (!shouldTrade && stratCold && digitFreq <= coldThreshold) {
+                shouldTrade = true;
+                tradeReason = `❄️ Cold (${digitFreq.toFixed(1)}% ≤ ${coldThreshold}%)`;
             }
             
             if (shouldTrade) {
                 state.currentTarget = digit;
-                triggerAutoTrade(digit, digitFreq, tradeReason);
+                triggerAutoTrade(digit, digitFreq, tradeReason, useDoubleRapid);
             }
         }
     }
@@ -783,18 +891,31 @@ function updateAutoStatus() {
     const startBtn = document.getElementById('startAutoBtn');
     const stopBtn = document.getElementById('stopAutoBtn');
     const ticksToAnalyze = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
-    const autoThreshold = parseFloat(document.getElementById('autoThreshold').value) || 5.5;
-    const strategy = document.getElementById('autoStrategy').value;
+    const coldThreshold = parseFloat(document.getElementById('coldThreshold').value) || 5.5;
     
-    // Update strategy description
-    const descEl = document.getElementById('strategyDesc');
-    const descriptions = {
-        'cold': `Trade when any digit falls to ≤${autoThreshold}% and appears`,
-        'double': 'Trade when any digit appears twice in a row (ignores frequency)',
-        'both': `Trade only when a cold digit (≤${autoThreshold}%) also doubles`,
-        'either': `Trade on cold (≤${autoThreshold}%) OR any double - whichever first`
-    };
-    if (descEl) descEl.textContent = descriptions[strategy] || '';
+    // Get enabled strategies
+    const stratCold = document.getElementById('stratCold')?.checked;
+    const stratDouble = document.getElementById('stratDouble')?.checked;
+    const stratDoubleCold = document.getElementById('stratDoubleCold')?.checked;
+    const stratTripleCold = document.getElementById('stratTripleCold')?.checked;
+    
+    // Update strategy status display
+    const strategyStatusEl = document.getElementById('strategyStatus');
+    const enabledStrategies = [];
+    if (stratCold) enabledStrategies.push('❄️ Cold');
+    if (stratDouble) enabledStrategies.push('🔥 Double');
+    if (stratDoubleCold) enabledStrategies.push('🔥❄️ Dbl+Cold');
+    if (stratTripleCold) enabledStrategies.push('🔥🔥🔥❄️ Trpl+Cold');
+    
+    if (strategyStatusEl) {
+        if (enabledStrategies.length === 0) {
+            strategyStatusEl.textContent = 'Select at least one strategy';
+            strategyStatusEl.style.color = 'var(--red)';
+        } else {
+            strategyStatusEl.textContent = `Active: ${enabledStrategies.join(' | ')}`;
+            strategyStatusEl.style.color = 'var(--green)';
+        }
+    }
     
     if (state.ticks.length < ticksToAnalyze) {
         statusEl.className = 'auto-status';
@@ -808,44 +929,40 @@ function updateAutoStatus() {
         return;
     }
     
-    // Check how many digits are under auto threshold
+    // Check how many digits are under cold threshold (use coldThreshold for display)
     const recent = state.ticks.slice(-ticksToAnalyze);
     const counts = [0,0,0,0,0,0,0,0,0,0];
     recent.forEach(t => counts[t.digit]++);
     const coldDigits = [];
     for (let i = 0; i < 10; i++) {
         const freq = counts[i] / recent.length * 100;
-        if (freq <= autoThreshold) {
+        if (freq <= coldThreshold) {
             coldDigits.push({ digit: i, freq: freq });
         }
     }
     
-    const strategyIcons = { cold: '❄️', double: '🔥', both: '❄️+🔥', either: '⚡' };
-    const strategyNames = { cold: 'Cold Only', double: 'Double Only', both: 'Cold+Double', either: 'Either' };
-    
     if (!state.autoRunning) {
         let readyText = '';
-        if (strategy === 'cold' || strategy === 'both') {
-            if (coldDigits.length === 0) {
-                readyText = `No digits ≤${autoThreshold}% yet`;
-            } else {
-                readyText = `${coldDigits.length} cold: ${coldDigits.map(t => `${t.digit}(${t.freq.toFixed(1)}%)`).join(', ')}`;
-            }
-        } else if (strategy === 'double') {
-            readyText = 'Waiting for any digit to repeat';
+        if (enabledStrategies.length === 0) {
+            readyText = 'Select strategies above';
         } else {
-            readyText = coldDigits.length > 0 
-                ? `${coldDigits.length} cold OR any double`
-                : 'Watching for cold or double';
+            const parts = [];
+            if (stratCold || stratDoubleCold || stratTripleCold) {
+                parts.push(`${coldDigits.length} cold digit(s)`);
+            }
+            if (stratDouble) {
+                parts.push('watching doubles');
+            }
+            readyText = parts.join(' + ') || 'Ready';
         }
         
         statusEl.className = 'auto-status ready';
         statusEl.innerHTML = `
-            <div class="auto-icon">${strategyIcons[strategy]}</div>
-            <div class="auto-text">${strategyNames[strategy]} Mode</div>
+            <div class="auto-icon">✅</div>
+            <div class="auto-text">Ready</div>
             <div class="auto-sub">${readyText}</div>
         `;
-        startBtn.style.display = 'block';
+        startBtn.style.display = enabledStrategies.length > 0 ? 'block' : 'none';
         stopBtn.style.display = 'none';
     } else {
         if (state.tradePending) {
@@ -855,35 +972,19 @@ function updateAutoStatus() {
                 <div class="auto-text">Trade Pending...</div>
                 <div class="auto-sub">Processing DIFFERS on digit ${state.currentTarget}</div>
             `;
-        } else if (state.doubleDetected && (strategy === 'double' || strategy === 'either' || strategy === 'both')) {
+        } else if (state.doubleDetected && (stratDouble || stratDoubleCold)) {
             statusEl.className = 'auto-status watching';
             statusEl.innerHTML = `
                 <div class="auto-icon">🔥</div>
                 <div class="auto-text">DOUBLE DETECTED!</div>
-                <div class="auto-sub">Digit ${state.doubleDigit} appeared twice in a row</div>
+                <div class="auto-sub">Digit ${state.doubleDigit} appeared twice</div>
             `;
         } else {
-            let watchingSub = '';
-            switch (strategy) {
-                case 'cold':
-                    watchingSub = `Waiting for digit ≤${autoThreshold}% to appear`;
-                    break;
-                case 'double':
-                    watchingSub = 'Waiting for any digit to repeat';
-                    break;
-                case 'both':
-                    watchingSub = `Waiting for cold digit (≤${autoThreshold}%) to double`;
-                    break;
-                case 'either':
-                    watchingSub = `Waiting for cold (≤${autoThreshold}%) or double`;
-                    break;
-            }
-            
             statusEl.className = 'auto-status watching';
             statusEl.innerHTML = `
                 <div class="auto-icon">👁️</div>
-                <div class="auto-text">Watching... ${strategyIcons[strategy]}</div>
-                <div class="auto-sub">${watchingSub}</div>
+                <div class="auto-text">Watching...</div>
+                <div class="auto-sub">${enabledStrategies.join(' | ')}</div>
             `;
         }
         startBtn.style.display = 'none';
@@ -893,23 +994,45 @@ function updateAutoStatus() {
 
 function startAuto() {
     const ticksToAnalyze = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
-    const autoThreshold = parseFloat(document.getElementById('autoThreshold').value) || 5.5;
-    const strategy = document.getElementById('autoStrategy').value;
+    
+    // Get individual thresholds
+    const coldThreshold = parseFloat(document.getElementById('coldThreshold').value) || 5.5;
+    const doubleColdThreshold = parseFloat(document.getElementById('doubleColdThreshold').value) || 7;
+    const tripleColdThreshold = parseFloat(document.getElementById('tripleColdThreshold').value) || 9;
+    
+    // Get enabled strategies
+    const stratCold = document.getElementById('stratCold')?.checked;
+    const stratDouble = document.getElementById('stratDouble')?.checked;
+    const stratDoubleCold = document.getElementById('stratDoubleCold')?.checked;
+    const stratTripleCold = document.getElementById('stratTripleCold')?.checked;
+    const enableTripleRecovery = document.getElementById('enableTripleRecovery')?.checked;
+    
+    // Validate at least one strategy
+    if (!stratCold && !stratDouble && !stratDoubleCold && !stratTripleCold) {
+        return log('❌ Select at least one strategy!', 'loss');
+    }
     
     if (state.ticks.length < ticksToAnalyze) return log(`Need ${ticksToAnalyze} ticks first!`, 'loss');
     
     state.autoRunning = true;
     state.tradePending = false;
     state.lastPriceDigit = null; // Reset for fresh double detection
+    state.consecutiveCount = 1;
+    state.waitingForTriple = false;
+    state.lastTradedDigit = null;
     
-    const strategyMessages = {
-        'cold': `❄️ Cold Only - Trading when digit ≤${autoThreshold}% appears`,
-        'double': `🔥 Double Only - Trading ${state.doubleRapidCount}x when any digit repeats`,
-        'both': `❄️+🔥 Cold+Double - Trading when cold digit (≤${autoThreshold}%) doubles`,
-        'either': `⚡ Either - Trading on cold (≤${autoThreshold}%) OR double`
-    };
+    // Build strategy list for log with individual thresholds
+    const strategies = [];
+    if (stratCold) strategies.push(`❄️ Cold (≤${coldThreshold}%)`);
+    if (stratDouble) {
+        let doubleText = `🔥 Double (${state.doubleRapidCount}x)`;
+        if (enableTripleRecovery) doubleText += ' +Recovery';
+        strategies.push(doubleText);
+    }
+    if (stratDoubleCold) strategies.push(`🔥❄️ Dbl+Cold (≤${doubleColdThreshold}%)`);
+    if (stratTripleCold) strategies.push(`🔥🔥🔥❄️ Trpl+Cold (≤${tripleColdThreshold}%)`);
     
-    log(`🤖 Auto started: ${strategyMessages[strategy]}`, 'info');
+    log(`🤖 Auto started: ${strategies.join(' | ')}`, 'info');
     updateAutoStatus();
 }
 
@@ -919,30 +1042,24 @@ function stopAuto() {
     state.currentTarget = null;
     state.doubleDetected = false;
     state.doubleDigit = null;
+    state.consecutiveCount = 1;
+    state.waitingForTriple = false;
+    state.lastTradedDigit = null;
     log('⏹️ Auto stopped', 'info');
     updateAutoStatus();
 }
 
-function updateStrategyDesc() {
-    const strategy = document.getElementById('autoStrategy').value;
-    const autoThreshold = parseFloat(document.getElementById('autoThreshold').value) || 5.5;
-    const descEl = document.getElementById('strategyDesc');
-    const rapidSection = document.getElementById('doubleRapidSection');
-    
-    const descriptions = {
-        'cold': `Trade when any digit falls to ≤${autoThreshold}% and appears`,
-        'double': `Trade ${state.doubleRapidCount}x when any digit appears twice in a row`,
-        'both': `Trade only when a cold digit (≤${autoThreshold}%) also doubles`,
-        'either': `Trade on cold (≤${autoThreshold}%) OR any double - whichever first`
-    };
-    
-    if (descEl) descEl.textContent = descriptions[strategy] || '';
-    
-    // Show rapid section only for double strategy
-    if (rapidSection) {
-        rapidSection.style.display = (strategy === 'double') ? 'block' : 'none';
+function updateStrategyDisplay() {
+    // No longer needed - individual thresholds are now inline
+    updateAutoStatus();
+}
+
+function toggleDoubleOptions() {
+    const stratDouble = document.getElementById('stratDouble')?.checked;
+    const optionsSection = document.getElementById('doubleOptionsSection');
+    if (optionsSection) {
+        optionsSection.style.display = stratDouble ? 'block' : 'none';
     }
-    
     updateAutoStatus();
 }
 
@@ -952,22 +1069,27 @@ function setDoubleRapid(count) {
     // Update button states
     document.querySelectorAll('.rapid-opt').forEach(btn => {
         btn.classList.remove('active');
-        if (parseInt(btn.textContent) === count) {
+        if (btn.textContent.includes(count)) {
             btn.classList.add('active');
         }
     });
     
-    // Update description
-    updateStrategyDesc();
-    
+    updateAutoStatus();
     log(`🔥 Double rapid set to ${count} trade(s)`, 'info');
 }
 
-function triggerAutoTrade(digit, freq, reason) {
+function triggerAutoTrade(digit, freq, reason, useDoubleRapid = false) {
     state.tradePending = true;
     
-    const strategy = document.getElementById('autoStrategy').value;
-    const rapidCount = (strategy === 'double') ? state.doubleRapidCount : 1;
+    const stratDouble = document.getElementById('stratDouble')?.checked;
+    const enableTripleRecovery = document.getElementById('enableTripleRecovery')?.checked;
+    const rapidCount = useDoubleRapid ? state.doubleRapidCount : 1;
+    
+    // If double strategy trade and triple recovery enabled, watch for triple
+    if (useDoubleRapid && stratDouble && enableTripleRecovery) {
+        state.waitingForTriple = true;
+        state.lastTradedDigit = digit;
+    }
     
     log(`🔔 ${reason}! Digit ${digit} - Trading DIFFERS...`, 'trade');
     
@@ -989,7 +1111,7 @@ function triggerAutoTrade(digit, freq, reason) {
             }, i * 300); // 300ms between trades
         }
         
-        // Reset tradePending after all trades
+        // Reset tradePending after all trades (but keep waitingForTriple!)
         setTimeout(() => {
             state.tradePending = false;
             state.doubleDetected = false;
@@ -1002,7 +1124,7 @@ function triggerAutoTrade(digit, freq, reason) {
         // Single trade
         placeTrade(digit);
         
-        // Reset tradePending after trade processes
+        // Reset tradePending after trade processes (but keep waitingForTriple!)
         setTimeout(() => {
             state.tradePending = false;
             state.doubleDetected = false;
