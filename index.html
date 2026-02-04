@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎯 Triple Bounce v2 - DIFFERS Only</title>
+    <title>🎯 Triple Bounce v3 - Wait For Loss</title>
     <style>
         :root{--bg:#0a0e17;--card:#1a2235;--border:#2a3549;--text:#f1f5f9;--muted:#64748b;--green:#10b981;--red:#ef4444;--cyan:#06b6d4;--yellow:#f59e0b;--purple:#a855f7;--orange:#f97316}
         *{margin:0;padding:0;box-sizing:border-box}
@@ -93,8 +93,8 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>🎯 Triple Bounce v2</h1>
-        <div class="subtitle">✅ DIFFERS Only | Bet Against Quads | 94%+ Win Rate</div>
+        <h1>🎯 Triple Bounce v3</h1>
+        <div class="subtitle">👁️ Wait For Loss | Then Trade 6 | DIFFERS Only</div>
     </div>
     
     <div class="status-bar">
@@ -146,22 +146,22 @@
     
     <!-- Strategy Explanation -->
     <div class="strategy-box">
-        <h4>📋 Why This Strategy Works</h4>
+        <h4>📋 Wait-For-Loss Strategy</h4>
+        <div class="point">
+            <span class="icon">👁️</span>
+            <span><strong>PHASE 1:</strong> OBSERVE triples without trading. Wait until we see a QUAD (loss).</span>
+        </div>
+        <div class="point">
+            <span class="icon">💥</span>
+            <span><strong>TRIGGER:</strong> When a triple becomes a QUAD → "loss is out of the way"</span>
+        </div>
         <div class="point">
             <span class="icon">🎯</span>
-            <span><strong>TRIGGER:</strong> Wait for digit to appear 3+ times consecutively (TRIPLE)</span>
-        </div>
-        <div class="point">
-            <span class="icon">📊</span>
-            <span><strong>FACT:</strong> Only ~6% of triples become quads (statistical reality)</span>
-        </div>
-        <div class="point">
-            <span class="icon">💰</span>
-            <span><strong>BET:</strong> DIFFERS - the triple WON'T become a quad</span>
+            <span><strong>PHASE 2:</strong> Trade the NEXT 6 triples with DIFFERS, then STOP.</span>
         </div>
         <div class="point">
             <span class="icon">✅</span>
-            <span class="highlight">WIN 94% of the time because quads are RARE!</span>
+            <span class="highlight">Theory: After a quad, next 6 triples are less likely to quad again!</span>
         </div>
     </div>
     
@@ -177,6 +177,10 @@
         
         <div id="signalBox" class="signal-box waiting">
             ⏳ WAITING FOR TRIPLE
+        </div>
+        
+        <div id="phaseDisplay" style="text-align:center;padding:10px;background:var(--bg);border-radius:6px;margin-top:10px;font-size:12px;font-weight:600">
+            <span style="color:var(--muted)">Start bot to begin</span>
         </div>
     </div>
     
@@ -301,6 +305,12 @@ const state = {
     
     pendingTrade: null,
     pendingContracts: new Map(),
+    
+    // NEW: Wait for Loss logic
+    observationPhase: true,        // Start in observation mode
+    observedTriple: null,          // Track triple we're observing
+    observedQuads: 0,              // How many quads (losses) we've seen
+    tradesAfterLoss: 0,            // Trades made after seeing loss
     
     totalTrades: 0,
     wins: 0,
@@ -430,8 +440,42 @@ function processTick(tick) {
     
     updateUI(digit, price, streak >= 3);
     
+    // === Check observation result ===
+    if (state.isTrading && state.observationPhase && state.observedTriple) {
+        checkObservationResult(digit);
+    }
+    
     if (state.isTrading && !state.pendingTrade) {
         checkForTriple(digit, streak);
+    }
+}
+
+function checkObservationResult(currentDigit) {
+    const observed = state.observedTriple;
+    
+    // Check if the triple we were observing just got resolved
+    // (current digit is different from the observed triple digit = streak broken)
+    if (currentDigit === observed.digit) {
+        // Streak continues - could be quad, quint, etc.
+        // Check if it's now a QUAD (4+)
+        if (state.currentStreak >= 4) {
+            // This WOULD have been a LOSS!
+            log(`💥 QUAD DETECTED! D${observed.digit} x4 - THIS WOULD HAVE BEEN A LOSS!`, 'loss');
+            log(`✅ Observation complete! Now entering TRADING phase (6 trades)`, 'win');
+            
+            state.observationPhase = false;
+            state.observedTriple = null;
+            state.tradesAfterLoss = 0;
+            
+            document.getElementById('signalBox').className = 'signal-box ready';
+            document.getElementById('signalBox').textContent = '🎯 ARMED! Waiting for next triple...';
+            updatePhaseDisplay();
+        }
+    } else {
+        // Different digit - streak broken, the observed triple did NOT become quad
+        // This would have been a WIN, but we don't care - we need to see a LOSS first
+        log(`👁️ Observed D${observed.digit} triple → D${currentDigit} (would have been WIN, still waiting for loss)`, 'info');
+        state.observedTriple = null; // Clear, wait for next triple
     }
 }
 
@@ -482,9 +526,27 @@ function checkForTriple(digit, streak) {
         return;
     }
     
-    log(`🎯 TRIPLE D${digit} (${freq.toFixed(1)}%) → TRADING DIFFERS`, 'trade');
+    // === OBSERVATION PHASE: Wait for 1 loss first ===
+    if (state.observationPhase) {
+        // Mark this triple for observation
+        state.observedTriple = { digit, freq, streak };
+        log(`👁️ OBSERVING: Triple D${digit} (${freq.toFixed(1)}%) - waiting to see result...`, 'info');
+        document.getElementById('signalBox').className = 'signal-box waiting';
+        document.getElementById('signalBox').textContent = `👁️ OBSERVING D${digit}... (need 1 loss first)`;
+        return;
+    }
+    
+    // === TRADING PHASE: After we saw the loss ===
+    const maxTradesAfterLoss = 6;
+    if (state.tradesAfterLoss >= maxTradesAfterLoss) {
+        log(`🏁 Already made ${maxTradesAfterLoss} trades. Stopping.`, 'info');
+        stopBot();
+        return;
+    }
+    
+    log(`🎯 TRIPLE D${digit} (${freq.toFixed(1)}%) → TRADE #${state.tradesAfterLoss + 1}/6`, 'trade');
     document.getElementById('signalBox').className = 'signal-box trading';
-    document.getElementById('signalBox').textContent = `🎯 TRADING: DIFFERS D${digit}`;
+    document.getElementById('signalBox').textContent = `🎯 TRADE #${state.tradesAfterLoss + 1}/6: DIFFERS D${digit}`;
     
     placeTrade(digit, freq);
 }
@@ -535,30 +597,40 @@ function handleContractUpdate(contract) {
     const profit = parseFloat(contract.profit) || (won ? info.stake * 0.0965 : -info.stake);
     
     state.totalTrades++;
+    state.tradesAfterLoss++;
     state.pnl += profit;
     
     if (won) {
         state.wins++;
         state.winStreak++;
         state.bestStreak = Math.max(state.bestStreak, state.winStreak);
-        log(`✅ WIN! D${info.digit} didn't repeat → +$${profit.toFixed(2)}`, 'win');
+        log(`✅ WIN! D${info.digit} didn't repeat → +$${profit.toFixed(2)} [Trade ${state.tradesAfterLoss}/6]`, 'win');
     } else {
         state.losses++;
         state.winStreak = 0;
-        log(`❌ LOSS! D${info.digit} became quad → -$${Math.abs(profit).toFixed(2)}`, 'loss');
+        log(`❌ LOSS! D${info.digit} became quad → -$${Math.abs(profit).toFixed(2)} [Trade ${state.tradesAfterLoss}/6]`, 'loss');
         
         if (document.getElementById('stopOnLoss').checked) {
             stopBot();
             log('🛑 Stopped on loss (conservative mode)', 'alert');
+            return;
         }
     }
     
-    checkLimits();
+    // Check if we've completed 6 trades
+    if (state.tradesAfterLoss >= 6) {
+        log(`🏁 Completed 6 trades! Session finished.`, 'win');
+        log(`📊 Final: ${state.wins}W/${state.losses}L | P/L: $${state.pnl.toFixed(2)}`, 'info');
+        stopBot();
+        return;
+    }
+    
     updateStats();
+    updatePhaseDisplay();
     addTradeEntry(info.digit, info.freq, won, profit);
     
     document.getElementById('signalBox').className = 'signal-box waiting';
-    document.getElementById('signalBox').textContent = '⏳ WAITING FOR TRIPLE';
+    document.getElementById('signalBox').textContent = `⏳ WAITING FOR TRIPLE [${state.tradesAfterLoss}/6 trades done]`;
 }
 
 function checkLimits() {
@@ -619,21 +691,41 @@ function startBot() {
     state.triplesDetected = 0; state.triplesSkipped = 0;
     state.tradeLog = [];
     
-    document.getElementById('tradeLog').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">Waiting for triples...</div>';
+    // Reset observation phase
+    state.observationPhase = true;
+    state.observedTriple = null;
+    state.tradesAfterLoss = 0;
+    
+    document.getElementById('tradeLog').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">Phase 1: Observing for loss...</div>';
     document.getElementById('startBtn').disabled = true;
     document.getElementById('signalBox').className = 'signal-box waiting';
-    document.getElementById('signalBox').textContent = '⏳ WAITING FOR TRIPLE';
+    document.getElementById('signalBox').textContent = '👁️ PHASE 1: Waiting to observe a QUAD (loss)';
     
     updateStats();
-    log('▶️ Bot started! Waiting for triples...', 'trade');
+    updatePhaseDisplay();
+    log('▶️ Bot started! PHASE 1: Observing triples, waiting for a quad...', 'trade');
+}
+
+function updatePhaseDisplay() {
+    const phaseEl = document.getElementById('phaseDisplay');
+    if (phaseEl) {
+        if (state.observationPhase) {
+            phaseEl.innerHTML = `<span style="color:var(--yellow)">👁️ PHASE 1: OBSERVING</span> - Waiting to see a quad (loss)`;
+        } else {
+            phaseEl.innerHTML = `<span style="color:var(--green)">🎯 PHASE 2: TRADING</span> - ${state.tradesAfterLoss}/6 trades completed`;
+        }
+    }
 }
 
 function stopBot() {
     state.isTrading = false;
     state.pendingTrade = null;
+    state.observationPhase = true;
+    state.observedTriple = null;
     document.getElementById('startBtn').disabled = false;
     document.getElementById('signalBox').className = 'signal-box waiting';
     document.getElementById('signalBox').textContent = '⏹ BOT STOPPED';
+    document.getElementById('phaseDisplay').innerHTML = '<span style="color:var(--muted)">Bot stopped - Start to begin new session</span>';
     log('⏹ Bot stopped', 'info');
 }
 
