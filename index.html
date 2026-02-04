@@ -3,376 +3,318 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎯 Triple Hunter Bot - Dual Strategy</title>
+    <title>🎯 Triple Bounce v2 - DIFFERS Only</title>
     <style>
-        :root{--bg:#0a0e17;--card:#1a2235;--border:#2a3549;--text:#f1f5f9;--muted:#64748b;--green:#10b981;--red:#ef4444;--cyan:#06b6d4;--yellow:#f59e0b;--purple:#a855f7;--orange:#f97316;--blue:#3b82f6;--pink:#ec4899}
+        :root{--bg:#0a0e17;--card:#1a2235;--border:#2a3549;--text:#f1f5f9;--muted:#64748b;--green:#10b981;--red:#ef4444;--cyan:#06b6d4;--yellow:#f59e0b;--purple:#a855f7;--orange:#f97316}
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);padding:8px;font-size:12px}
-        .container{max-width:1400px;margin:0 auto}
-        .header{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:3px solid var(--purple);margin-bottom:10px}
-        .header h1{font-size:18px;color:var(--purple)}
-        .header .subtitle{font-size:10px;color:var(--muted)}
-        .status{display:flex;align-items:center;gap:10px}
-        .dot{width:12px;height:12px;border-radius:50%;background:var(--muted)}
+        body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);padding:10px;font-size:13px}
+        .container{max-width:800px;margin:0 auto}
+        
+        .header{text-align:center;padding:15px;border-bottom:3px solid var(--purple);margin-bottom:15px}
+        .header h1{font-size:26px;color:var(--purple);margin-bottom:5px}
+        .header .subtitle{color:var(--green);font-size:12px;font-weight:600}
+        
+        .status-bar{display:flex;justify-content:center;align-items:center;gap:20px;padding:12px;background:var(--card);border-radius:8px;margin-bottom:15px;flex-wrap:wrap}
+        .status-item{text-align:center}
+        .status-item .label{font-size:9px;color:var(--muted);text-transform:uppercase}
+        .status-item .value{font-size:16px;font-weight:700;font-family:monospace}
+        .dot{width:12px;height:12px;border-radius:50%;background:var(--muted);display:inline-block}
         .dot.on{background:var(--green);box-shadow:0 0 10px var(--green)}
-        .balance{font-family:monospace;font-size:16px;color:var(--green)}
         
-        .grid{display:grid;grid-template-columns:300px 1fr 280px;gap:10px}
-        @media(max-width:1200px){.grid{grid-template-columns:1fr}}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:15px;margin-bottom:12px}
+        .card h3{font-size:11px;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
+        .card.highlight{border:2px solid var(--purple);background:rgba(168,85,247,0.08)}
         
-        .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
-        .card h3{font-size:10px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
-        .card.highlight{border:2px solid var(--cyan);background:rgba(6,182,212,0.05)}
-        .card.s1-card{border:2px solid var(--purple);background:rgba(168,85,247,0.08)}
-        .card.s2-card{border:2px solid var(--pink);background:rgba(236,72,153,0.08)}
+        .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
         
-        label{display:block;font-size:9px;color:var(--muted);margin-bottom:3px}
-        input,select{width:100%;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;margin-bottom:5px}
-        .row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+        label{display:block;font-size:10px;color:var(--muted);margin-bottom:3px}
+        input,select{width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px}
         
-        button{padding:8px 12px;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:11px;text-transform:uppercase;transition:all 0.2s}
+        button{padding:12px 15px;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px;text-transform:uppercase;transition:all 0.2s}
         .btn-blue{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;width:100%}
         .btn-green{background:var(--green);color:white}
         .btn-red{background:var(--red);color:white}
         .btn-purple{background:var(--purple);color:white}
-        .btn-pink{background:var(--pink);color:white}
-        .btn-cyan{background:var(--cyan);color:black}
         
-        .digit-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:10px 0}
+        .digit-display{text-align:center;padding:20px;background:var(--bg);border-radius:10px;margin:15px 0}
+        .current-digit{font-size:72px;font-weight:900;line-height:1;transition:all 0.2s}
+        .streak-indicator{font-size:20px;margin-top:10px;font-weight:600}
+        .streak-indicator.triple{color:var(--purple);animation:pulse 0.5s infinite}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+        
+        .digit-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
         .digit-box{background:var(--bg);border:2px solid var(--border);border-radius:8px;padding:10px 5px;text-align:center;transition:all 0.2s}
-        .digit-box.active{border-color:var(--yellow);background:rgba(245,158,11,0.3)}
-        .digit-box.doubled{border-color:var(--orange);background:rgba(249,115,22,0.4);animation:pulse-double 0.5s infinite}
-        .digit-box.tripled{border-color:var(--purple);background:rgba(168,85,247,0.5);animation:pulse-triple 0.3s infinite}
-        .digit-box.hottest{border-color:var(--pink);box-shadow:0 0 10px rgba(236,72,153,0.5)}
-        @keyframes pulse-triple{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
-        @keyframes pulse-double{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+        .digit-box.active{border-color:var(--yellow);background:rgba(245,158,11,0.2)}
+        .digit-box.tripled{border-color:var(--purple);background:rgba(168,85,247,0.4);animation:glow 0.5s infinite}
+        @keyframes glow{0%,100%{box-shadow:0 0 5px var(--purple)}50%{box-shadow:0 0 25px var(--purple)}}
         .digit-num{font-size:22px;font-weight:700}
-        .digit-freq{font-size:11px;color:var(--muted)}
-        .digit-freq.hot{color:var(--pink);font-weight:600}
+        .digit-freq{font-size:10px;color:var(--muted)}
         
-        .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-        .stat{background:var(--bg);padding:10px;border-radius:6px;text-align:center}
-        .stat-val{font-size:18px;font-weight:700;font-family:monospace}
+        .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+        .stat{background:var(--bg);padding:12px;border-radius:6px;text-align:center}
+        .stat-val{font-size:20px;font-weight:700;font-family:monospace}
         .stat-val.green{color:var(--green)}
         .stat-val.red{color:var(--red)}
-        .stat-label{font-size:8px;color:var(--muted);text-transform:uppercase;margin-top:2px}
+        .stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:3px}
         
-        .signal-box{padding:12px;border-radius:8px;text-align:center;font-weight:700;font-size:12px;margin:8px 0}
-        .signal-box.waiting{background:rgba(100,116,139,0.2);border:2px solid var(--muted);color:var(--muted)}
-        .signal-box.ready{background:rgba(168,85,247,0.2);border:2px solid var(--purple);color:var(--purple);animation:glow 1s infinite}
-        .signal-box.trading{background:rgba(16,185,129,0.2);border:2px solid var(--green);color:var(--green)}
-        @keyframes glow{0%,100%{box-shadow:0 0 5px currentColor}50%{box-shadow:0 0 15px currentColor}}
+        .win-streak-banner{background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(168,85,247,0.2));border:2px solid var(--green);border-radius:10px;padding:20px;text-align:center;margin:15px 0}
+        .win-streak-banner .number{font-size:52px;font-weight:900;color:var(--green);text-shadow:0 0 20px var(--green)}
+        .win-streak-banner .label{font-size:12px;color:var(--muted)}
         
-        .trade-log{max-height:220px;overflow-y:auto}
-        .trade-entry{display:flex;justify-content:space-between;padding:6px 8px;margin-bottom:3px;border-radius:5px;font-size:10px;border-left:4px solid var(--border);background:var(--bg)}
+        .trade-log{max-height:250px;overflow-y:auto;background:var(--bg);border-radius:6px;padding:8px}
+        .trade-entry{display:flex;justify-content:space-between;padding:10px;margin-bottom:4px;border-radius:5px;font-size:11px;border-left:4px solid var(--border)}
         .trade-entry.win{border-left-color:var(--green);background:rgba(16,185,129,0.1)}
         .trade-entry.loss{border-left-color:var(--red);background:rgba(239,68,68,0.1)}
-        .trade-entry .badge{display:inline-block;padding:2px 5px;border-radius:3px;font-size:8px;font-weight:700;margin-right:4px}
-        .trade-entry .badge.s1{background:var(--purple);color:white}
-        .trade-entry .badge.s2{background:var(--pink);color:white}
+        .trade-entry.pending{border-left-color:var(--yellow);background:rgba(245,158,11,0.1)}
         
-        .activity-log{max-height:150px;overflow-y:auto;font-family:monospace;font-size:9px;background:var(--bg);padding:6px;border-radius:6px}
+        .signal-box{padding:15px;border-radius:8px;text-align:center;font-weight:700;font-size:14px;margin:10px 0}
+        .signal-box.waiting{background:rgba(100,116,139,0.2);border:2px solid var(--muted);color:var(--muted)}
+        .signal-box.ready{background:rgba(168,85,247,0.2);border:2px solid var(--purple);color:var(--purple);animation:pulse 1s infinite}
+        .signal-box.trading{background:rgba(16,185,129,0.2);border:2px solid var(--green);color:var(--green)}
+        
+        .strategy-box{background:rgba(16,185,129,0.1);border:2px solid var(--green);border-radius:8px;padding:15px;margin-bottom:15px}
+        .strategy-box h4{color:var(--green);margin-bottom:10px;font-size:14px}
+        .strategy-box .point{display:flex;gap:8px;margin-bottom:8px;font-size:11px}
+        .strategy-box .point .icon{font-size:14px}
+        .strategy-box .highlight{color:var(--cyan);font-weight:600}
+        
+        .activity-log{max-height:120px;overflow-y:auto;font-family:monospace;font-size:10px;background:var(--bg);padding:8px;border-radius:6px}
         .activity-log div{padding:2px 0;border-bottom:1px solid var(--border)}
         .activity-log .win{color:var(--green)}
         .activity-log .loss{color:var(--red)}
         .activity-log .info{color:var(--cyan)}
         .activity-log .alert{color:var(--yellow)}
-        .activity-log .s1{color:var(--purple)}
-        .activity-log .s2{color:var(--pink)}
+        .activity-log .trade{color:var(--purple);font-weight:bold}
         
-        .metric-box{background:var(--bg);padding:10px;border-radius:6px;margin:5px 0}
-        .metric-box .label{font-size:8px;color:var(--muted);text-transform:uppercase}
-        .metric-box .value{font-size:18px;font-weight:700;font-family:monospace}
-        
-        .win-streak-display{text-align:center;padding:15px;background:linear-gradient(135deg,rgba(16,185,129,0.1),rgba(6,182,212,0.1));border:2px solid var(--green);border-radius:10px;margin:10px 0}
-        .win-streak-display .number{font-size:48px;font-weight:900;color:var(--green);text-shadow:0 0 20px var(--green)}
-        .win-streak-display .label{font-size:11px;color:var(--muted)}
-        
-        .strategy-info{background:var(--bg);padding:8px;border-radius:6px;font-size:9px;color:var(--muted);margin-bottom:8px}
-        .strategy-info strong{color:var(--text)}
-        
-        .session-limits{padding:8px;background:rgba(239,68,68,0.1);border:1px solid var(--red);border-radius:6px;margin-top:6px}
-        .session-limits h4{font-size:9px;color:var(--red);margin-bottom:5px}
+        .warning-box{background:rgba(239,68,68,0.1);border:1px solid var(--red);border-radius:6px;padding:10px;margin:10px 0;font-size:10px;color:var(--red)}
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <div>
-            <h1>🎯 Triple Hunter Bot</h1>
-            <div class="subtitle">S1: Triple Bounce (DIFFERS 94% WR) | S2: Hot Matches (MATCHES 29.5% WR @ 8x)</div>
+        <h1>🎯 Triple Bounce v2</h1>
+        <div class="subtitle">✅ DIFFERS Only | Bet Against Quads | 94%+ Win Rate</div>
+    </div>
+    
+    <div class="status-bar">
+        <div class="status-item">
+            <div class="label">Status</div>
+            <div class="value"><span class="dot" id="dot"></span> <span id="status">Offline</span></div>
         </div>
-        <div class="status">
-            <span id="timeDisplay">--:--:--</span>
-            <span class="balance" id="balance">$0.00</span>
-            <div class="dot" id="dot"></div>
-            <span id="status">Offline</span>
+        <div class="status-item">
+            <div class="label">Balance</div>
+            <div class="value" id="balance" style="color:var(--green)">$0.00</div>
+        </div>
+        <div class="status-item">
+            <div class="label">Time</div>
+            <div class="value" id="time">--:--:--</div>
+        </div>
+        <div class="status-item">
+            <div class="label">Market</div>
+            <div class="value" id="marketDisplay">--</div>
+        </div>
+        <div class="status-item">
+            <div class="label">Ticks</div>
+            <div class="value" id="tickCount">0</div>
         </div>
     </div>
     
-    <div class="grid">
-        <!-- LEFT COLUMN -->
-        <div>
-            <!-- Connection -->
-            <div class="card">
-                <h3>🔌 Connection</h3>
+    <!-- Connection -->
+    <div class="card">
+        <h3>🔌 Connection</h3>
+        <div class="row">
+            <div>
                 <label>API Token</label>
-                <input type="password" id="token" placeholder="Enter Deriv API token">
-                <div class="row">
-                    <div>
-                        <label>Symbol</label>
-                        <select id="symbol">
-                            <option value="1HZ10V" selected>Vol 10 (1s)</option>
-                            <option value="1HZ25V">Vol 25 (1s)</option>
-                            <option value="1HZ50V">Vol 50 (1s)</option>
-                            <option value="1HZ75V">Vol 75 (1s)</option>
-                            <option value="1HZ100V">Vol 100 (1s)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Stake ($)</label>
-                        <input type="number" id="stake" value="10" min="1">
-                    </div>
-                </div>
-                <button class="btn-blue" onclick="connect()">🔗 Connect</button>
+                <input type="password" id="token" placeholder="Enter your Deriv API token">
             </div>
-            
-            <!-- S1: Triple Bounce -->
-            <div class="card s1-card">
-                <h3>🎯 S1: TRIPLE BOUNCE <span style="color:var(--green);font-size:9px">94.1% WR</span></h3>
-                <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-                    <input type="checkbox" id="s1Enabled" checked style="width:auto">
-                    <span style="font-size:11px;font-weight:600">Enabled</span>
-                </label>
-                
-                <div class="strategy-info">
-                    <strong>Trade:</strong> DIFFERS (bet triple WON'T become quad)<br>
-                    <strong>Trigger:</strong> Digit appears 3+ times consecutively<br>
-                    <strong>Filter:</strong> Frequency < 16% (skip hot momentum)
-                </div>
-                
-                <div class="row">
-                    <div>
-                        <label>Max Freq (%)</label>
-                        <input type="number" id="s1MaxFreq" value="16" min="10" max="20">
-                    </div>
-                    <div>
-                        <label>Ticks to Analyze</label>
-                        <input type="number" id="ticksToAnalyze" value="100" min="50" max="200">
-                    </div>
-                </div>
-                
-                <div class="session-limits">
-                    <h4>Session Limits</h4>
-                    <div class="row">
-                        <div><label>Win Target</label><input type="number" id="s1WinTarget" value="15" min="0"></div>
-                        <div><label>Max Trades</label><input type="number" id="s1MaxTrades" value="20" min="0"></div>
-                    </div>
-                    <label style="display:flex;align-items:center;gap:4px;margin-top:4px">
-                        <input type="checkbox" id="s1StopOnLoss" style="width:auto">Stop on loss
-                    </label>
-                </div>
-                
-                <div id="s1Signal" class="signal-box waiting">WAITING FOR TRIPLE</div>
+            <div>
+                <label>Symbol</label>
+                <select id="symbol">
+                    <option value="1HZ10V" selected>Volatility 10 (1s)</option>
+                    <option value="1HZ25V">Volatility 25 (1s)</option>
+                    <option value="1HZ50V">Volatility 50 (1s)</option>
+                    <option value="1HZ75V">Volatility 75 (1s)</option>
+                    <option value="1HZ100V">Volatility 100 (1s)</option>
+                </select>
             </div>
-            
-            <!-- S2: Hot Matches -->
-            <div class="card s2-card">
-                <h3>🔥 S2: HOT MATCHES <span style="color:var(--yellow);font-size:9px">29.5% WR @ 8x</span></h3>
-                <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-                    <input type="checkbox" id="s2Enabled" checked style="width:auto">
-                    <span style="font-size:11px;font-weight:600">Enabled</span>
-                </label>
-                
-                <div class="strategy-info">
-                    <strong>Trade:</strong> MATCHES (bet double WILL become triple)<br>
-                    <strong>Trigger:</strong> Hot digit doubles (hottest+gap≥2% OR freq≥15%)<br>
-                    <strong>Filter:</strong> Recent doubles ≤1 in last 10 ticks
-                </div>
-                
-                <div class="row">
-                    <div>
-                        <label>Hot Gap ≥%</label>
-                        <input type="number" id="s2HotGap" value="2" min="1" max="5" step="0.5">
-                    </div>
-                    <div>
-                        <label>High Freq ≥%</label>
-                        <input type="number" id="s2HighFreq" value="15" min="12" max="20">
-                    </div>
-                </div>
-                <div class="row">
-                    <div>
-                        <label>Max Recent Doubles</label>
-                        <input type="number" id="s2MaxDoubles" value="1" min="0" max="5">
-                    </div>
-                    <div style="font-size:8px;color:var(--muted);padding-top:18px">In last 10 ticks</div>
-                </div>
-                
-                <div class="session-limits">
-                    <h4>Session Limits</h4>
-                    <div class="row">
-                        <div><label>Win Target</label><input type="number" id="s2WinTarget" value="5" min="0"></div>
-                        <div><label>Max Trades</label><input type="number" id="s2MaxTrades" value="25" min="0"></div>
-                    </div>
-                    <label style="display:flex;align-items:center;gap:4px;margin-top:4px">
-                        <input type="checkbox" id="s2StopOnLoss" style="width:auto">Stop on loss
-                    </label>
-                </div>
-                
-                <div id="s2Signal" class="signal-box waiting">WAITING FOR HOT DOUBLE</div>
+        </div>
+        <div style="margin-top:10px">
+            <button class="btn-blue" onclick="connect()">🔗 Connect to Deriv</button>
+        </div>
+    </div>
+    
+    <!-- Strategy Explanation -->
+    <div class="strategy-box">
+        <h4>📋 Why This Strategy Works</h4>
+        <div class="point">
+            <span class="icon">🎯</span>
+            <span><strong>TRIGGER:</strong> Wait for digit to appear 3+ times consecutively (TRIPLE)</span>
+        </div>
+        <div class="point">
+            <span class="icon">📊</span>
+            <span><strong>FACT:</strong> Only ~6% of triples become quads (statistical reality)</span>
+        </div>
+        <div class="point">
+            <span class="icon">💰</span>
+            <span><strong>BET:</strong> DIFFERS - the triple WON'T become a quad</span>
+        </div>
+        <div class="point">
+            <span class="icon">✅</span>
+            <span class="highlight">WIN 94% of the time because quads are RARE!</span>
+        </div>
+    </div>
+    
+    <!-- Digit Display -->
+    <div class="card highlight">
+        <div class="digit-display">
+            <div id="priceDisplay" style="font-size:13px;color:var(--muted);margin-bottom:5px">Price: -.-----</div>
+            <div class="current-digit" id="currentDigit" style="color:var(--yellow)">-</div>
+            <div class="streak-indicator" id="streakIndicator">Waiting for data...</div>
+        </div>
+        
+        <div class="digit-grid" id="digitGrid"></div>
+        
+        <div id="signalBox" class="signal-box waiting">
+            ⏳ WAITING FOR TRIPLE
+        </div>
+    </div>
+    
+    <!-- Settings -->
+    <div class="card">
+        <h3>⚙️ Settings</h3>
+        <div class="row3">
+            <div>
+                <label>Stake ($)</label>
+                <input type="number" id="stake" value="1" min="0.35" step="0.01">
             </div>
-            
-            <!-- Activity Log -->
-            <div class="card">
-                <h3>📋 Activity Log</h3>
-                <div class="activity-log" id="activityLog"></div>
+            <div>
+                <label>Max Freq % (filter)</label>
+                <input type="number" id="maxFreq" value="16" min="12" max="20" step="1">
+            </div>
+            <div>
+                <label>Ticks to Analyze</label>
+                <input type="number" id="ticksToAnalyze" value="100" min="50" max="200">
             </div>
         </div>
         
-        <!-- MIDDLE COLUMN -->
-        <div>
-            <!-- Trading Controls -->
-            <div class="card highlight">
-                <h3>🚀 TRADING CONTROLS</h3>
-                <div class="row" style="margin-bottom:10px">
-                    <button class="btn-green" onclick="startBot()" id="startBtn" style="font-size:14px;padding:14px">▶️ START</button>
-                    <button class="btn-red" onclick="stopBot()" id="stopBtn" style="font-size:14px;padding:14px">⏹ STOP</button>
-                </div>
-                <div id="tradingStatus" class="signal-box waiting">IDLE - Click START to begin</div>
+        <div class="row" style="margin-top:10px">
+            <div>
+                <label>Win Target (0=unlimited)</label>
+                <input type="number" id="winTarget" value="20" min="0">
             </div>
-            
-            <!-- Digit Grid -->
-            <div class="card">
-                <h3>🔢 Digit Monitor <span id="marketLabel" style="color:var(--purple);margin-left:6px">--</span> <span id="tickCount" style="float:right;color:var(--cyan)">0 ticks</span></h3>
-                
-                <div style="display:flex;justify-content:center;align-items:center;gap:20px;padding:12px;background:var(--bg);border-radius:8px;margin-bottom:10px">
-                    <div style="text-align:center">
-                        <div style="font-size:9px;color:var(--muted)">PRICE</div>
-                        <div id="priceDisplay" style="font-size:16px;font-weight:600;font-family:monospace">-.-----</div>
-                    </div>
-                    <div style="text-align:center">
-                        <div style="font-size:9px;color:var(--muted)">LAST DIGIT</div>
-                        <div id="digitDisplay" style="font-size:48px;font-weight:900;color:var(--yellow);line-height:1">-</div>
-                    </div>
-                    <div style="text-align:center">
-                        <div style="font-size:9px;color:var(--muted)">STREAK</div>
-                        <div id="streakDisplay" style="font-size:24px;font-weight:700;color:var(--purple)">1x</div>
-                    </div>
-                </div>
-                
-                <div class="digit-grid" id="digitGrid"></div>
-                
-                <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:6px">
-                    <span>🟣 Triple = S1 Signal</span>
-                    <span>🔴 Hot Double = S2 Signal</span>
-                </div>
-            </div>
-            
-            <!-- Win Streak -->
-            <div class="win-streak-display">
-                <div class="number" id="winStreak">0</div>
-                <div class="label">🔥 WIN STREAK</div>
-            </div>
-            
-            <!-- Session Stats -->
-            <div class="card">
-                <h3>📊 Session Statistics</h3>
-                <div class="stats-grid">
-                    <div class="stat"><div class="stat-val" id="totalTrades">0</div><div class="stat-label">Trades</div></div>
-                    <div class="stat"><div class="stat-val green" id="totalWins">0</div><div class="stat-label">Wins</div></div>
-                    <div class="stat"><div class="stat-val" id="winRate">0%</div><div class="stat-label">Win Rate</div></div>
-                    <div class="stat"><div class="stat-val green" id="totalPL">$0.00</div><div class="stat-label">P/L</div></div>
-                </div>
-                
-                <div class="row" style="margin-top:10px">
-                    <div class="metric-box" style="border-left:3px solid var(--purple)">
-                        <div class="label">S1 Triple Bounce</div>
-                        <div class="value" id="s1Stats" style="color:var(--purple)">0W / 0L</div>
-                        <div style="font-size:10px" id="s1PL">$0.00</div>
-                    </div>
-                    <div class="metric-box" style="border-left:3px solid var(--pink)">
-                        <div class="label">S2 Hot Matches</div>
-                        <div class="value" id="s2Stats" style="color:var(--pink)">0W / 0L</div>
-                        <div style="font-size:10px" id="s2PL">$0.00</div>
-                    </div>
-                </div>
+            <div>
+                <label>Max Trades (0=unlimited)</label>
+                <input type="number" id="maxTrades" value="30" min="0">
             </div>
         </div>
         
-        <!-- RIGHT COLUMN -->
-        <div>
-            <!-- Trade History -->
-            <div class="card">
-                <h3>💰 Trade History <span id="tradeCount" style="float:right;color:var(--green)">0</span></h3>
-                <div class="trade-log" id="tradeLog">
-                    <div style="text-align:center;color:var(--muted);padding:20px;font-size:11px">No trades yet</div>
-                </div>
+        <div style="margin-top:10px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="stopOnLoss" style="width:auto">
+                <span>Stop on first loss (conservative mode)</span>
+            </label>
+        </div>
+        
+        <div class="row" style="margin-top:12px">
+            <button class="btn-green" onclick="startBot()" id="startBtn">▶️ START BOT</button>
+            <button class="btn-red" onclick="stopBot()" id="stopBtn">⏹ STOP BOT</button>
+        </div>
+    </div>
+    
+    <!-- Win Streak -->
+    <div class="win-streak-banner">
+        <div class="number" id="winStreak">0</div>
+        <div class="label">🔥 WIN STREAK</div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="card">
+        <h3>📊 Session Statistics</h3>
+        <div class="stats-grid">
+            <div class="stat">
+                <div class="stat-val" id="totalTrades">0</div>
+                <div class="stat-label">Trades</div>
             </div>
-            
-            <!-- Export -->
-            <div class="card">
-                <h3>📥 Export Data</h3>
-                <div class="row">
-                    <button class="btn-cyan" onclick="exportTrades()">Trades</button>
-                    <button class="btn-purple" onclick="exportActivity()">Activity</button>
-                </div>
+            <div class="stat">
+                <div class="stat-val green" id="wins">0</div>
+                <div class="stat-label">Wins</div>
             </div>
-            
-            <!-- Best Stats -->
-            <div class="card">
-                <h3>🏆 Best Stats</h3>
-                <div class="stats-grid">
-                    <div class="stat"><div class="stat-val" id="bestStreak">0</div><div class="stat-label">Best Streak</div></div>
-                    <div class="stat"><div class="stat-val" id="triplesDetected">0</div><div class="stat-label">Triples</div></div>
-                    <div class="stat"><div class="stat-val" id="hotDoublesDetected">0</div><div class="stat-label">Hot Doubles</div></div>
-                    <div class="stat"><div class="stat-val" id="sessionTime">0:00</div><div class="stat-label">Duration</div></div>
-                </div>
+            <div class="stat">
+                <div class="stat-val" id="winRate">0%</div>
+                <div class="stat-label">Win Rate</div>
             </div>
+            <div class="stat">
+                <div class="stat-val green" id="pnl">$0.00</div>
+                <div class="stat-label">P/L</div>
+            </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+            <div class="stat">
+                <div class="stat-val" id="triplesDetected">0</div>
+                <div class="stat-label">Triples Seen</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val" id="triplesSkipped">0</div>
+                <div class="stat-label">Skipped (Hot)</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Trade Log -->
+    <div class="card">
+        <h3>💰 Trade History <span id="tradeCount" style="float:right;color:var(--green)">0</span></h3>
+        <div class="trade-log" id="tradeLog">
+            <div style="text-align:center;color:var(--muted);padding:20px">No trades yet. Start the bot!</div>
+        </div>
+    </div>
+    
+    <!-- Activity Log -->
+    <div class="card">
+        <h3>📋 Activity Log</h3>
+        <div class="activity-log" id="activityLog"></div>
+    </div>
+    
+    <!-- Export -->
+    <div class="card">
+        <h3>📥 Export Data</h3>
+        <div class="row">
+            <button class="btn-purple" onclick="exportTrades()">Export Trades CSV</button>
+            <button class="btn-purple" onclick="exportActivity()">Export Activity Log</button>
         </div>
     </div>
 </div>
 
 <script>
-// ============== STATE ==============
 const state = {
     ws: null,
     connected: false,
     isTrading: false,
     pingInterval: null,
     reconnectAttempts: 0,
-    maxReconnectAttempts: 5,
     
-    // Tick data
     ticks: [],
     recentDigits: [],
     frequencies: Array(10).fill(10),
     currentStreak: 1,
     lastDigit: null,
     
-    // S1: Triple Bounce
-    s1: {
-        trades: 0, wins: 0, pnl: 0, streak: 0, limitReached: false, pendingTrade: null
-    },
-    
-    // S2: Hot Matches
-    s2: {
-        trades: 0, wins: 0, pnl: 0, streak: 0, limitReached: false, pendingTrade: null
-    },
-    
-    // Overall
-    totalTrades: 0, totalWins: 0, totalPL: 0, winStreak: 0, bestStreak: 0,
-    triplesDetected: 0, hotDoublesDetected: 0,
-    sessionStart: null,
-    
-    // Contracts
+    pendingTrade: null,
     pendingContracts: new Map(),
     
-    // Logs
+    totalTrades: 0,
+    wins: 0,
+    losses: 0,
+    pnl: 0,
+    winStreak: 0,
+    bestStreak: 0,
+    triplesDetected: 0,
+    triplesSkipped: 0,
+    
     tradeLog: [],
     activityLog: []
 };
 
-// ============== INIT ==============
 function initDigitGrid() {
     const grid = document.getElementById('digitGrid');
     grid.innerHTML = '';
@@ -386,65 +328,23 @@ function initDigitGrid() {
 }
 initDigitGrid();
 
-// Handle tab visibility changes (reconnect when tab becomes active)
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        // Tab is now visible
-        if (state.isTrading && (!state.ws || state.ws.readyState !== WebSocket.OPEN)) {
-            log('👁️ Tab active - checking connection...', 'info');
-            const token = document.getElementById('token').value;
-            if (token && !state.connected) {
-                setTimeout(() => connect(), 1000);
-            }
-        }
-    }
-});
-
-// Prevent browser from throttling timers when tab is hidden
-let lastTickTime = Date.now();
 setInterval(() => {
-    const now = Date.now();
-    const drift = now - lastTickTime;
-    if (drift > 5000) { // More than 5 seconds since last check = tab was throttled
-        log('⚠️ Tab was throttled, checking connection...', 'alert');
-        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-            state.ws.send(JSON.stringify({ ping: 1 }));
-        }
-    }
-    lastTickTime = now;
-}, 2000);
-
-// Time display
-setInterval(() => {
-    document.getElementById('timeDisplay').textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
-    
-    // Update session duration
-    if (state.sessionStart) {
-        const elapsed = Math.floor((Date.now() - state.sessionStart) / 1000);
-        const mins = Math.floor(elapsed / 60);
-        const secs = elapsed % 60;
-        document.getElementById('sessionTime').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
+    document.getElementById('time').textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
 }, 1000);
 
-// ============== LOGGING ==============
 function log(msg, type = 'info') {
     const time = new Date().toLocaleTimeString('en-US', { hour12: false });
     const el = document.getElementById('activityLog');
     el.innerHTML = `<div class="${type}">[${time}] ${msg}</div>` + el.innerHTML;
     if (el.children.length > 100) el.removeChild(el.lastChild);
-    state.activityLog.push({ time, message: msg });
+    state.activityLog.push({ time, message: msg, type });
 }
 
-// ============== CONNECTION ==============
 function connect() {
     const token = document.getElementById('token').value;
-    if (!token) return log('Enter API token', 'alert');
+    if (!token) return log('Please enter API token', 'alert');
     
-    // Close existing connection if any
-    if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-        state.ws.close();
-    }
+    if (state.ws && state.ws.readyState === WebSocket.OPEN) state.ws.close();
     
     log('Connecting...', 'info');
     document.getElementById('status').textContent = 'Connecting...';
@@ -452,44 +352,29 @@ function connect() {
     
     state.ws.onopen = () => {
         state.ws.send(JSON.stringify({ authorize: token }));
-        
-        // Start heartbeat ping every 25 seconds
         if (state.pingInterval) clearInterval(state.pingInterval);
         state.pingInterval = setInterval(() => {
-            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-                state.ws.send(JSON.stringify({ ping: 1 }));
-            }
+            if (state.ws?.readyState === WebSocket.OPEN) state.ws.send(JSON.stringify({ ping: 1 }));
         }, 25000);
-        
         state.reconnectAttempts = 0;
     };
     
     state.ws.onmessage = (e) => {
         const data = JSON.parse(e.data);
-        
-        // Handle ping response (keep-alive)
-        if (data.ping) return;
-        if (data.pong) return;
+        if (data.ping || data.pong) return;
         
         if (data.authorize) {
             state.connected = true;
             document.getElementById('dot').classList.add('on');
             document.getElementById('status').textContent = 'Connected';
             document.getElementById('balance').textContent = '$' + parseFloat(data.authorize.balance).toFixed(2);
-            
-            const wasReconnect = state.reconnectAttempts > 0;
-            if (wasReconnect) {
-                log('✅ Reconnected successfully!', 'win');
-            } else {
-                log('✅ Connected!', 'win');
-            }
-            
+            log('✅ Connected!', 'win');
             subscribeTicks();
         }
         
         if (data.tick) processTick(data.tick);
         if (data.buy) handleBuyResponse(data);
-        if (data.proposal_open_contract) handleContractResult(data.proposal_open_contract);
+        if (data.proposal_open_contract) handleContractUpdate(data.proposal_open_contract);
         if (data.balance) document.getElementById('balance').textContent = '$' + parseFloat(data.balance.balance).toFixed(2);
     };
     
@@ -497,22 +382,13 @@ function connect() {
         state.connected = false;
         document.getElementById('dot').classList.remove('on');
         document.getElementById('status').textContent = 'Disconnected';
-        
-        // Clear ping interval
-        if (state.pingInterval) {
-            clearInterval(state.pingInterval);
-            state.pingInterval = null;
-        }
-        
+        if (state.pingInterval) { clearInterval(state.pingInterval); state.pingInterval = null; }
         log('🔴 Disconnected', 'loss');
         
-        // Auto-reconnect if was trading
-        if (state.isTrading && state.reconnectAttempts < state.maxReconnectAttempts) {
+        if (state.isTrading && state.reconnectAttempts < 5) {
             state.reconnectAttempts++;
-            log(`🔄 Reconnecting... (attempt ${state.reconnectAttempts}/${state.maxReconnectAttempts})`, 'alert');
-            setTimeout(() => {
-                if (!state.connected) connect();
-            }, 3000);
+            log(`🔄 Reconnecting (${state.reconnectAttempts}/5)...`, 'alert');
+            setTimeout(() => { if (!state.connected) connect(); }, 3000);
         }
     };
     
@@ -524,30 +400,26 @@ function subscribeTicks() {
     state.ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
     state.ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
     state.ws.send(JSON.stringify({ proposal_open_contract: 1, subscribe: 1 }));
-    document.getElementById('marketLabel').textContent = symbol;
+    document.getElementById('marketDisplay').textContent = symbol;
     log(`📡 Subscribed to ${symbol}`, 'info');
 }
 
-// ============== TICK PROCESSING ==============
 function processTick(tick) {
     const price = parseFloat(tick.quote);
     const digit = parseInt(tick.quote.toString().slice(-1));
     
-    // Store data
     state.ticks.push({ price, digit, epoch: tick.epoch });
     if (state.ticks.length > 500) state.ticks.shift();
     
     state.recentDigits.push(digit);
     if (state.recentDigits.length > 200) state.recentDigits.shift();
     
-    // Calculate frequencies
     const ticksToAnalyze = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
     const recent = state.recentDigits.slice(-ticksToAnalyze);
     const counts = Array(10).fill(0);
     recent.forEach(d => counts[d]++);
     state.frequencies = counts.map(c => (c / recent.length) * 100);
     
-    // Calculate streak
     let streak = 1;
     for (let i = state.recentDigits.length - 2; i >= 0; i--) {
         if (state.recentDigits[i] === digit) streak++;
@@ -556,82 +428,70 @@ function processTick(tick) {
     state.currentStreak = streak;
     state.lastDigit = digit;
     
-    // Detect patterns
-    const isDouble = streak === 2;
-    const isTriple = streak >= 3;
+    updateUI(digit, price, streak >= 3);
     
-    // Update UI
-    updateUI(digit, price, isDouble, isTriple);
-    
-    // Process trading signals
-    if (state.isTrading) {
-        if (!state.s1.pendingTrade && !state.s1.limitReached && document.getElementById('s1Enabled').checked) {
-            checkS1Signal(digit, isTriple);
-        }
-        if (!state.s2.pendingTrade && !state.s2.limitReached && document.getElementById('s2Enabled').checked) {
-            checkS2Signal(digit, isDouble, isTriple);
-        }
+    if (state.isTrading && !state.pendingTrade) {
+        checkForTriple(digit, streak);
     }
 }
 
-function updateUI(digit, price, isDouble, isTriple) {
-    // Price and digit display
-    document.getElementById('priceDisplay').textContent = price.toFixed(5);
-    document.getElementById('digitDisplay').textContent = digit;
-    document.getElementById('digitDisplay').style.color = isTriple ? 'var(--purple)' : (isDouble ? 'var(--orange)' : 'var(--yellow)');
-    document.getElementById('streakDisplay').textContent = state.currentStreak + 'x';
-    document.getElementById('streakDisplay').style.color = isTriple ? 'var(--purple)' : 'var(--muted)';
-    document.getElementById('tickCount').textContent = state.ticks.length + ' ticks';
+function updateUI(digit, price, isTriple) {
+    document.getElementById('priceDisplay').textContent = `Price: ${price.toFixed(5)}`;
+    document.getElementById('currentDigit').textContent = digit;
+    document.getElementById('currentDigit').style.color = isTriple ? 'var(--purple)' : 'var(--yellow)';
+    document.getElementById('tickCount').textContent = state.ticks.length;
     
-    // Digit grid
-    const hottest = state.frequencies.indexOf(Math.max(...state.frequencies));
+    const streakEl = document.getElementById('streakIndicator');
+    if (isTriple) {
+        streakEl.textContent = `🔥 TRIPLE! (${state.currentStreak}x D${digit})`;
+        streakEl.className = 'streak-indicator triple';
+    } else if (state.currentStreak === 2) {
+        streakEl.textContent = `⚡ Double (2x D${digit})`;
+        streakEl.className = 'streak-indicator';
+        streakEl.style.color = 'var(--orange)';
+    } else {
+        streakEl.textContent = `Single (D${digit})`;
+        streakEl.className = 'streak-indicator';
+        streakEl.style.color = 'var(--muted)';
+    }
     
     for (let i = 0; i < 10; i++) {
         const box = document.getElementById(`digit-${i}`);
         const freqEl = document.getElementById(`freq-${i}`);
-        const freq = state.frequencies[i];
-        
-        freqEl.textContent = freq.toFixed(1) + '%';
+        freqEl.textContent = state.frequencies[i].toFixed(1) + '%';
         box.className = 'digit-box';
-        freqEl.className = 'digit-freq';
-        
-        if (i === hottest) {
-            box.classList.add('hottest');
-            freqEl.classList.add('hot');
-        }
-        
         if (i === digit) {
-            if (isTriple) box.classList.add('tripled');
-            else if (isDouble) box.classList.add('doubled');
-            else box.classList.add('active');
+            box.classList.add(isTriple ? 'tripled' : 'active');
         }
     }
 }
 
-// ============== S1: TRIPLE BOUNCE ==============
-function checkS1Signal(digit, isTriple) {
-    if (!isTriple) return;
-    
-    const maxFreq = parseFloat(document.getElementById('s1MaxFreq').value) || 16;
-    const freq = state.frequencies[digit];
+function checkForTriple(digit, streak) {
+    if (streak < 3) return;
     
     state.triplesDetected++;
     document.getElementById('triplesDetected').textContent = state.triplesDetected;
     
-    if (freq < maxFreq) {
-        log(`🎯 S1: Triple D${digit} (${freq.toFixed(1)}%) - TRADING DIFFERS`, 's1');
-        document.getElementById('s1Signal').className = 'signal-box trading';
-        document.getElementById('s1Signal').textContent = `🎯 TRADING: DIFFERS D${digit}`;
-        placeS1Trade(digit, freq);
-    } else {
-        log(`⚠️ S1: Triple D${digit} skipped - freq ${freq.toFixed(1)}% >= ${maxFreq}%`, 'alert');
+    const maxFreq = parseFloat(document.getElementById('maxFreq').value) || 16;
+    const freq = state.frequencies[digit];
+    
+    if (freq >= maxFreq) {
+        state.triplesSkipped++;
+        document.getElementById('triplesSkipped').textContent = state.triplesSkipped;
+        log(`⚠️ Triple D${digit} skipped (freq ${freq.toFixed(1)}% ≥ ${maxFreq}%)`, 'alert');
+        return;
     }
+    
+    log(`🎯 TRIPLE D${digit} (${freq.toFixed(1)}%) → TRADING DIFFERS`, 'trade');
+    document.getElementById('signalBox').className = 'signal-box trading';
+    document.getElementById('signalBox').textContent = `🎯 TRADING: DIFFERS D${digit}`;
+    
+    placeTrade(digit, freq);
 }
 
-function placeS1Trade(digit, freq) {
-    const stake = parseFloat(document.getElementById('stake').value) || 10;
-    
-    state.s1.pendingTrade = { digit, freq, stake, time: Date.now() };
+function placeTrade(digit, freq) {
+    const stake = parseFloat(document.getElementById('stake').value) || 1;
+    state.pendingTrade = { digit, freq, stake, time: new Date().toISOString() };
     
     state.ws.send(JSON.stringify({
         buy: 1,
@@ -647,310 +507,147 @@ function placeS1Trade(digit, freq) {
             barrier: digit.toString()
         }
     }));
-    
-    log(`📤 S1: DIFFERS D${digit} @ $${stake}`, 's1');
 }
 
-// ============== S2: HOT MATCHES ==============
-function checkS2Signal(digit, isDouble, isTriple) {
-    // Only trigger on fresh double (not triple)
-    if (!isDouble || isTriple) return;
-    
-    const hotGapThreshold = parseFloat(document.getElementById('s2HotGap').value) || 2;
-    const highFreqThreshold = parseFloat(document.getElementById('s2HighFreq').value) || 15;
-    const maxRecentDoubles = parseInt(document.getElementById('s2MaxDoubles').value) || 1;
-    
-    const freq = state.frequencies[digit];
-    const sorted = [...state.frequencies].sort((a, b) => b - a);
-    const isHottest = freq === sorted[0];
-    const hotGap = isHottest ? (sorted[0] - sorted[1]) : 0;
-    
-    // Check hot condition
-    const hotCondition = (isHottest && hotGap >= hotGapThreshold) || (freq >= highFreqThreshold);
-    if (!hotCondition) return;
-    
-    state.hotDoublesDetected++;
-    document.getElementById('hotDoublesDetected').textContent = state.hotDoublesDetected;
-    
-    // Count recent doubles (excluding current)
-    let recentDoubles = 0;
-    const recent = state.recentDigits.slice(-11, -1); // Last 10 before current
-    for (let i = 1; i < recent.length; i++) {
-        if (recent[i] === recent[i-1]) recentDoubles++;
-    }
-    
-    if (recentDoubles <= maxRecentDoubles) {
-        log(`🔥 S2: Hot double D${digit} (${freq.toFixed(1)}%, gap=${hotGap.toFixed(1)}%) - TRADING MATCHES`, 's2');
-        document.getElementById('s2Signal').className = 'signal-box trading';
-        document.getElementById('s2Signal').textContent = `🔥 TRADING: MATCHES D${digit}`;
-        placeS2Trade(digit, freq);
-    } else {
-        log(`⚠️ S2: Hot double D${digit} skipped - ${recentDoubles} recent doubles > ${maxRecentDoubles}`, 'alert');
-    }
-}
-
-function placeS2Trade(digit, freq) {
-    const stake = parseFloat(document.getElementById('stake').value) || 10;
-    
-    state.s2.pendingTrade = { digit, freq, stake, time: Date.now() };
-    
-    state.ws.send(JSON.stringify({
-        buy: 1,
-        price: stake,
-        parameters: {
-            amount: stake,
-            basis: 'stake',
-            contract_type: 'DIGITMATCH',
-            currency: 'USD',
-            duration: 1,
-            duration_unit: 't',
-            symbol: document.getElementById('symbol').value,
-            barrier: digit.toString()
-        }
-    }));
-    
-    log(`📤 S2: MATCHES D${digit} @ $${stake}`, 's2');
-}
-
-// ============== TRADE HANDLING ==============
 function handleBuyResponse(data) {
     if (data.error) {
-        log(`❌ Trade error: ${data.error.message}`, 'loss');
-        state.s1.pendingTrade = null;
-        state.s2.pendingTrade = null;
+        log(`❌ Error: ${data.error.message}`, 'loss');
+        state.pendingTrade = null;
+        document.getElementById('signalBox').className = 'signal-box waiting';
+        document.getElementById('signalBox').textContent = '⏳ WAITING FOR TRIPLE';
         return;
     }
-    
     if (data.buy) {
-        const contractId = data.buy.contract_id;
-        
-        if (state.s1.pendingTrade) {
-            state.pendingContracts.set(contractId, {
-                strategy: 'S1',
-                ...state.s1.pendingTrade,
-                type: 'DIFFERS'
-            });
-        } else if (state.s2.pendingTrade) {
-            state.pendingContracts.set(contractId, {
-                strategy: 'S2',
-                ...state.s2.pendingTrade,
-                type: 'MATCHES'
-            });
-        }
+        state.pendingContracts.set(data.buy.contract_id, state.pendingTrade);
+        log(`📤 Trade placed: Contract ${data.buy.contract_id}`, 'info');
     }
 }
 
-function handleContractResult(contract) {
+function handleContractUpdate(contract) {
     const info = state.pendingContracts.get(contract.contract_id);
     if (!info) return;
     if (contract.status !== 'won' && contract.status !== 'lost') return;
     
     state.pendingContracts.delete(contract.contract_id);
+    state.pendingTrade = null;
     
     const won = contract.status === 'won';
-    const profit = parseFloat(contract.profit) || (won ? info.stake * (info.type === 'DIFFERS' ? 0.0965 : 8) : -info.stake);
+    const profit = parseFloat(contract.profit) || (won ? info.stake * 0.0965 : -info.stake);
     
-    // Update strategy stats
-    if (info.strategy === 'S1') {
-        state.s1.pendingTrade = null;
-        state.s1.trades++;
-        state.s1.pnl += profit;
-        
-        document.getElementById('s1Signal').className = 'signal-box waiting';
-        document.getElementById('s1Signal').textContent = 'WAITING FOR TRIPLE';
-        
-        if (won) {
-            state.s1.wins++;
-            state.s1.streak++;
-        } else {
-            state.s1.streak = 0;
-            if (document.getElementById('s1StopOnLoss').checked) {
-                state.s1.limitReached = true;
-                log('🛑 S1: Stopped on loss', 'loss');
-            }
-        }
-        
-        // Check limits
-        const winTarget = parseInt(document.getElementById('s1WinTarget').value) || 0;
-        const maxTrades = parseInt(document.getElementById('s1MaxTrades').value) || 0;
-        if (winTarget > 0 && state.s1.wins >= winTarget) {
-            state.s1.limitReached = true;
-            log(`🎯 S1: Win target ${winTarget} reached!`, 'win');
-        }
-        if (maxTrades > 0 && state.s1.trades >= maxTrades) {
-            state.s1.limitReached = true;
-            log(`🎯 S1: Max trades ${maxTrades} reached!`, 'info');
-        }
-        
-        document.getElementById('s1Stats').textContent = `${state.s1.wins}W / ${state.s1.trades - state.s1.wins}L`;
-        document.getElementById('s1PL').textContent = `$${state.s1.pnl.toFixed(2)}`;
-        document.getElementById('s1PL').style.color = state.s1.pnl >= 0 ? 'var(--green)' : 'var(--red)';
-        
-    } else if (info.strategy === 'S2') {
-        state.s2.pendingTrade = null;
-        state.s2.trades++;
-        state.s2.pnl += profit;
-        
-        document.getElementById('s2Signal').className = 'signal-box waiting';
-        document.getElementById('s2Signal').textContent = 'WAITING FOR HOT DOUBLE';
-        
-        if (won) {
-            state.s2.wins++;
-            state.s2.streak++;
-        } else {
-            state.s2.streak = 0;
-            if (document.getElementById('s2StopOnLoss').checked) {
-                state.s2.limitReached = true;
-                log('🛑 S2: Stopped on loss', 'loss');
-            }
-        }
-        
-        // Check limits
-        const winTarget = parseInt(document.getElementById('s2WinTarget').value) || 0;
-        const maxTrades = parseInt(document.getElementById('s2MaxTrades').value) || 0;
-        if (winTarget > 0 && state.s2.wins >= winTarget) {
-            state.s2.limitReached = true;
-            log(`🎯 S2: Win target ${winTarget} reached!`, 'win');
-        }
-        if (maxTrades > 0 && state.s2.trades >= maxTrades) {
-            state.s2.limitReached = true;
-            log(`🎯 S2: Max trades ${maxTrades} reached!`, 'info');
-        }
-        
-        document.getElementById('s2Stats').textContent = `${state.s2.wins}W / ${state.s2.trades - state.s2.wins}L`;
-        document.getElementById('s2PL').textContent = `$${state.s2.pnl.toFixed(2)}`;
-        document.getElementById('s2PL').style.color = state.s2.pnl >= 0 ? 'var(--green)' : 'var(--red)';
-    }
-    
-    // Update overall stats
     state.totalTrades++;
-    state.totalPL += profit;
+    state.pnl += profit;
+    
     if (won) {
-        state.totalWins++;
+        state.wins++;
         state.winStreak++;
         state.bestStreak = Math.max(state.bestStreak, state.winStreak);
+        log(`✅ WIN! D${info.digit} didn't repeat → +$${profit.toFixed(2)}`, 'win');
     } else {
+        state.losses++;
         state.winStreak = 0;
+        log(`❌ LOSS! D${info.digit} became quad → -$${Math.abs(profit).toFixed(2)}`, 'loss');
+        
+        if (document.getElementById('stopOnLoss').checked) {
+            stopBot();
+            log('🛑 Stopped on loss (conservative mode)', 'alert');
+        }
     }
     
-    updateOverallStats();
-    addTradeEntry(info, won, profit);
+    checkLimits();
+    updateStats();
+    addTradeEntry(info.digit, info.freq, won, profit);
     
-    // Log result
-    const emoji = won ? '✅' : '❌';
-    log(`${emoji} ${info.strategy}: ${info.type} D${info.digit} ${won ? 'WIN' : 'LOSS'} $${profit.toFixed(2)}`, won ? 'win' : 'loss');
+    document.getElementById('signalBox').className = 'signal-box waiting';
+    document.getElementById('signalBox').textContent = '⏳ WAITING FOR TRIPLE';
+}
+
+function checkLimits() {
+    const winTarget = parseInt(document.getElementById('winTarget').value) || 0;
+    const maxTrades = parseInt(document.getElementById('maxTrades').value) || 0;
     
-    // Check if all done
-    if (state.s1.limitReached && state.s2.limitReached) {
+    if (winTarget > 0 && state.wins >= winTarget) {
         stopBot();
-        log('🎯 All strategy limits reached!', 'win');
+        log(`🎯 Win target ${winTarget} reached!`, 'win');
+    }
+    if (maxTrades > 0 && state.totalTrades >= maxTrades) {
+        stopBot();
+        log(`🎯 Max trades ${maxTrades} reached!`, 'info');
     }
 }
 
-function updateOverallStats() {
+function updateStats() {
     document.getElementById('totalTrades').textContent = state.totalTrades;
-    document.getElementById('totalWins').textContent = state.totalWins;
-    document.getElementById('winRate').textContent = state.totalTrades > 0 ? (state.totalWins / state.totalTrades * 100).toFixed(1) + '%' : '0%';
-    document.getElementById('totalPL').textContent = '$' + state.totalPL.toFixed(2);
-    document.getElementById('totalPL').className = 'stat-val ' + (state.totalPL >= 0 ? 'green' : 'red');
+    document.getElementById('wins').textContent = state.wins;
+    document.getElementById('winRate').textContent = state.totalTrades > 0 ? (state.wins / state.totalTrades * 100).toFixed(1) + '%' : '0%';
+    document.getElementById('pnl').textContent = '$' + state.pnl.toFixed(2);
+    document.getElementById('pnl').className = 'stat-val ' + (state.pnl >= 0 ? 'green' : 'red');
     document.getElementById('winStreak').textContent = state.winStreak;
-    document.getElementById('bestStreak').textContent = state.bestStreak;
     document.getElementById('tradeCount').textContent = state.totalTrades;
 }
 
-function addTradeEntry(info, won, profit) {
-    const container = document.getElementById('tradeLog');
-    if (state.totalTrades === 1) container.innerHTML = '';
+function addTradeEntry(digit, freq, won, profit) {
+    const el = document.getElementById('tradeLog');
+    if (state.totalTrades === 1) el.innerHTML = '';
     
     const entry = document.createElement('div');
     entry.className = `trade-entry ${won ? 'win' : 'loss'}`;
     entry.innerHTML = `
-        <span><span class="badge ${info.strategy.toLowerCase()}">${info.strategy}</span> D${info.digit} (${info.freq.toFixed(1)}%)</span>
+        <span>D${digit} (${freq.toFixed(1)}%) - ${won ? 'WIN ✅' : 'LOSS ❌'}</span>
         <span style="color:${won ? 'var(--green)' : 'var(--red)'}">${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}</span>
     `;
-    container.insertBefore(entry, container.firstChild);
+    el.insertBefore(entry, el.firstChild);
     
     state.tradeLog.push({
         time: new Date().toISOString(),
-        strategy: info.strategy,
-        type: info.type,
-        digit: info.digit,
-        freq: info.freq,
+        digit, freq: freq.toFixed(1),
         result: won ? 'WIN' : 'LOSS',
-        profit
+        profit: profit.toFixed(2)
     });
 }
 
-// ============== BOT CONTROL ==============
 function startBot() {
-    if (!state.connected) return log('Connect first!', 'alert');
+    if (!state.connected) return log('Please connect first!', 'alert');
     
     const ticksNeeded = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
     if (state.ticks.length < ticksNeeded) {
-        return log(`Need ${ticksNeeded} ticks (have ${state.ticks.length})`, 'alert');
-    }
-    
-    if (!document.getElementById('s1Enabled').checked && !document.getElementById('s2Enabled').checked) {
-        return log('Enable at least one strategy!', 'alert');
+        return log(`Need ${ticksNeeded} ticks (have ${state.ticks.length}). Wait...`, 'alert');
     }
     
     state.isTrading = true;
-    state.sessionStart = Date.now();
-    
-    // Reset stats
-    state.s1 = { trades: 0, wins: 0, pnl: 0, streak: 0, limitReached: false, pendingTrade: null };
-    state.s2 = { trades: 0, wins: 0, pnl: 0, streak: 0, limitReached: false, pendingTrade: null };
-    state.totalTrades = 0;
-    state.totalWins = 0;
-    state.totalPL = 0;
-    state.winStreak = 0;
-    state.triplesDetected = 0;
-    state.hotDoublesDetected = 0;
+    state.totalTrades = 0; state.wins = 0; state.losses = 0;
+    state.pnl = 0; state.winStreak = 0;
+    state.triplesDetected = 0; state.triplesSkipped = 0;
     state.tradeLog = [];
     
-    document.getElementById('tradeLog').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;font-size:11px">Waiting for signals...</div>';
-    
+    document.getElementById('tradeLog').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">Waiting for triples...</div>';
     document.getElementById('startBtn').disabled = true;
-    document.getElementById('tradingStatus').className = 'signal-box trading';
-    document.getElementById('tradingStatus').textContent = '🚀 TRADING ACTIVE';
-    document.getElementById('s1Signal').className = 'signal-box waiting';
-    document.getElementById('s1Signal').textContent = 'WAITING FOR TRIPLE';
-    document.getElementById('s2Signal').className = 'signal-box waiting';
-    document.getElementById('s2Signal').textContent = 'WAITING FOR HOT DOUBLE';
+    document.getElementById('signalBox').className = 'signal-box waiting';
+    document.getElementById('signalBox').textContent = '⏳ WAITING FOR TRIPLE';
     
-    updateOverallStats();
-    log('▶️ Bot started!', 'win');
+    updateStats();
+    log('▶️ Bot started! Waiting for triples...', 'trade');
 }
 
 function stopBot() {
     state.isTrading = false;
-    state.s1.pendingTrade = null;
-    state.s2.pendingTrade = null;
-    
+    state.pendingTrade = null;
     document.getElementById('startBtn').disabled = false;
-    document.getElementById('tradingStatus').className = 'signal-box waiting';
-    document.getElementById('tradingStatus').textContent = 'STOPPED - Click START';
-    document.getElementById('s1Signal').className = 'signal-box waiting';
-    document.getElementById('s1Signal').textContent = 'STOPPED';
-    document.getElementById('s2Signal').className = 'signal-box waiting';
-    document.getElementById('s2Signal').textContent = 'STOPPED';
-    
+    document.getElementById('signalBox').className = 'signal-box waiting';
+    document.getElementById('signalBox').textContent = '⏹ BOT STOPPED';
     log('⏹ Bot stopped', 'info');
 }
 
-// ============== EXPORT ==============
 function exportTrades() {
-    if (!state.tradeLog.length) return log('No trades', 'alert');
-    const csv = ['time,strategy,type,digit,freq,result,profit', ...state.tradeLog.map(t => 
-        `${t.time},${t.strategy},${t.type},${t.digit},${t.freq},${t.result},${t.profit}`)].join('\n');
-    download(csv, `triple_hunter_trades_${Date.now()}.csv`, 'text/csv');
+    if (!state.tradeLog.length) return log('No trades to export', 'alert');
+    const csv = ['time,digit,freq,result,profit', ...state.tradeLog.map(t => `${t.time},${t.digit},${t.freq},${t.result},${t.profit}`)].join('\n');
+    download(csv, `triple_bounce_trades_${Date.now()}.csv`, 'text/csv');
     log('📥 Trades exported', 'info');
 }
 
 function exportActivity() {
-    if (!state.activityLog.length) return log('No activity', 'alert');
+    if (!state.activityLog.length) return log('No activity to export', 'alert');
     const txt = state.activityLog.map(a => `[${a.time}] ${a.message}`).join('\n');
-    download(txt, `triple_hunter_activity_${Date.now()}.txt`, 'text/plain');
+    download(txt, `triple_bounce_activity_${Date.now()}.txt`, 'text/plain');
     log('📥 Activity exported', 'info');
 }
 
