@@ -3,22 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎯 Triple Bounce v3 - Wait For Loss</title>
+    <title>🎯 Triple Bounce v4 - Auto Cycle</title>
     <style>
         :root{--bg:#0a0e17;--card:#1a2235;--border:#2a3549;--text:#f1f5f9;--muted:#64748b;--green:#10b981;--red:#ef4444;--cyan:#06b6d4;--yellow:#f59e0b;--purple:#a855f7;--orange:#f97316}
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);padding:10px;font-size:13px}
-        .container{max-width:800px;margin:0 auto}
+        .container{max-width:900px;margin:0 auto}
         
         .header{text-align:center;padding:15px;border-bottom:3px solid var(--purple);margin-bottom:15px}
         .header h1{font-size:26px;color:var(--purple);margin-bottom:5px}
         .header .subtitle{color:var(--green);font-size:12px;font-weight:600}
         
-        .status-bar{display:flex;justify-content:center;align-items:center;gap:20px;padding:12px;background:var(--card);border-radius:8px;margin-bottom:15px;flex-wrap:wrap}
-        .status-item{text-align:center}
+        .phase-banner{padding:20px;border-radius:10px;text-align:center;margin-bottom:15px;transition:all 0.3s}
+        .phase-banner.observe{background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(245,158,11,0.1));border:3px solid var(--yellow)}
+        .phase-banner.trade{background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(16,185,129,0.1));border:3px solid var(--green);animation:tradePulse 1s infinite}
+        .phase-banner.cooldown{background:linear-gradient(135deg,rgba(6,182,212,0.2),rgba(6,182,212,0.1));border:3px solid var(--cyan)}
+        .phase-banner.stopped{background:linear-gradient(135deg,rgba(100,116,139,0.2),rgba(100,116,139,0.1));border:3px solid var(--muted)}
+        @keyframes tradePulse{0%,100%{box-shadow:0 0 0 rgba(16,185,129,0)}50%{box-shadow:0 0 30px rgba(16,185,129,0.3)}}
+        
+        .phase-icon{font-size:40px;margin-bottom:8px}
+        .phase-title{font-size:22px;font-weight:700;margin-bottom:5px}
+        .phase-sub{font-size:13px;color:var(--muted)}
+        .phase-timer{font-family:monospace;font-size:28px;font-weight:700;margin-top:10px;color:var(--cyan)}
+        
+        .status-bar{display:flex;justify-content:center;align-items:center;gap:15px;padding:12px;background:var(--card);border-radius:8px;margin-bottom:15px;flex-wrap:wrap}
+        .status-item{text-align:center;min-width:70px}
         .status-item .label{font-size:9px;color:var(--muted);text-transform:uppercase}
-        .status-item .value{font-size:16px;font-weight:700;font-family:monospace}
-        .dot{width:12px;height:12px;border-radius:50%;background:var(--muted);display:inline-block}
+        .status-item .value{font-size:15px;font-weight:700;font-family:monospace}
+        .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);display:inline-block}
         .dot.on{background:var(--green);box-shadow:0 0 10px var(--green)}
         
         .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:15px;margin-bottom:12px}
@@ -27,6 +39,7 @@
         
         .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
         .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+        .row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
         
         label{display:block;font-size:10px;color:var(--muted);margin-bottom:3px}
         input,select{width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px}
@@ -37,66 +50,71 @@
         .btn-red{background:var(--red);color:white}
         .btn-purple{background:var(--purple);color:white}
         
-        .digit-display{text-align:center;padding:20px;background:var(--bg);border-radius:10px;margin:15px 0}
-        .current-digit{font-size:72px;font-weight:900;line-height:1;transition:all 0.2s}
-        .streak-indicator{font-size:20px;margin-top:10px;font-weight:600}
+        .digit-display{text-align:center;padding:15px;background:var(--bg);border-radius:10px;margin:10px 0}
+        .current-digit{font-size:60px;font-weight:900;line-height:1;transition:all 0.2s}
+        .streak-indicator{font-size:18px;margin-top:8px;font-weight:600}
         .streak-indicator.triple{color:var(--purple);animation:pulse 0.5s infinite}
         @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
         
-        .digit-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
-        .digit-box{background:var(--bg);border:2px solid var(--border);border-radius:8px;padding:10px 5px;text-align:center;transition:all 0.2s}
+        .digit-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:10px 0}
+        .digit-box{background:var(--bg);border:2px solid var(--border);border-radius:6px;padding:8px 4px;text-align:center;transition:all 0.2s}
         .digit-box.active{border-color:var(--yellow);background:rgba(245,158,11,0.2)}
         .digit-box.tripled{border-color:var(--purple);background:rgba(168,85,247,0.4);animation:glow 0.5s infinite}
-        @keyframes glow{0%,100%{box-shadow:0 0 5px var(--purple)}50%{box-shadow:0 0 25px var(--purple)}}
-        .digit-num{font-size:22px;font-weight:700}
-        .digit-freq{font-size:10px;color:var(--muted)}
+        @keyframes glow{0%,100%{box-shadow:0 0 5px var(--purple)}50%{box-shadow:0 0 20px var(--purple)}}
+        .digit-num{font-size:18px;font-weight:700}
+        .digit-freq{font-size:9px;color:var(--muted)}
         
-        .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-        .stat{background:var(--bg);padding:12px;border-radius:6px;text-align:center}
-        .stat-val{font-size:20px;font-weight:700;font-family:monospace}
-        .stat-val.green{color:var(--green)}
-        .stat-val.red{color:var(--red)}
-        .stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:3px}
+        .cycle-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:15px}
+        .cycle-stat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+        .cycle-stat .val{font-size:24px;font-weight:700;font-family:monospace}
+        .cycle-stat .val.green{color:var(--green)}
+        .cycle-stat .val.red{color:var(--red)}
+        .cycle-stat .val.cyan{color:var(--cyan)}
+        .cycle-stat .val.yellow{color:var(--yellow)}
+        .cycle-stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:4px}
         
-        .win-streak-banner{background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(168,85,247,0.2));border:2px solid var(--green);border-radius:10px;padding:20px;text-align:center;margin:15px 0}
-        .win-streak-banner .number{font-size:52px;font-weight:900;color:var(--green);text-shadow:0 0 20px var(--green)}
-        .win-streak-banner .label{font-size:12px;color:var(--muted)}
+        .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:10px}
+        .progress-fill{height:100%;border-radius:4px;transition:width 0.3s}
+        .progress-fill.green{background:var(--green)}
+        .progress-fill.cyan{background:var(--cyan)}
+        .progress-fill.yellow{background:var(--yellow)}
         
-        .trade-log{max-height:250px;overflow-y:auto;background:var(--bg);border-radius:6px;padding:8px}
-        .trade-entry{display:flex;justify-content:space-between;padding:10px;margin-bottom:4px;border-radius:5px;font-size:11px;border-left:4px solid var(--border)}
+        .trade-log{max-height:200px;overflow-y:auto;background:var(--bg);border-radius:6px;padding:8px}
+        .trade-entry{display:flex;justify-content:space-between;padding:8px;margin-bottom:4px;border-radius:5px;font-size:11px;border-left:4px solid var(--border)}
         .trade-entry.win{border-left-color:var(--green);background:rgba(16,185,129,0.1)}
         .trade-entry.loss{border-left-color:var(--red);background:rgba(239,68,68,0.1)}
-        .trade-entry.pending{border-left-color:var(--yellow);background:rgba(245,158,11,0.1)}
         
-        .signal-box{padding:15px;border-radius:8px;text-align:center;font-weight:700;font-size:14px;margin:10px 0}
-        .signal-box.waiting{background:rgba(100,116,139,0.2);border:2px solid var(--muted);color:var(--muted)}
-        .signal-box.ready{background:rgba(168,85,247,0.2);border:2px solid var(--purple);color:var(--purple);animation:pulse 1s infinite}
-        .signal-box.trading{background:rgba(16,185,129,0.2);border:2px solid var(--green);color:var(--green)}
-        
-        .strategy-box{background:rgba(16,185,129,0.1);border:2px solid var(--green);border-radius:8px;padding:15px;margin-bottom:15px}
-        .strategy-box h4{color:var(--green);margin-bottom:10px;font-size:14px}
-        .strategy-box .point{display:flex;gap:8px;margin-bottom:8px;font-size:11px}
-        .strategy-box .point .icon{font-size:14px}
-        .strategy-box .highlight{color:var(--cyan);font-weight:600}
-        
-        .activity-log{max-height:120px;overflow-y:auto;font-family:monospace;font-size:10px;background:var(--bg);padding:8px;border-radius:6px}
+        .activity-log{max-height:150px;overflow-y:auto;font-family:monospace;font-size:10px;background:var(--bg);padding:8px;border-radius:6px}
         .activity-log div{padding:2px 0;border-bottom:1px solid var(--border)}
         .activity-log .win{color:var(--green)}
         .activity-log .loss{color:var(--red)}
         .activity-log .info{color:var(--cyan)}
         .activity-log .alert{color:var(--yellow)}
         .activity-log .trade{color:var(--purple);font-weight:bold}
+        .activity-log .cooldown{color:var(--cyan)}
         
-        .warning-box{background:rgba(239,68,68,0.1);border:1px solid var(--red);border-radius:6px;padding:10px;margin:10px 0;font-size:10px;color:var(--red)}
+        .cycle-indicator{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:10px}
+        .cycle-dot{width:12px;height:12px;border-radius:50%;background:var(--border)}
+        .cycle-dot.complete{background:var(--green)}
+        .cycle-dot.current{background:var(--yellow);animation:pulse 1s infinite}
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>🎯 Triple Bounce v3</h1>
-        <div class="subtitle">👁️ Wait For Loss | Then Trade 6 | DIFFERS Only</div>
+        <h1>🎯 Triple Bounce v4</h1>
+        <div class="subtitle">🔄 Auto Cycle: Observe → Trade → Cooldown → Repeat</div>
     </div>
     
+    <!-- Phase Banner -->
+    <div class="phase-banner stopped" id="phaseBanner">
+        <div class="phase-icon" id="phaseIcon">⏹</div>
+        <div class="phase-title" id="phaseTitle">BOT STOPPED</div>
+        <div class="phase-sub" id="phaseSub">Connect and start to begin cycling</div>
+        <div class="phase-timer" id="phaseTimer" style="display:none">00:00</div>
+    </div>
+    
+    <!-- Status Bar -->
     <div class="status-bar">
         <div class="status-item">
             <div class="label">Status</div>
@@ -107,8 +125,8 @@
             <div class="value" id="balance" style="color:var(--green)">$0.00</div>
         </div>
         <div class="status-item">
-            <div class="label">Time</div>
-            <div class="value" id="time">--:--:--</div>
+            <div class="label">Cycle</div>
+            <div class="value" id="cycleNum" style="color:var(--purple)">#0</div>
         </div>
         <div class="status-item">
             <div class="label">Market</div>
@@ -117,6 +135,30 @@
         <div class="status-item">
             <div class="label">Ticks</div>
             <div class="value" id="tickCount">0</div>
+        </div>
+    </div>
+    
+    <!-- Cycle Stats -->
+    <div class="cycle-stats">
+        <div class="cycle-stat">
+            <div class="val cyan" id="totalCycles">0</div>
+            <div class="lbl">Cycles</div>
+        </div>
+        <div class="cycle-stat">
+            <div class="val" id="totalTrades">0</div>
+            <div class="lbl">Trades</div>
+        </div>
+        <div class="cycle-stat">
+            <div class="val green" id="wins">0</div>
+            <div class="lbl">Wins</div>
+        </div>
+        <div class="cycle-stat">
+            <div class="val" id="winRate">0%</div>
+            <div class="lbl">Win Rate</div>
+        </div>
+        <div class="cycle-stat">
+            <div class="val green" id="pnl">$0.00</div>
+            <div class="lbl">P/L</div>
         </div>
     </div>
     
@@ -140,136 +182,81 @@
             </div>
         </div>
         <div style="margin-top:10px">
-            <button class="btn-blue" onclick="connect()">🔗 Connect to Deriv</button>
+            <button class="btn-blue" onclick="connect()" id="connectBtn">🔗 Connect to Deriv</button>
         </div>
     </div>
     
-    <!-- Strategy Explanation -->
-    <div class="strategy-box">
-        <h4>📋 Wait-For-Loss Strategy</h4>
-        <div class="point">
-            <span class="icon">👁️</span>
-            <span><strong>PHASE 1:</strong> OBSERVE triples without trading. Wait until we see a QUAD (loss).</span>
+    <!-- Cycle Settings -->
+    <div class="card">
+        <h3>🔄 Cycle Settings</h3>
+        <div class="row3">
+            <div>
+                <label>Trades Per Cycle</label>
+                <input type="number" id="tradesPerCycle" value="3" min="1" max="20">
+            </div>
+            <div>
+                <label>Cooldown (minutes)</label>
+                <input type="number" id="cooldownMins" value="10" min="1" max="60">
+            </div>
+            <div>
+                <label>Max Cycles (0=∞)</label>
+                <input type="number" id="maxCycles" value="0" min="0">
+            </div>
         </div>
-        <div class="point">
-            <span class="icon">💥</span>
-            <span><strong>TRIGGER:</strong> When a triple becomes a QUAD → "loss is out of the way"</span>
+        <div class="row" style="margin-top:10px">
+            <div>
+                <label>Stake ($)</label>
+                <input type="number" id="stake" value="1" min="0.35" step="0.01">
+            </div>
+            <div>
+                <label>Max Freq % (skip hot)</label>
+                <input type="number" id="maxFreq" value="16" min="12" max="20" step="1">
+            </div>
         </div>
-        <div class="point">
-            <span class="icon">🎯</span>
-            <span><strong>PHASE 2:</strong> Trade the NEXT 6 triples with DIFFERS, then STOP.</span>
-        </div>
-        <div class="point">
-            <span class="icon">✅</span>
-            <span class="highlight">Theory: After a quad, next 6 triples are less likely to quad again!</span>
+        <div style="margin-top:10px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="stopOnLoss" style="width:auto">
+                <span>Stop entire bot on first loss</span>
+            </label>
         </div>
     </div>
     
-    <!-- Digit Display -->
+    <!-- Controls -->
+    <div class="card">
+        <h3>🎮 Controls</h3>
+        <div class="row">
+            <button class="btn-green" onclick="startBot()" id="startBtn">▶️ START BOT</button>
+            <button class="btn-red" onclick="stopBot()" id="stopBtn">⏹ STOP BOT</button>
+        </div>
+    </div>
+    
+    <!-- Live Display -->
     <div class="card highlight">
         <div class="digit-display">
-            <div id="priceDisplay" style="font-size:13px;color:var(--muted);margin-bottom:5px">Price: -.-----</div>
+            <div id="priceDisplay" style="font-size:12px;color:var(--muted);margin-bottom:5px">Price: -.-----</div>
             <div class="current-digit" id="currentDigit" style="color:var(--yellow)">-</div>
             <div class="streak-indicator" id="streakIndicator">Waiting for data...</div>
         </div>
         
         <div class="digit-grid" id="digitGrid"></div>
         
-        <div id="signalBox" class="signal-box waiting">
-            ⏳ WAITING FOR TRIPLE
-        </div>
-        
-        <div id="phaseDisplay" style="text-align:center;padding:10px;background:var(--bg);border-radius:6px;margin-top:10px;font-size:12px;font-weight:600">
-            <span style="color:var(--muted)">Start bot to begin</span>
-        </div>
-    </div>
-    
-    <!-- Settings -->
-    <div class="card">
-        <h3>⚙️ Settings</h3>
-        <div class="row3">
-            <div>
-                <label>Stake ($)</label>
-                <input type="number" id="stake" value="1" min="0.35" step="0.01">
+        <!-- Cycle Progress -->
+        <div style="margin-top:15px;padding:10px;background:var(--bg);border-radius:6px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px">
+                <span id="progressLabel">Cycle Progress</span>
+                <span id="progressText">0/0 trades</span>
             </div>
-            <div>
-                <label>Max Freq % (filter)</label>
-                <input type="number" id="maxFreq" value="16" min="12" max="20" step="1">
-            </div>
-            <div>
-                <label>Ticks to Analyze</label>
-                <input type="number" id="ticksToAnalyze" value="100" min="50" max="200">
-            </div>
-        </div>
-        
-        <div class="row" style="margin-top:10px">
-            <div>
-                <label>Win Target (0=unlimited)</label>
-                <input type="number" id="winTarget" value="20" min="0">
-            </div>
-            <div>
-                <label>Max Trades (0=unlimited)</label>
-                <input type="number" id="maxTrades" value="30" min="0">
-            </div>
-        </div>
-        
-        <div style="margin-top:10px">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" id="stopOnLoss" style="width:auto">
-                <span>Stop on first loss (conservative mode)</span>
-            </label>
-        </div>
-        
-        <div class="row" style="margin-top:12px">
-            <button class="btn-green" onclick="startBot()" id="startBtn">▶️ START BOT</button>
-            <button class="btn-red" onclick="stopBot()" id="stopBtn">⏹ STOP BOT</button>
-        </div>
-    </div>
-    
-    <!-- Win Streak -->
-    <div class="win-streak-banner">
-        <div class="number" id="winStreak">0</div>
-        <div class="label">🔥 WIN STREAK</div>
-    </div>
-    
-    <!-- Stats -->
-    <div class="card">
-        <h3>📊 Session Statistics</h3>
-        <div class="stats-grid">
-            <div class="stat">
-                <div class="stat-val" id="totalTrades">0</div>
-                <div class="stat-label">Trades</div>
-            </div>
-            <div class="stat">
-                <div class="stat-val green" id="wins">0</div>
-                <div class="stat-label">Wins</div>
-            </div>
-            <div class="stat">
-                <div class="stat-val" id="winRate">0%</div>
-                <div class="stat-label">Win Rate</div>
-            </div>
-            <div class="stat">
-                <div class="stat-val green" id="pnl">$0.00</div>
-                <div class="stat-label">P/L</div>
-            </div>
-        </div>
-        <div class="row" style="margin-top:10px">
-            <div class="stat">
-                <div class="stat-val" id="triplesDetected">0</div>
-                <div class="stat-label">Triples Seen</div>
-            </div>
-            <div class="stat">
-                <div class="stat-val" id="triplesSkipped">0</div>
-                <div class="stat-label">Skipped (Hot)</div>
+            <div class="progress-bar">
+                <div class="progress-fill green" id="progressFill" style="width:0%"></div>
             </div>
         </div>
     </div>
     
     <!-- Trade Log -->
     <div class="card">
-        <h3>💰 Trade History <span id="tradeCount" style="float:right;color:var(--green)">0</span></h3>
+        <h3>💰 Trade History</h3>
         <div class="trade-log" id="tradeLog">
-            <div style="text-align:center;color:var(--muted);padding:20px">No trades yet. Start the bot!</div>
+            <div style="text-align:center;color:var(--muted);padding:20px">No trades yet</div>
         </div>
     </div>
     
@@ -283,48 +270,59 @@
     <div class="card">
         <h3>📥 Export Data</h3>
         <div class="row">
-            <button class="btn-purple" onclick="exportTrades()">Export Trades CSV</button>
-            <button class="btn-purple" onclick="exportActivity()">Export Activity Log</button>
+            <button class="btn-purple" onclick="exportTrades()">Export Trades</button>
+            <button class="btn-purple" onclick="exportActivity()">Export Activity</button>
         </div>
     </div>
 </div>
 
 <script>
+// ============================================================
+// STATE
+// ============================================================
 const state = {
     ws: null,
     connected: false,
-    isTrading: false,
-    pingInterval: null,
-    reconnectAttempts: 0,
+    isRunning: false,
     
+    // Phases: 'stopped', 'observe', 'trade', 'cooldown'
+    phase: 'stopped',
+    
+    // Tick data
     ticks: [],
     recentDigits: [],
     frequencies: Array(10).fill(10),
     currentStreak: 1,
     lastDigit: null,
     
+    // Observation
+    observedTriple: null,
+    
+    // Trading
     pendingTrade: null,
     pendingContracts: new Map(),
+    cycleTradeCount: 0,
     
-    // NEW: Wait for Loss logic
-    observationPhase: true,        // Start in observation mode
-    observedTriple: null,          // Track triple we're observing
-    observedQuads: 0,              // How many quads (losses) we've seen
-    tradesAfterLoss: 0,            // Trades made after seeing loss
+    // Cooldown
+    cooldownEndTime: null,
+    cooldownInterval: null,
     
+    // Overall stats
+    totalCycles: 0,
     totalTrades: 0,
     wins: 0,
     losses: 0,
     pnl: 0,
     winStreak: 0,
-    bestStreak: 0,
-    triplesDetected: 0,
-    triplesSkipped: 0,
     
+    // Logs
     tradeLog: [],
     activityLog: []
 };
 
+// ============================================================
+// INITIALIZATION
+// ============================================================
 function initDigitGrid() {
     const grid = document.getElementById('digitGrid');
     grid.innerHTML = '';
@@ -338,18 +336,45 @@ function initDigitGrid() {
 }
 initDigitGrid();
 
+// Update time display
 setInterval(() => {
-    document.getElementById('time').textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
+    const now = new Date();
+    // Update cooldown timer if active
+    if (state.phase === 'cooldown' && state.cooldownEndTime) {
+        const remaining = Math.max(0, state.cooldownEndTime - Date.now());
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        document.getElementById('phaseTimer').textContent = 
+            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        
+        // Update progress bar for cooldown
+        const cooldownMins = parseInt(document.getElementById('cooldownMins').value) || 10;
+        const totalMs = cooldownMins * 60 * 1000;
+        const elapsed = totalMs - remaining;
+        const pct = (elapsed / totalMs) * 100;
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressFill').className = 'progress-fill cyan';
+        
+        if (remaining <= 0) {
+            endCooldown();
+        }
+    }
 }, 1000);
 
+// ============================================================
+// LOGGING
+// ============================================================
 function log(msg, type = 'info') {
     const time = new Date().toLocaleTimeString('en-US', { hour12: false });
     const el = document.getElementById('activityLog');
     el.innerHTML = `<div class="${type}">[${time}] ${msg}</div>` + el.innerHTML;
-    if (el.children.length > 100) el.removeChild(el.lastChild);
+    if (el.children.length > 150) el.removeChild(el.lastChild);
     state.activityLog.push({ time, message: msg, type });
 }
 
+// ============================================================
+// CONNECTION
+// ============================================================
 function connect() {
     const token = document.getElementById('token').value;
     if (!token) return log('Please enter API token', 'alert');
@@ -357,16 +382,17 @@ function connect() {
     if (state.ws && state.ws.readyState === WebSocket.OPEN) state.ws.close();
     
     log('Connecting...', 'info');
-    document.getElementById('status').textContent = 'Connecting...';
     state.ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
     
     state.ws.onopen = () => {
         state.ws.send(JSON.stringify({ authorize: token }));
-        if (state.pingInterval) clearInterval(state.pingInterval);
-        state.pingInterval = setInterval(() => {
-            if (state.ws?.readyState === WebSocket.OPEN) state.ws.send(JSON.stringify({ ping: 1 }));
+        
+        // Ping to keep alive
+        setInterval(() => {
+            if (state.ws?.readyState === WebSocket.OPEN) {
+                state.ws.send(JSON.stringify({ ping: 1 }));
+            }
         }, 25000);
-        state.reconnectAttempts = 0;
     };
     
     state.ws.onmessage = (e) => {
@@ -392,17 +418,8 @@ function connect() {
         state.connected = false;
         document.getElementById('dot').classList.remove('on');
         document.getElementById('status').textContent = 'Disconnected';
-        if (state.pingInterval) { clearInterval(state.pingInterval); state.pingInterval = null; }
         log('🔴 Disconnected', 'loss');
-        
-        if (state.isTrading && state.reconnectAttempts < 5) {
-            state.reconnectAttempts++;
-            log(`🔄 Reconnecting (${state.reconnectAttempts}/5)...`, 'alert');
-            setTimeout(() => { if (!state.connected) connect(); }, 3000);
-        }
     };
-    
-    state.ws.onerror = () => log('Connection error', 'loss');
 }
 
 function subscribeTicks() {
@@ -414,6 +431,9 @@ function subscribeTicks() {
     log(`📡 Subscribed to ${symbol}`, 'info');
 }
 
+// ============================================================
+// TICK PROCESSING
+// ============================================================
 function processTick(tick) {
     const price = parseFloat(tick.quote);
     const digit = parseInt(tick.quote.toString().slice(-1));
@@ -424,12 +444,13 @@ function processTick(tick) {
     state.recentDigits.push(digit);
     if (state.recentDigits.length > 200) state.recentDigits.shift();
     
-    const ticksToAnalyze = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
-    const recent = state.recentDigits.slice(-ticksToAnalyze);
+    // Calculate frequencies
+    const recent = state.recentDigits.slice(-100);
     const counts = Array(10).fill(0);
     recent.forEach(d => counts[d]++);
     state.frequencies = counts.map(c => (c / recent.length) * 100);
     
+    // Calculate streak
     let streak = 1;
     for (let i = state.recentDigits.length - 2; i >= 0; i--) {
         if (state.recentDigits[i] === digit) streak++;
@@ -438,52 +459,28 @@ function processTick(tick) {
     state.currentStreak = streak;
     state.lastDigit = digit;
     
-    updateUI(digit, price, streak >= 3);
+    // Update UI
+    updateDigitDisplay(digit, price, streak >= 3);
+    document.getElementById('tickCount').textContent = state.ticks.length;
     
-    // === Check observation result ===
-    if (state.isTrading && state.observationPhase && state.observedTriple) {
+    // Phase-specific logic
+    if (!state.isRunning || state.phase === 'stopped' || state.phase === 'cooldown') return;
+    
+    // Check observation result
+    if (state.phase === 'observe' && state.observedTriple) {
         checkObservationResult(digit);
     }
     
-    if (state.isTrading && !state.pendingTrade) {
-        checkForTriple(digit, streak);
+    // Check for new triples
+    if (!state.pendingTrade && streak >= 3) {
+        handleTriple(digit, streak);
     }
 }
 
-function checkObservationResult(currentDigit) {
-    const observed = state.observedTriple;
-    
-    // Check if the triple we were observing just got resolved
-    // (current digit is different from the observed triple digit = streak broken)
-    if (currentDigit === observed.digit) {
-        // Streak continues - could be quad, quint, etc.
-        // Check if it's now a QUAD (4+)
-        if (state.currentStreak >= 4) {
-            // This WOULD have been a LOSS!
-            log(`💥 QUAD DETECTED! D${observed.digit} x4 - THIS WOULD HAVE BEEN A LOSS!`, 'loss');
-            log(`✅ Observation complete! Now entering TRADING phase (6 trades)`, 'win');
-            
-            state.observationPhase = false;
-            state.observedTriple = null;
-            state.tradesAfterLoss = 0;
-            
-            document.getElementById('signalBox').className = 'signal-box ready';
-            document.getElementById('signalBox').textContent = '🎯 ARMED! Waiting for next triple...';
-            updatePhaseDisplay();
-        }
-    } else {
-        // Different digit - streak broken, the observed triple did NOT become quad
-        // This would have been a WIN, but we don't care - we need to see a LOSS first
-        log(`👁️ Observed D${observed.digit} triple → D${currentDigit} (would have been WIN, still waiting for loss)`, 'info');
-        state.observedTriple = null; // Clear, wait for next triple
-    }
-}
-
-function updateUI(digit, price, isTriple) {
+function updateDigitDisplay(digit, price, isTriple) {
     document.getElementById('priceDisplay').textContent = `Price: ${price.toFixed(5)}`;
     document.getElementById('currentDigit').textContent = digit;
     document.getElementById('currentDigit').style.color = isTriple ? 'var(--purple)' : 'var(--yellow)';
-    document.getElementById('tickCount').textContent = state.ticks.length;
     
     const streakEl = document.getElementById('streakIndicator');
     if (isTriple) {
@@ -499,6 +496,7 @@ function updateUI(digit, price, isTriple) {
         streakEl.style.color = 'var(--muted)';
     }
     
+    // Update digit grid
     for (let i = 0; i < 10; i++) {
         const box = document.getElementById(`digit-${i}`);
         const freqEl = document.getElementById(`freq-${i}`);
@@ -510,45 +508,77 @@ function updateUI(digit, price, isTriple) {
     }
 }
 
-function checkForTriple(digit, streak) {
-    if (streak < 3) return;
+// ============================================================
+// PHASE: OBSERVATION
+// ============================================================
+function checkObservationResult(currentDigit) {
+    const observed = state.observedTriple;
     
-    state.triplesDetected++;
-    document.getElementById('triplesDetected').textContent = state.triplesDetected;
-    
+    if (currentDigit === observed.digit) {
+        // Streak continues - check for quad
+        if (state.currentStreak >= 4) {
+            // QUAD detected! This would have been a loss
+            log(`💥 QUAD! D${observed.digit} x${state.currentStreak} - Loss scenario observed!`, 'loss');
+            state.observedTriple = null;
+            
+            // Move to trading phase
+            startTradingPhase();
+        }
+    } else {
+        // Different digit - would have been a win, keep observing
+        log(`👁️ D${observed.digit} triple → D${currentDigit} (would be WIN, still waiting for loss)`, 'info');
+        state.observedTriple = null;
+    }
+}
+
+function handleTriple(digit, streak) {
     const maxFreq = parseFloat(document.getElementById('maxFreq').value) || 16;
     const freq = state.frequencies[digit];
     
+    // Skip if too hot
     if (freq >= maxFreq) {
-        state.triplesSkipped++;
-        document.getElementById('triplesSkipped').textContent = state.triplesSkipped;
         log(`⚠️ Triple D${digit} skipped (freq ${freq.toFixed(1)}% ≥ ${maxFreq}%)`, 'alert');
         return;
     }
     
-    // === OBSERVATION PHASE: Wait for 1 loss first ===
-    if (state.observationPhase) {
-        // Mark this triple for observation
+    if (state.phase === 'observe') {
+        // Observation phase - watch this triple
         state.observedTriple = { digit, freq, streak };
-        log(`👁️ OBSERVING: Triple D${digit} (${freq.toFixed(1)}%) - waiting to see result...`, 'info');
-        document.getElementById('signalBox').className = 'signal-box waiting';
-        document.getElementById('signalBox').textContent = `👁️ OBSERVING D${digit}... (need 1 loss first)`;
-        return;
+        log(`👁️ OBSERVING: Triple D${digit} (${freq.toFixed(1)}%)...`, 'info');
+        updatePhaseBanner();
+    } else if (state.phase === 'trade') {
+        // Trading phase - place trade
+        const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 3;
+        
+        if (state.cycleTradeCount >= tradesPerCycle) {
+            // Shouldn't happen, but safety check
+            startCooldown();
+            return;
+        }
+        
+        state.cycleTradeCount++;
+        log(`🎯 TRADE #${state.cycleTradeCount}/${tradesPerCycle}: DIFFERS D${digit} (${freq.toFixed(1)}%)`, 'trade');
+        placeTrade(digit, freq);
+        updateProgress();
     }
+}
+
+// ============================================================
+// PHASE: TRADING
+// ============================================================
+function startTradingPhase() {
+    state.phase = 'trade';
+    state.cycleTradeCount = 0;
+    state.totalCycles++;
     
-    // === TRADING PHASE: After we saw the loss ===
-    const maxTradesAfterLoss = 6;
-    if (state.tradesAfterLoss >= maxTradesAfterLoss) {
-        log(`🏁 Already made ${maxTradesAfterLoss} trades. Stopping.`, 'info');
-        stopBot();
-        return;
-    }
+    document.getElementById('cycleNum').textContent = '#' + state.totalCycles;
+    document.getElementById('totalCycles').textContent = state.totalCycles;
     
-    log(`🎯 TRIPLE D${digit} (${freq.toFixed(1)}%) → TRADE #${state.tradesAfterLoss + 1}/6`, 'trade');
-    document.getElementById('signalBox').className = 'signal-box trading';
-    document.getElementById('signalBox').textContent = `🎯 TRADE #${state.tradesAfterLoss + 1}/6: DIFFERS D${digit}`;
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 3;
+    log(`✅ PHASE 2: Trading ${tradesPerCycle} trades (Cycle #${state.totalCycles})`, 'win');
     
-    placeTrade(digit, freq);
+    updatePhaseBanner();
+    updateProgress();
 }
 
 function placeTrade(digit, freq) {
@@ -575,13 +605,11 @@ function handleBuyResponse(data) {
     if (data.error) {
         log(`❌ Error: ${data.error.message}`, 'loss');
         state.pendingTrade = null;
-        document.getElementById('signalBox').className = 'signal-box waiting';
-        document.getElementById('signalBox').textContent = '⏳ WAITING FOR TRIPLE';
         return;
     }
     if (data.buy) {
         state.pendingContracts.set(data.buy.contract_id, state.pendingTrade);
-        log(`📤 Trade placed: Contract ${data.buy.contract_id}`, 'info');
+        log(`📤 Contract ${data.buy.contract_id} placed`, 'info');
     }
 }
 
@@ -597,64 +625,194 @@ function handleContractUpdate(contract) {
     const profit = parseFloat(contract.profit) || (won ? info.stake * 0.0965 : -info.stake);
     
     state.totalTrades++;
-    state.tradesAfterLoss++;
     state.pnl += profit;
     
     if (won) {
         state.wins++;
         state.winStreak++;
-        state.bestStreak = Math.max(state.bestStreak, state.winStreak);
-        log(`✅ WIN! D${info.digit} didn't repeat → +$${profit.toFixed(2)} [Trade ${state.tradesAfterLoss}/6]`, 'win');
+        log(`✅ WIN! D${info.digit} → +$${profit.toFixed(2)} [${state.cycleTradeCount}/${document.getElementById('tradesPerCycle').value}]`, 'win');
     } else {
         state.losses++;
         state.winStreak = 0;
-        log(`❌ LOSS! D${info.digit} became quad → -$${Math.abs(profit).toFixed(2)} [Trade ${state.tradesAfterLoss}/6]`, 'loss');
+        log(`❌ LOSS! D${info.digit} became quad → -$${Math.abs(profit).toFixed(2)}`, 'loss');
         
         if (document.getElementById('stopOnLoss').checked) {
+            log('🛑 Stopping on loss (conservative mode)', 'alert');
             stopBot();
-            log('🛑 Stopped on loss (conservative mode)', 'alert');
             return;
         }
     }
     
-    // Check if we've completed 6 trades
-    if (state.tradesAfterLoss >= 6) {
-        log(`🏁 Completed 6 trades! Session finished.`, 'win');
-        log(`📊 Final: ${state.wins}W/${state.losses}L | P/L: $${state.pnl.toFixed(2)}`, 'info');
-        stopBot();
+    // Record trade
+    addTradeEntry(info.digit, info.freq, won, profit);
+    updateStats();
+    
+    // Check if cycle complete
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 3;
+    if (state.cycleTradeCount >= tradesPerCycle) {
+        log(`🏁 Cycle #${state.totalCycles} complete: ${state.cycleTradeCount} trades`, 'info');
+        
+        // Check max cycles
+        const maxCycles = parseInt(document.getElementById('maxCycles').value) || 0;
+        if (maxCycles > 0 && state.totalCycles >= maxCycles) {
+            log(`🎯 Max cycles (${maxCycles}) reached!`, 'win');
+            stopBot();
+            return;
+        }
+        
+        startCooldown();
+    }
+}
+
+// ============================================================
+// PHASE: COOLDOWN
+// ============================================================
+function startCooldown() {
+    state.phase = 'cooldown';
+    const cooldownMins = parseInt(document.getElementById('cooldownMins').value) || 10;
+    state.cooldownEndTime = Date.now() + (cooldownMins * 60 * 1000);
+    
+    log(`❄️ COOLDOWN: ${cooldownMins} minutes before next cycle`, 'cooldown');
+    
+    document.getElementById('phaseTimer').style.display = 'block';
+    document.getElementById('progressLabel').textContent = 'Cooldown Progress';
+    document.getElementById('progressText').textContent = `${cooldownMins}:00 remaining`;
+    
+    updatePhaseBanner();
+}
+
+function endCooldown() {
+    state.cooldownEndTime = null;
+    document.getElementById('phaseTimer').style.display = 'none';
+    
+    log(`✅ Cooldown complete! Starting new observation phase...`, 'win');
+    
+    // Back to observation
+    startObservationPhase();
+}
+
+// ============================================================
+// PHASE: OBSERVATION (Start)
+// ============================================================
+function startObservationPhase() {
+    state.phase = 'observe';
+    state.observedTriple = null;
+    state.cycleTradeCount = 0;
+    
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 3;
+    document.getElementById('progressLabel').textContent = 'Cycle Progress';
+    document.getElementById('progressText').textContent = `0/${tradesPerCycle} trades`;
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('progressFill').className = 'progress-fill yellow';
+    
+    log(`👁️ PHASE 1: Observing for quad (loss scenario)...`, 'info');
+    
+    updatePhaseBanner();
+}
+
+// ============================================================
+// BOT CONTROLS
+// ============================================================
+function startBot() {
+    if (!state.connected) {
+        log('Please connect first!', 'alert');
         return;
     }
     
-    updateStats();
-    updatePhaseDisplay();
-    addTradeEntry(info.digit, info.freq, won, profit);
+    if (state.ticks.length < 50) {
+        log(`Need more ticks (${state.ticks.length}/50). Wait...`, 'alert');
+        return;
+    }
     
-    document.getElementById('signalBox').className = 'signal-box waiting';
-    document.getElementById('signalBox').textContent = `⏳ WAITING FOR TRIPLE [${state.tradesAfterLoss}/6 trades done]`;
+    state.isRunning = true;
+    
+    // Reset cycle stats (keep overall stats)
+    state.cycleTradeCount = 0;
+    state.observedTriple = null;
+    
+    document.getElementById('startBtn').disabled = true;
+    
+    log('▶️ Bot started! Beginning observation phase...', 'trade');
+    
+    startObservationPhase();
 }
 
-function checkLimits() {
-    const winTarget = parseInt(document.getElementById('winTarget').value) || 0;
-    const maxTrades = parseInt(document.getElementById('maxTrades').value) || 0;
+function stopBot() {
+    state.isRunning = false;
+    state.phase = 'stopped';
+    state.pendingTrade = null;
+    state.observedTriple = null;
+    state.cooldownEndTime = null;
     
-    if (winTarget > 0 && state.wins >= winTarget) {
-        stopBot();
-        log(`🎯 Win target ${winTarget} reached!`, 'win');
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('phaseTimer').style.display = 'none';
+    
+    updatePhaseBanner();
+    log('⏹ Bot stopped', 'info');
+}
+
+// ============================================================
+// UI UPDATES
+// ============================================================
+function updatePhaseBanner() {
+    const banner = document.getElementById('phaseBanner');
+    const icon = document.getElementById('phaseIcon');
+    const title = document.getElementById('phaseTitle');
+    const sub = document.getElementById('phaseSub');
+    const timer = document.getElementById('phaseTimer');
+    
+    banner.className = 'phase-banner ' + state.phase;
+    
+    switch (state.phase) {
+        case 'stopped':
+            icon.textContent = '⏹';
+            title.textContent = 'BOT STOPPED';
+            sub.textContent = 'Start to begin cycling';
+            timer.style.display = 'none';
+            break;
+        case 'observe':
+            icon.textContent = '👁️';
+            title.textContent = 'PHASE 1: OBSERVING';
+            sub.textContent = state.observedTriple 
+                ? `Watching D${state.observedTriple.digit} triple...`
+                : 'Waiting to observe a quad (loss scenario)';
+            timer.style.display = 'none';
+            break;
+        case 'trade':
+            const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 3;
+            icon.textContent = '🎯';
+            title.textContent = 'PHASE 2: TRADING';
+            sub.textContent = `Trade ${state.cycleTradeCount}/${tradesPerCycle} | Cycle #${state.totalCycles}`;
+            timer.style.display = 'none';
+            break;
+        case 'cooldown':
+            icon.textContent = '❄️';
+            title.textContent = 'PHASE 3: COOLDOWN';
+            sub.textContent = 'Waiting before next cycle...';
+            timer.style.display = 'block';
+            break;
     }
-    if (maxTrades > 0 && state.totalTrades >= maxTrades) {
-        stopBot();
-        log(`🎯 Max trades ${maxTrades} reached!`, 'info');
-    }
+}
+
+function updateProgress() {
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 3;
+    const pct = (state.cycleTradeCount / tradesPerCycle) * 100;
+    
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressFill').className = 'progress-fill green';
+    document.getElementById('progressText').textContent = `${state.cycleTradeCount}/${tradesPerCycle} trades`;
+    
+    updatePhaseBanner();
 }
 
 function updateStats() {
     document.getElementById('totalTrades').textContent = state.totalTrades;
     document.getElementById('wins').textContent = state.wins;
-    document.getElementById('winRate').textContent = state.totalTrades > 0 ? (state.wins / state.totalTrades * 100).toFixed(1) + '%' : '0%';
+    document.getElementById('winRate').textContent = state.totalTrades > 0 
+        ? (state.wins / state.totalTrades * 100).toFixed(1) + '%' 
+        : '0%';
     document.getElementById('pnl').textContent = '$' + state.pnl.toFixed(2);
-    document.getElementById('pnl').className = 'stat-val ' + (state.pnl >= 0 ? 'green' : 'red');
-    document.getElementById('winStreak').textContent = state.winStreak;
-    document.getElementById('tradeCount').textContent = state.totalTrades;
+    document.getElementById('pnl').className = 'val ' + (state.pnl >= 0 ? 'green' : 'red');
 }
 
 function addTradeEntry(digit, freq, won, profit) {
@@ -664,91 +822,48 @@ function addTradeEntry(digit, freq, won, profit) {
     const entry = document.createElement('div');
     entry.className = `trade-entry ${won ? 'win' : 'loss'}`;
     entry.innerHTML = `
-        <span>D${digit} (${freq.toFixed(1)}%) - ${won ? 'WIN ✅' : 'LOSS ❌'}</span>
+        <span>Cycle #${state.totalCycles} | D${digit} (${freq.toFixed(1)}%) - ${won ? 'WIN ✅' : 'LOSS ❌'}</span>
         <span style="color:${won ? 'var(--green)' : 'var(--red)'}">${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}</span>
     `;
     el.insertBefore(entry, el.firstChild);
     
     state.tradeLog.push({
+        cycle: state.totalCycles,
         time: new Date().toISOString(),
-        digit, freq: freq.toFixed(1),
+        digit, 
+        freq: freq.toFixed(1),
         result: won ? 'WIN' : 'LOSS',
         profit: profit.toFixed(2)
     });
 }
 
-function startBot() {
-    if (!state.connected) return log('Please connect first!', 'alert');
-    
-    const ticksNeeded = parseInt(document.getElementById('ticksToAnalyze').value) || 100;
-    if (state.ticks.length < ticksNeeded) {
-        return log(`Need ${ticksNeeded} ticks (have ${state.ticks.length}). Wait...`, 'alert');
-    }
-    
-    state.isTrading = true;
-    state.totalTrades = 0; state.wins = 0; state.losses = 0;
-    state.pnl = 0; state.winStreak = 0;
-    state.triplesDetected = 0; state.triplesSkipped = 0;
-    state.tradeLog = [];
-    
-    // Reset observation phase
-    state.observationPhase = true;
-    state.observedTriple = null;
-    state.tradesAfterLoss = 0;
-    
-    document.getElementById('tradeLog').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">Phase 1: Observing for loss...</div>';
-    document.getElementById('startBtn').disabled = true;
-    document.getElementById('signalBox').className = 'signal-box waiting';
-    document.getElementById('signalBox').textContent = '👁️ PHASE 1: Waiting to observe a QUAD (loss)';
-    
-    updateStats();
-    updatePhaseDisplay();
-    log('▶️ Bot started! PHASE 1: Observing triples, waiting for a quad...', 'trade');
-}
-
-function updatePhaseDisplay() {
-    const phaseEl = document.getElementById('phaseDisplay');
-    if (phaseEl) {
-        if (state.observationPhase) {
-            phaseEl.innerHTML = `<span style="color:var(--yellow)">👁️ PHASE 1: OBSERVING</span> - Waiting to see a quad (loss)`;
-        } else {
-            phaseEl.innerHTML = `<span style="color:var(--green)">🎯 PHASE 2: TRADING</span> - ${state.tradesAfterLoss}/6 trades completed`;
-        }
-    }
-}
-
-function stopBot() {
-    state.isTrading = false;
-    state.pendingTrade = null;
-    state.observationPhase = true;
-    state.observedTriple = null;
-    document.getElementById('startBtn').disabled = false;
-    document.getElementById('signalBox').className = 'signal-box waiting';
-    document.getElementById('signalBox').textContent = '⏹ BOT STOPPED';
-    document.getElementById('phaseDisplay').innerHTML = '<span style="color:var(--muted)">Bot stopped - Start to begin new session</span>';
-    log('⏹ Bot stopped', 'info');
-}
-
+// ============================================================
+// EXPORT
+// ============================================================
 function exportTrades() {
     if (!state.tradeLog.length) return log('No trades to export', 'alert');
-    const csv = ['time,digit,freq,result,profit', ...state.tradeLog.map(t => `${t.time},${t.digit},${t.freq},${t.result},${t.profit}`)].join('\n');
-    download(csv, `triple_bounce_trades_${Date.now()}.csv`, 'text/csv');
+    const csv = ['cycle,time,digit,freq,result,profit', ...state.tradeLog.map(t => 
+        `${t.cycle},${t.time},${t.digit},${t.freq},${t.result},${t.profit}`
+    )].join('\n');
+    download(csv, `triple_bounce_v4_trades_${Date.now()}.csv`);
     log('📥 Trades exported', 'info');
 }
 
 function exportActivity() {
     if (!state.activityLog.length) return log('No activity to export', 'alert');
     const txt = state.activityLog.map(a => `[${a.time}] ${a.message}`).join('\n');
-    download(txt, `triple_bounce_activity_${Date.now()}.txt`, 'text/plain');
+    download(txt, `triple_bounce_v4_activity_${Date.now()}.txt`);
     log('📥 Activity exported', 'info');
 }
 
-function download(content, filename, type) {
+function download(content, filename) {
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([content], { type }));
+    a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
     a.download = filename;
     a.click();
 }
+
+log('🎯 Triple Bounce v4 ready. Connect to start.', 'info');
 </script>
 </body>
 </html>
