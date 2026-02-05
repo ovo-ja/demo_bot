@@ -150,6 +150,18 @@
             <div class="label">Ticks</div>
             <div class="value" id="tickCount">0</div>
         </div>
+        <div class="status-item">
+            <div class="label">Reconn</div>
+            <div class="value" id="reconnCount" style="color:var(--orange)">0</div>
+        </div>
+        <div class="status-item">
+            <div class="label">Wake Lock</div>
+            <div class="value" id="wakeLockStatus" style="color:var(--muted)">--</div>
+        </div>
+        <div class="status-item">
+            <div class="label">Auto-Save</div>
+            <div class="value" id="autoSaveStatus" style="color:var(--muted)">Off</div>
+        </div>
     </div>
     
     <!-- Cycle Stats -->
@@ -377,6 +389,27 @@ const state = {
     lastDownloadTime: 0,
     userWantsToLeave: false,
     
+    // Connection resilience
+    autoReconnect: true,
+    reconnectAttempts: 0,
+    maxReconnectAttempts: 50,
+    reconnectTimer: null,
+    pingInterval: null,
+    lastMessageTime: 0,
+    staleCheckInterval: null,
+    keepAliveWorker: null,
+    savedToken: null,
+    totalReconnects: 0,
+    
+    // Wake Lock
+    wakeLock: null,
+    wakeLockSupported: 'wakeLock' in navigator,
+    
+    // Auto-save
+    autoSaveInterval: null,
+    lastAutoSave: 0,
+    autoSaveEnabled: true,
+    
     // Logs
     tradeLog: [],
     activityLog: []
@@ -418,6 +451,342 @@ setInterval(() => {
 }, 1000);
 
 // ============================================================
+// WAKE LOCK (prevents screen/tab discard)
+// ============================================================
+async function requestWakeLock() {
+    if (!state.wakeLockSupported) {
+        document.getElementById('wakeLockStatus').textContent = 'N/A';
+        document.getElementById('wakeLockStatus').style.color = 'var(--muted)';
+        log('⚠️ Wake Lock not supported in this browser', 'alert');
+        return;
+    }
+    
+    try {
+        state.wakeLock = await navigator.wakeLock.request('screen');
+        document.getElementById('wakeLockStatus').textContent = '🟢 ON';
+        document.getElementById('wakeLockStatus').style.color = 'var(--green)';
+        log('🔒 Wake Lock acquired — screen/tab will stay active', 'win');
+        
+        state.wakeLock.addEventListener('release', () => {
+            document.getElementById('wakeLockStatus').textContent = '🔴 OFF';
+            document.getElementById('wakeLockStatus').style.color = 'var(--red)';
+            log('🔓 Wake Lock released', 'alert');
+        });
+    } catch(e) {
+        document.getElementById('wakeLockStatus').textContent = '❌ Fail';
+        document.getElementById('wakeLockStatus').style.color = 'var(--red)';
+        log(`⚠️ Wake Lock failed: ${e.message}`, 'alert');
+    }
+}
+
+async function reacquireWakeLock() {
+    if (state.wakeLockSupported && state.connected && (!state.wakeLock || state.wakeLock.released)) {
+        await requestWakeLock();
+    }
+}
+
+// ============================================================
+// AUTO-SAVE (IndexedDB - survives tab crash/discard)
+// ============================================================
+const DB_NAME = 'TripleBounceV4';
+const DB_STORE = 'sessions';
+const DB_VERSION = 1;
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(DB_STORE)) {
+                db.createObjectStore(DB_STORE, { keyPath: 'id' });
+            }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function autoSave() {
+    if (!state.autoSaveEnabled) return;
+    if (state.allSessionTicks.length === 0 && state.tradeLog.length === 0) return;
+    
+    try {
+        const db = await openDB();
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        const store = tx.objectStore(DB_STORE);
+        
+        const snapshot = {
+            id: 'current_session',
+            savedAt: new Date().toISOString(),
+            savedAtMs: Date.now(),
+            sessionStartTime: state.sessionStartTime,
+            symbol: document.getElementById('symbol').value,
+            
+            // Tick data (full archive)
+            allSessionTicks: state.allSessionTicks,
+            recentDigits: state.recentDigits,
+            frequencies: state.frequencies,
+            
+            // Triple events
+            tripleEvents: state.tripleEvents,
+            digitTripleCounts: state.digitTripleCounts,
+            digitQuadCounts: state.digitQuadCounts,
+            lastTripleTickIndex: state.lastTripleTickIndex,
+            lastQuadTickIndex: state.lastQuadTickIndex,
+            
+            // Trade data
+            tradeLog: state.tradeLog,
+            
+            // Stats
+            totalCycles: state.totalCycles,
+            totalTrades: state.totalTrades,
+            wins: state.wins,
+            losses: state.losses,
+            pnl: state.pnl,
+            winStreak: state.winStreak,
+            tradesSinceLoss: state.tradesSinceLoss,
+            lastTradeResult: state.lastTradeResult,
+            totalReconnects: state.totalReconnects,
+            
+            // Activity log (last 300 entries to keep size reasonable)
+            activityLog: state.activityLog.slice(-300),
+            
+            // Settings for context
+            settings: {
+                tradesPerCycle: document.getElementById('tradesPerCycle').value,
+                cooldownMins: document.getElementById('cooldownMins').value,
+                stake: document.getElementById('stake').value,
+                maxFreq: document.getElementById('maxFreq').value,
+                resetOnLoss: document.getElementById('resetOnLoss').checked,
+                stopOnLoss: document.getElementById('stopOnLoss').checked
+            }
+        };
+        
+        store.put(snapshot);
+        
+        await new Promise((resolve, reject) => {
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+        });
+        
+        state.lastAutoSave = Date.now();
+        const size = (JSON.stringify(snapshot).length / 1024).toFixed(0);
+        document.getElementById('autoSaveStatus').textContent = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        document.getElementById('autoSaveStatus').style.color = 'var(--green)';
+        log(`💾 Auto-saved (${size}KB, ${state.allSessionTicks.length} ticks, ${state.tripleEvents.length} triples)`, 'info');
+        
+        db.close();
+    } catch(e) {
+        log(`⚠️ Auto-save failed: ${e.message}`, 'alert');
+        document.getElementById('autoSaveStatus').textContent = '❌ Fail';
+        document.getElementById('autoSaveStatus').style.color = 'var(--red)';
+    }
+}
+
+function startAutoSave() {
+    if (state.autoSaveInterval) clearInterval(state.autoSaveInterval);
+    // Save every 5 minutes
+    state.autoSaveInterval = setInterval(() => autoSave(), 5 * 60 * 1000);
+    state.autoSaveEnabled = true;
+    document.getElementById('autoSaveStatus').textContent = 'Active';
+    document.getElementById('autoSaveStatus').style.color = 'var(--cyan)';
+}
+
+async function checkForRecovery() {
+    try {
+        const db = await openDB();
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const store = tx.objectStore(DB_STORE);
+        const req = store.get('current_session');
+        
+        req.onsuccess = () => {
+            const snapshot = req.result;
+            db.close();
+            
+            if (!snapshot) return;
+            
+            // Only offer recovery if data is less than 24 hours old
+            const age = Date.now() - snapshot.savedAtMs;
+            if (age > 24 * 60 * 60 * 1000) {
+                clearSavedSession();
+                return;
+            }
+            
+            const ageMins = Math.floor(age / 60000);
+            const ageStr = ageMins < 60 
+                ? `${ageMins}m ago` 
+                : `${Math.floor(ageMins/60)}h ${ageMins%60}m ago`;
+            
+            showRecoveryPrompt(snapshot, ageStr);
+        };
+        
+        req.onerror = () => db.close();
+    } catch(e) {
+        // IndexedDB not available, no recovery
+    }
+}
+
+function showRecoveryPrompt(snapshot, ageStr) {
+    const overlay = document.getElementById('exitOverlay');
+    const modal = overlay.querySelector('.exit-modal');
+    
+    modal.innerHTML = `
+        <h2>💾 Recovered Session Found</h2>
+        <p>Found auto-saved data from <strong>${ageStr}</strong>. Recover or start fresh?</p>
+        <div class="data-summary">
+            <div><span>Saved</span><span class="val">${new Date(snapshot.savedAtMs).toLocaleTimeString()}</span></div>
+            <div><span>Symbol</span><span class="val">${snapshot.symbol || '--'}</span></div>
+            <div><span>Ticks</span><span class="val">${snapshot.allSessionTicks?.length?.toLocaleString() || 0}</span></div>
+            <div><span>Triple Events</span><span class="val">${snapshot.tripleEvents?.length || 0}</span></div>
+            <div><span>Trades</span><span class="val">${snapshot.totalTrades || 0} (${snapshot.wins || 0}W / ${snapshot.losses || 0}L)</span></div>
+            <div><span>P/L</span><span class="val" style="color:${(snapshot.pnl||0) >= 0 ? 'var(--green)' : 'var(--red)'}">$${(snapshot.pnl||0).toFixed(2)}</span></div>
+        </div>
+        <div class="btn-row">
+            <button class="btn-green" onclick="recoverSession()">♻️ Recover Data</button>
+            <button class="btn-purple" onclick="downloadRecoveryAndClear()">📥 Download & Clear</button>
+        </div>
+        <div style="margin-top:10px">
+            <button class="btn-red" onclick="clearAndDismiss()" style="width:100%">🗑 Start Fresh</button>
+        </div>
+    `;
+    
+    // Stash snapshot for the recover/download buttons
+    state._recoverySnapshot = snapshot;
+    overlay.classList.add('show');
+}
+
+function recoverSession() {
+    const snap = state._recoverySnapshot;
+    if (!snap) return;
+    
+    // Restore state
+    state.allSessionTicks = snap.allSessionTicks || [];
+    state.recentDigits = snap.recentDigits || [];
+    state.frequencies = snap.frequencies || Array(10).fill(10);
+    state.tripleEvents = snap.tripleEvents || [];
+    state.digitTripleCounts = snap.digitTripleCounts || Array(10).fill(0);
+    state.digitQuadCounts = snap.digitQuadCounts || Array(10).fill(0);
+    state.lastTripleTickIndex = snap.lastTripleTickIndex || 0;
+    state.lastQuadTickIndex = snap.lastQuadTickIndex || 0;
+    state.tradeLog = snap.tradeLog || [];
+    state.totalCycles = snap.totalCycles || 0;
+    state.totalTrades = snap.totalTrades || 0;
+    state.wins = snap.wins || 0;
+    state.losses = snap.losses || 0;
+    state.pnl = snap.pnl || 0;
+    state.winStreak = snap.winStreak || 0;
+    state.tradesSinceLoss = snap.tradesSinceLoss || 0;
+    state.lastTradeResult = snap.lastTradeResult || null;
+    state.totalReconnects = snap.totalReconnects || 0;
+    state.sessionStartTime = snap.sessionStartTime || Date.now();
+    state.activityLog = snap.activityLog || [];
+    
+    // Fill display buffer from archive
+    state.ticks = state.allSessionTicks.slice(-500).map(t => ({ price: t.price, digit: t.digit, epoch: t.epoch }));
+    
+    // Update UI
+    updateStats();
+    document.getElementById('tickCount').textContent = state.allSessionTicks.length;
+    document.getElementById('cycleNum').textContent = '#' + state.totalCycles;
+    document.getElementById('totalCycles').textContent = state.totalCycles;
+    document.getElementById('reconnCount').textContent = state.totalReconnects;
+    
+    // Restore trade log display
+    if (state.tradeLog.length > 0) {
+        const el = document.getElementById('tradeLog');
+        el.innerHTML = '';
+        state.tradeLog.slice(-30).reverse().forEach(t => {
+            const entry = document.createElement('div');
+            const won = t.result === 'WIN';
+            entry.className = `trade-entry ${won ? 'win' : 'loss'}`;
+            entry.innerHTML = `
+                <span>Cycle #${t.cycle} | D${t.digit} (${t.freq}%) - ${t.result} ${won ? '✅' : '❌'}</span>
+                <span style="color:${won ? 'var(--green)' : 'var(--red)'}">${parseFloat(t.profit) >= 0 ? '+' : ''}$${t.profit}</span>
+            `;
+            el.appendChild(entry);
+        });
+    }
+    
+    // Restore activity log display
+    if (state.activityLog.length > 0) {
+        const el = document.getElementById('activityLog');
+        el.innerHTML = '';
+        state.activityLog.slice(-100).reverse().forEach(a => {
+            el.innerHTML += `<div class="${a.type}">[${a.time}] ${a.message}</div>`;
+        });
+    }
+    
+    // Update digit grid
+    for (let i = 0; i < 10; i++) {
+        document.getElementById(`freq-${i}`).textContent = state.frequencies[i].toFixed(1) + '%';
+    }
+    
+    log(`♻️ Session recovered! ${state.allSessionTicks.length} ticks, ${state.tripleEvents.length} triples, ${state.totalTrades} trades`, 'win');
+    
+    delete state._recoverySnapshot;
+    document.getElementById('exitOverlay').classList.remove('show');
+    resetExitModal();
+}
+
+function downloadRecoveryAndClear() {
+    // Temporarily load recovered data so export functions work
+    const snap = state._recoverySnapshot;
+    state.allSessionTicks = snap.allSessionTicks || [];
+    state.tripleEvents = snap.tripleEvents || [];
+    state.tradeLog = snap.tradeLog || [];
+    state.totalTrades = snap.totalTrades || 0;
+    state.wins = snap.wins || 0;
+    state.losses = snap.losses || 0;
+    state.pnl = snap.pnl || 0;
+    state.totalCycles = snap.totalCycles || 0;
+    state.digitTripleCounts = snap.digitTripleCounts || Array(10).fill(0);
+    state.digitQuadCounts = snap.digitQuadCounts || Array(10).fill(0);
+    state.totalReconnects = snap.totalReconnects || 0;
+    state.sessionStartTime = snap.sessionStartTime || Date.now();
+    state.activityLog = snap.activityLog || [];
+    
+    exportAll();
+    
+    // Reset state
+    clearAndDismiss();
+}
+
+async function clearSavedSession() {
+    try {
+        const db = await openDB();
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).delete('current_session');
+        await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+        db.close();
+    } catch(e) {}
+}
+
+function clearAndDismiss() {
+    clearSavedSession();
+    delete state._recoverySnapshot;
+    document.getElementById('exitOverlay').classList.remove('show');
+    resetExitModal();
+    log('🗑 Starting fresh session', 'info');
+}
+
+function resetExitModal() {
+    // Restore exit modal to its original purpose
+    const modal = document.getElementById('exitOverlay').querySelector('.exit-modal');
+    modal.innerHTML = `
+        <h2>📊 Unsaved Session Data</h2>
+        <p>You have session data that hasn't been downloaded recently. Save before leaving?</p>
+        <div class="data-summary" id="exitDataSummary"></div>
+        <div class="btn-row">
+            <button class="btn-green" onclick="exportAllAndLeave()">💾 Download & Leave</button>
+            <button class="btn-red" onclick="confirmLeave()">🚪 Leave</button>
+        </div>
+        <div style="margin-top:10px">
+            <button class="btn-purple" onclick="cancelLeave()" style="width:100%">← Stay on Page</button>
+        </div>
+    `;
+}
+
+// ============================================================
 // EXIT HANDLER
 // ============================================================
 function hasUnsavedData() {
@@ -429,6 +798,11 @@ function recentlyDownloaded() {
 }
 
 window.addEventListener('beforeunload', function(e) {
+    // Always try to auto-save on exit
+    if (hasUnsavedData()) {
+        autoSave(); // Fire and forget — IndexedDB write is fast
+    }
+    
     if (hasUnsavedData() && !recentlyDownloaded() && !state.userWantsToLeave) {
         e.preventDefault();
         e.returnValue = '';
@@ -483,39 +857,175 @@ function log(msg, type = 'info') {
 }
 
 // ============================================================
-// CONNECTION
+// CONNECTION (with auto-reconnect + Web Worker keep-alive)
 // ============================================================
+
+// --- Web Worker for background-tab-proof pings ---
+// Browsers throttle setInterval in background tabs to ~1/min.
+// Web Workers run on a separate thread and are NOT throttled.
+function createKeepAliveWorker() {
+    if (state.keepAliveWorker) state.keepAliveWorker.terminate();
+    
+    const workerCode = `
+        let interval = null;
+        self.onmessage = function(e) {
+            if (e.data === 'start') {
+                if (interval) clearInterval(interval);
+                interval = setInterval(() => self.postMessage('ping'), 15000);
+            } else if (e.data === 'stop') {
+                if (interval) clearInterval(interval);
+                interval = null;
+            }
+        };
+    `;
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    state.keepAliveWorker = new Worker(URL.createObjectURL(blob));
+    
+    state.keepAliveWorker.onmessage = () => {
+        // Worker fires every 15s regardless of tab visibility
+        if (state.ws?.readyState === WebSocket.OPEN) {
+            state.ws.send(JSON.stringify({ ping: 1 }));
+        }
+    };
+}
+
+// --- Stale connection detection ---
+// If we haven't received ANY message (including pongs) in 45s, connection is dead
+function startStaleCheck() {
+    if (state.staleCheckInterval) clearInterval(state.staleCheckInterval);
+    state.staleCheckInterval = setInterval(() => {
+        if (!state.connected) return;
+        const staleSec = (Date.now() - state.lastMessageTime) / 1000;
+        if (staleSec > 45) {
+            log(`⚠️ Connection stale (${staleSec.toFixed(0)}s no data) — forcing reconnect`, 'alert');
+            state.ws?.close();
+        }
+    }, 10000);
+}
+
+// --- Visibility API: check connection + re-acquire wake lock when tab becomes visible ---
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        // Re-acquire wake lock (it gets released when tab goes background in some browsers)
+        reacquireWakeLock();
+        
+        if (state.savedToken) {
+            const staleSec = (Date.now() - state.lastMessageTime) / 1000;
+            if (staleSec > 30 && state.connected) {
+                log(`👁️ Tab refocused — connection may be stale (${staleSec.toFixed(0)}s), checking...`, 'info');
+                try { state.ws?.send(JSON.stringify({ ping: 1 })); } catch(e) { /* will trigger reconnect */ }
+            } else if (!state.connected && state.autoReconnect) {
+                log('👁️ Tab refocused — reconnecting...', 'info');
+                attemptReconnect();
+            }
+        }
+    }
+});
+
+// --- Auto-reconnect with exponential backoff ---
+function getReconnectDelay() {
+    // 2s, 4s, 8s, 16s, 30s (capped)
+    return Math.min(2000 * Math.pow(2, state.reconnectAttempts), 30000);
+}
+
+function attemptReconnect() {
+    if (state.reconnectTimer) clearTimeout(state.reconnectTimer);
+    if (!state.savedToken || !state.autoReconnect) return;
+    if (state.reconnectAttempts >= state.maxReconnectAttempts) {
+        log(`🛑 Max reconnect attempts (${state.maxReconnectAttempts}) reached. Click Connect to retry.`, 'loss');
+        return;
+    }
+    
+    const delay = getReconnectDelay();
+    state.reconnectAttempts++;
+    log(`🔄 Reconnecting in ${(delay/1000).toFixed(0)}s (attempt ${state.reconnectAttempts}/${state.maxReconnectAttempts})...`, 'alert');
+    document.getElementById('status').textContent = `Reconnecting (${state.reconnectAttempts})...`;
+    
+    state.reconnectTimer = setTimeout(() => {
+        connectWithToken(state.savedToken);
+    }, delay);
+}
+
 function connect() {
     const token = document.getElementById('token').value;
     if (!token) return log('Please enter API token', 'alert');
     
-    if (state.ws && state.ws.readyState === WebSocket.OPEN) state.ws.close();
+    state.savedToken = token;
+    state.reconnectAttempts = 0;
+    state.autoReconnect = true;
+    
+    connectWithToken(token);
+}
+
+function connectWithToken(token) {
+    // Clean up old connection
+    if (state.pingInterval) { clearInterval(state.pingInterval); state.pingInterval = null; }
+    if (state.ws) {
+        state.ws.onclose = null; // prevent triggering reconnect from intentional close
+        if (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING) {
+            state.ws.close();
+        }
+    }
     
     log('Connecting...', 'info');
-    state.ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
+    document.getElementById('status').textContent = 'Connecting...';
+    
+    try {
+        state.ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
+    } catch(e) {
+        log(`❌ WebSocket creation failed: ${e.message}`, 'loss');
+        attemptReconnect();
+        return;
+    }
     
     state.ws.onopen = () => {
         state.ws.send(JSON.stringify({ authorize: token }));
-        setInterval(() => {
+        
+        // Start Web Worker keep-alive (background-tab proof)
+        createKeepAliveWorker();
+        state.keepAliveWorker.postMessage('start');
+        
+        // Also keep a regular ping as backup (works when tab is focused)
+        if (state.pingInterval) clearInterval(state.pingInterval);
+        state.pingInterval = setInterval(() => {
             if (state.ws?.readyState === WebSocket.OPEN) {
                 state.ws.send(JSON.stringify({ ping: 1 }));
             }
-        }, 25000);
+        }, 20000);
+        
+        // Start stale connection monitoring
+        state.lastMessageTime = Date.now();
+        startStaleCheck();
     };
     
     state.ws.onmessage = (e) => {
+        state.lastMessageTime = Date.now();
+        
         const data = JSON.parse(e.data);
         if (data.ping || data.pong) return;
         
         if (data.authorize) {
             state.connected = true;
-            state.sessionStartTime = Date.now();
+            state.reconnectAttempts = 0; // Reset on successful auth
+            if (!state.sessionStartTime) state.sessionStartTime = Date.now();
+            
             document.getElementById('dot').classList.add('on');
-            document.getElementById('status').textContent = 'Connected';
+            
+            if (state.totalReconnects > 0) {
+                document.getElementById('status').textContent = `Connected (R:${state.totalReconnects})`;
+                log(`✅ Reconnected! (${state.totalReconnects} total reconnects)`, 'win');
+            } else {
+                document.getElementById('status').textContent = 'Connected';
+                log('✅ Connected!', 'win');
+            }
+            
             document.getElementById('balance').textContent = '$' + parseFloat(data.authorize.balance).toFixed(2);
             document.getElementById('displayBalance').textContent = '$' + parseFloat(data.authorize.balance).toFixed(2);
-            log('✅ Connected!', 'win');
             subscribeTicks();
+            
+            // Activate wake lock + auto-save on connection
+            requestWakeLock();
+            startAutoSave();
         }
         
         if (data.tick) processTick(data.tick);
@@ -527,11 +1037,28 @@ function connect() {
         }
     };
     
-    state.ws.onclose = () => {
+    state.ws.onclose = (e) => {
         state.connected = false;
         document.getElementById('dot').classList.remove('on');
-        document.getElementById('status').textContent = 'Disconnected';
-        log('🔴 Disconnected', 'loss');
+        
+        // Stop worker pings
+        if (state.keepAliveWorker) state.keepAliveWorker.postMessage('stop');
+        if (state.pingInterval) { clearInterval(state.pingInterval); state.pingInterval = null; }
+        
+        if (state.autoReconnect && state.savedToken) {
+            state.totalReconnects++;
+            document.getElementById('reconnCount').textContent = state.totalReconnects;
+            log(`🔴 Disconnected (code: ${e.code}) — auto-reconnecting...`, 'loss');
+            document.getElementById('status').textContent = 'Reconnecting...';
+            attemptReconnect();
+        } else {
+            document.getElementById('status').textContent = 'Disconnected';
+            log('🔴 Disconnected', 'loss');
+        }
+    };
+    
+    state.ws.onerror = (e) => {
+        log('⚠️ WebSocket error', 'alert');
     };
 }
 
@@ -1214,6 +1741,7 @@ function exportAll() {
         winRate: state.totalTrades > 0 ? (state.wins / state.totalTrades * 100).toFixed(1) + '%' : 'N/A',
         pnl: state.pnl.toFixed(2),
         totalCycles: state.totalCycles,
+        totalReconnects: state.totalReconnects,
         digitTripleCounts: Object.fromEntries(state.digitTripleCounts.map((c,i) => [`d${i}`, c])),
         digitQuadCounts: Object.fromEntries(state.digitQuadCounts.map((c,i) => [`d${i}`, c])),
         digitBounceRates: Object.fromEntries(state.digitTripleCounts.map((tc, i) => {
@@ -1238,6 +1766,7 @@ function exportAll() {
     if (state.activityLog.length > 0) { exportActivity(); count++; }
     
     markDownloadTime();
+    clearSavedSession();
     log(`📦 All session data exported (${count} files)`, 'win');
 }
 
@@ -1249,6 +1778,9 @@ function download(content, filename) {
 }
 
 log('🎯 Triple Bounce v4 ready. Connect to start.', 'info');
+
+// Check for recoverable session on load
+checkForRecovery();
 </script>
 </body>
 </html>
