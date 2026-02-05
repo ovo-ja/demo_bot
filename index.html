@@ -192,11 +192,11 @@
         <div class="row3">
             <div>
                 <label>Trades Per Cycle</label>
-                <input type="number" id="tradesPerCycle" value="3" min="1" max="20">
+                <input type="number" id="tradesPerCycle" value="6" min="1" max="20">
             </div>
             <div>
                 <label>Cooldown (minutes)</label>
-                <input type="number" id="cooldownMins" value="10" min="1" max="60">
+                <input type="number" id="cooldownMins" value="1" min="1" max="60">
             </div>
             <div>
                 <label>Max Cycles (0=∞)</label>
@@ -206,7 +206,7 @@
         <div class="row" style="margin-top:10px">
             <div>
                 <label>Stake ($)</label>
-                <input type="number" id="stake" value="1" min="0.35" step="0.01">
+                <input type="number" id="stake" value="10" min="0.35" step="0.01">
             </div>
             <div>
                 <label>Max Freq % (skip hot)</label>
@@ -233,6 +233,10 @@
     <!-- Live Display -->
     <div class="card highlight">
         <div class="digit-display">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px">
+                <span>💰 <span id="displayBalance" style="color:var(--green);font-weight:700">$0.00</span></span>
+                <span>📊 <span id="displayPair" style="color:var(--cyan);font-weight:700">--</span></span>
+            </div>
             <div id="priceDisplay" style="font-size:12px;color:var(--muted);margin-bottom:5px">Price: -.-----</div>
             <div class="current-digit" id="currentDigit" style="color:var(--yellow)">-</div>
             <div class="streak-indicator" id="streakIndicator">Waiting for data...</div>
@@ -404,6 +408,7 @@ function connect() {
             document.getElementById('dot').classList.add('on');
             document.getElementById('status').textContent = 'Connected';
             document.getElementById('balance').textContent = '$' + parseFloat(data.authorize.balance).toFixed(2);
+            document.getElementById('displayBalance').textContent = '$' + parseFloat(data.authorize.balance).toFixed(2);
             log('✅ Connected!', 'win');
             subscribeTicks();
         }
@@ -411,7 +416,10 @@ function connect() {
         if (data.tick) processTick(data.tick);
         if (data.buy) handleBuyResponse(data);
         if (data.proposal_open_contract) handleContractUpdate(data.proposal_open_contract);
-        if (data.balance) document.getElementById('balance').textContent = '$' + parseFloat(data.balance.balance).toFixed(2);
+        if (data.balance) {
+            document.getElementById('balance').textContent = '$' + parseFloat(data.balance.balance).toFixed(2);
+            document.getElementById('displayBalance').textContent = '$' + parseFloat(data.balance.balance).toFixed(2);
+        }
     };
     
     state.ws.onclose = () => {
@@ -428,6 +436,7 @@ function subscribeTicks() {
     state.ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
     state.ws.send(JSON.stringify({ proposal_open_contract: 1, subscribe: 1 }));
     document.getElementById('marketDisplay').textContent = symbol;
+    document.getElementById('displayPair').textContent = symbol;
     log(`📡 Subscribed to ${symbol}`, 'info');
 }
 
@@ -582,7 +591,7 @@ function startTradingPhase() {
 }
 
 function placeTrade(digit, freq) {
-    const stake = parseFloat(document.getElementById('stake').value) || 10;
+    const stake = parseFloat(document.getElementById('stake').value) || 1;
     state.pendingTrade = { digit, freq, stake, time: new Date().toISOString() };
     
     state.ws.send(JSON.stringify({
@@ -648,7 +657,7 @@ function handleContractUpdate(contract) {
     updateStats();
     
     // Check if cycle complete
-    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 6;
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 3;
     if (state.cycleTradeCount >= tradesPerCycle) {
         log(`🏁 Cycle #${state.totalCycles} complete: ${state.cycleTradeCount} trades`, 'info');
         
@@ -669,7 +678,7 @@ function handleContractUpdate(contract) {
 // ============================================================
 function startCooldown() {
     state.phase = 'cooldown';
-    const cooldownMins = parseInt(document.getElementById('cooldownMins').value) || 1;
+    const cooldownMins = parseInt(document.getElementById('cooldownMins').value) || 10;
     state.cooldownEndTime = Date.now() + (cooldownMins * 60 * 1000);
     
     log(`❄️ COOLDOWN: ${cooldownMins} minutes before next cycle`, 'cooldown');
