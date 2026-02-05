@@ -582,7 +582,7 @@ function startTradingPhase() {
 }
 
 function placeTrade(digit, freq) {
-    const stake = parseFloat(document.getElementById('stake').value) || 1;
+    const stake = parseFloat(document.getElementById('stake').value) || 10;
     state.pendingTrade = { digit, freq, stake, time: new Date().toISOString() };
     
     state.ws.send(JSON.stringify({
@@ -648,7 +648,7 @@ function handleContractUpdate(contract) {
     updateStats();
     
     // Check if cycle complete
-    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 3;
+    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 6;
     if (state.cycleTradeCount >= tradesPerCycle) {
         log(`🏁 Cycle #${state.totalCycles} complete: ${state.cycleTradeCount} trades`, 'info');
         
@@ -669,7 +669,7 @@ function handleContractUpdate(contract) {
 // ============================================================
 function startCooldown() {
     state.phase = 'cooldown';
-    const cooldownMins = parseInt(document.getElementById('cooldownMins').value) || 10;
+    const cooldownMins = parseInt(document.getElementById('cooldownMins').value) || 1;
     state.cooldownEndTime = Date.now() + (cooldownMins * 60 * 1000);
     
     log(`❄️ COOLDOWN: ${cooldownMins} minutes before next cycle`, 'cooldown');
