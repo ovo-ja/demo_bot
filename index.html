@@ -979,6 +979,13 @@
                                 </div>
                             </div>
                             
+                            <div class="form-row" style="margin-bottom: 8px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label style="font-size: 0.7rem;">Exit Early at Diff +</label>
+                                    <input type="number" id="snipeExitThreshold" value="5" min="1" max="15" style="padding: 6px 10px;">
+                                </div>
+                            </div>
+                            
                             <div id="snipeModeStatus" style="padding: 10px; border-radius: 6px; text-align: center; font-size: 0.8rem; background: var(--bg-tertiary); color: var(--text-dim);">
                                 Click Start to begin
                             </div>
@@ -1100,7 +1107,8 @@
                 maxTrades: 2,            // Take only 2 trades per snipe
                 tradesTaken: 0,          // Trades taken this snipe session
                 isWaitingForEntry: true, // Waiting for good entry point
-                entryThreshold: -3       // Enter when diff <= -3
+                entryThreshold: -3,      // Enter when diff <= -3
+                exitThreshold: 5         // Exit early if diff >= +5 (after a win)
             },
             
             // Watch only mode (no trading, just shadow tracking)
@@ -1764,6 +1772,28 @@
                 log('info', `🎯 Trade ${state.snipeMode.tradesTaken}/${state.snipeMode.maxTrades} complete`);
                 
                 updateSnipeModeUI();
+                
+                const diff = state.shadow.diff;
+                const exitThreshold = state.snipeMode.exitThreshold;
+                
+                // Check for EARLY EXIT: diff too high (correction likely)
+                if (diff >= exitThreshold && state.snipeMode.tradesTaken < state.snipeMode.maxTrades) {
+                    log('system', `🎯 EARLY EXIT! Diff +${diff} ≥ +${exitThreshold}`);
+                    log('info', `Only completed ${state.snipeMode.tradesTaken}/${state.snipeMode.maxTrades} trades. Correction likely.`);
+                    log('info', `Returning to observation. Waiting for diff -${state.snipeMode.entryThreshold}...`);
+                    
+                    // Reset and go back to watching
+                    state.snipeMode.isWaitingForEntry = true;
+                    state.snipeMode.tradesTaken = 0;
+                    
+                    state.isRunning = false;
+                    state.isWatching = true;
+                    state.phase = 'observation';
+                    setPhase('observation');
+                    
+                    updateSnipeModeUI();
+                    return true;
+                }
                 
                 // Check if we've hit max trades
                 if (state.snipeMode.tradesTaken >= state.snipeMode.maxTrades) {
@@ -2435,6 +2465,7 @@
             // Update snipe settings
             state.snipeMode.maxTrades = parseInt(document.getElementById('snipeMaxTrades').value);
             state.snipeMode.entryThreshold = parseInt(document.getElementById('snipeEntryThreshold').value);
+            state.snipeMode.exitThreshold = parseInt(document.getElementById('snipeExitThreshold').value);
             state.snipeMode.tradesTaken = 0;
             state.snipeMode.isWaitingForEntry = true;
             
@@ -2456,8 +2487,8 @@
             elements.btnStop.style.display = 'block';
             
             log('system', '🎯 Bot started - Observing market');
-            log('info', `Waiting for diff to reach -${state.snipeMode.entryThreshold} before trading`);
-            log('info', `Will take ${state.snipeMode.maxTrades} trades per snipe`);
+            log('info', `Entry: diff ≤ -${state.snipeMode.entryThreshold} | Exit: diff ≥ +${state.snipeMode.exitThreshold}`);
+            log('info', `Will take up to ${state.snipeMode.maxTrades} trades per snipe`);
             
             if (!state.connected) {
                 connect();
@@ -2574,6 +2605,12 @@
         document.getElementById('snipeEntryThreshold').addEventListener('change', (e) => {
             state.snipeMode.entryThreshold = parseInt(e.target.value);
             log('info', `Entry threshold updated to -${e.target.value}`);
+            updateSnipeModeUI();
+        });
+        
+        document.getElementById('snipeExitThreshold').addEventListener('change', (e) => {
+            state.snipeMode.exitThreshold = parseInt(e.target.value);
+            log('info', `Exit threshold updated to +${e.target.value}`);
             updateSnipeModeUI();
         });
         
