@@ -1056,7 +1056,9 @@
                     maxTrigger: 10,
                     checkWindow: 50,      // Check over last 50 cycles
                     maxStreakRate: 3,     // Max 3% of cycles can hit 4+ losses
-                    adjustments: 0        // How many times we've adjusted
+                    adjustments: 0,       // How many times we've adjusted
+                    cyclesAtCurrentTrigger: 0,  // Cycles since last trigger change
+                    cooldownCycles: 100   // Cycles before trying to decrease
                 }
             },
             
@@ -1635,11 +1637,17 @@
         function checkAdaptiveTrigger() {
             if (!state.shadow.adaptiveTrigger.enabled) return;
             
+            const adaptive = state.shadow.adaptiveTrigger;
             const history = state.shadow.streakHistory;
-            const window = state.shadow.adaptiveTrigger.checkWindow;
-            const maxRate = state.shadow.adaptiveTrigger.maxStreakRate;
-            const currentTrigger = state.shadow.adaptiveTrigger.currentTrigger;
-            const maxTrigger = state.shadow.adaptiveTrigger.maxTrigger;
+            const window = adaptive.checkWindow;
+            const maxRate = adaptive.maxStreakRate;
+            const currentTrigger = adaptive.currentTrigger;
+            const baseTrigger = adaptive.baseTrigger;
+            const maxTrigger = adaptive.maxTrigger;
+            const cooldown = adaptive.cooldownCycles;
+            
+            // Increment cycles at current trigger
+            adaptive.cyclesAtCurrentTrigger++;
             
             // Need at least 20 cycles to evaluate
             if (history.length < 20) return;
@@ -1649,21 +1657,43 @@
             const fourPlusCount = recentCycles.filter(s => s >= 4).length;
             const streakRate = (fourPlusCount / recentCycles.length) * 100;
             
-            // If rate exceeds threshold, increase trigger
+            // INCREASE: If rate exceeds threshold, increase trigger
             if (streakRate > maxRate && currentTrigger < maxTrigger) {
                 const oldTrigger = currentTrigger;
-                state.shadow.adaptiveTrigger.currentTrigger++;
-                state.shadow.adaptiveTrigger.adjustments++;
+                adaptive.currentTrigger++;
+                adaptive.adjustments++;
+                adaptive.cyclesAtCurrentTrigger = 0;  // Reset counter
                 
                 // Update actual config
-                state.config.consecutiveTrigger = state.shadow.adaptiveTrigger.currentTrigger;
-                document.getElementById('consecutiveTrigger').value = state.shadow.adaptiveTrigger.currentTrigger;
+                state.config.consecutiveTrigger = adaptive.currentTrigger;
+                document.getElementById('consecutiveTrigger').value = adaptive.currentTrigger;
                 
-                log('system', `🔧 ADAPTIVE: Trigger increased ${oldTrigger} → ${state.shadow.adaptiveTrigger.currentTrigger}`);
+                log('system', `🔧 ADAPTIVE: Trigger increased ${oldTrigger} → ${adaptive.currentTrigger}`);
                 log('info', `Reason: 4+ streak rate ${streakRate.toFixed(1)}% > ${maxRate}% threshold`);
-                log('info', `Adjustments made: ${state.shadow.adaptiveTrigger.adjustments}`);
                 
-                // Reset streak history after adjustment to give new trigger a fresh evaluation
+                // Reset streak history after adjustment
+                state.shadow.streakHistory = [];
+                state.shadow.fourPlusStreaks = 0;
+                state.shadow.cyclesCompleted = 0;
+            }
+            // DECREASE: After cooldown period, try lowering trigger if rate is safe
+            else if (currentTrigger > baseTrigger && 
+                     adaptive.cyclesAtCurrentTrigger >= cooldown && 
+                     streakRate <= maxRate) {
+                const oldTrigger = currentTrigger;
+                adaptive.currentTrigger--;
+                adaptive.adjustments++;
+                adaptive.cyclesAtCurrentTrigger = 0;  // Reset counter
+                
+                // Update actual config
+                state.config.consecutiveTrigger = adaptive.currentTrigger;
+                document.getElementById('consecutiveTrigger').value = adaptive.currentTrigger;
+                
+                log('system', `🔧 ADAPTIVE: Trigger decreased ${oldTrigger} → ${adaptive.currentTrigger}`);
+                log('info', `Reason: ${cooldown} cycles passed, rate ${streakRate.toFixed(1)}% is safe`);
+                log('info', `Testing if lower trigger is sustainable...`);
+                
+                // Reset streak history after adjustment
                 state.shadow.streakHistory = [];
                 state.shadow.fourPlusStreaks = 0;
                 state.shadow.cyclesCompleted = 0;
@@ -1720,7 +1750,16 @@
             } else {
                 statusEl.style.background = 'rgba(139, 92, 246, 0.2)';
                 statusEl.style.color = 'var(--accent-purple)';
-                statusEl.innerHTML = `Adaptive: ON | Trigger: <span style="font-weight:700;">${adaptive.currentTrigger}</span> | Adjustments: ${adaptive.adjustments}`;
+                
+                // Show cooldown progress if above base trigger
+                let cooldownInfo = '';
+                if (adaptive.currentTrigger > adaptive.baseTrigger) {
+                    const progress = Math.min(adaptive.cyclesAtCurrentTrigger, adaptive.cooldownCycles);
+                    const pct = ((progress / adaptive.cooldownCycles) * 100).toFixed(0);
+                    cooldownInfo = ` | Cooldown: ${progress}/${adaptive.cooldownCycles} (${pct}%)`;
+                }
+                
+                statusEl.innerHTML = `Adaptive: ON | Trigger: <span style="font-weight:700;">${adaptive.currentTrigger}</span> (base: ${adaptive.baseTrigger})${cooldownInfo}`;
             }
         }
         
@@ -1827,6 +1866,7 @@
             // Reset adaptive trigger to base (but keep enabled state)
             state.shadow.adaptiveTrigger.currentTrigger = state.shadow.adaptiveTrigger.baseTrigger;
             state.shadow.adaptiveTrigger.adjustments = 0;
+            state.shadow.adaptiveTrigger.cyclesAtCurrentTrigger = 0;
             state.config.consecutiveTrigger = state.shadow.adaptiveTrigger.baseTrigger;
             document.getElementById('consecutiveTrigger').value = state.shadow.adaptiveTrigger.baseTrigger;
             
