@@ -891,6 +891,50 @@
                         
                         <button class="btn btn-secondary" id="btnResetShadow" style="margin-bottom: 12px;">Reset Shadow Tracker</button>
                         
+                        <!-- Streak Tracking Section -->
+                        <div style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-bottom: 12px;">
+                            <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 8px;">Loss Streak Monitor</div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px;">
+                                <div style="background: var(--bg-tertiary); padding: 8px; border-radius: 6px; text-align: center;">
+                                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700;" id="currentLossStreak">0</div>
+                                    <div style="font-size: 0.6rem; color: var(--text-secondary);">CURRENT STREAK</div>
+                                </div>
+                                <div style="background: var(--bg-tertiary); padding: 8px; border-radius: 6px; text-align: center;">
+                                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; color: var(--accent-red);" id="maxLossStreak">0</div>
+                                    <div style="font-size: 0.6rem; color: var(--text-secondary);">MAX STREAK</div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
+                                    <span style="color: var(--text-secondary);">Cycles Completed:</span>
+                                    <span style="font-family: 'JetBrains Mono', monospace;" id="cyclesCompleted">0</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
+                                    <span style="color: var(--text-secondary);">4+ Loss Streaks:</span>
+                                    <span style="font-family: 'JetBrains Mono', monospace; color: var(--accent-red);" id="fourPlusStreaks">0</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+                                    <span style="color: var(--text-secondary);">Streak Rate:</span>
+                                    <span style="font-family: 'JetBrains Mono', monospace;" id="streakRate">0%</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Adaptive Trigger -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="font-size: 0.8rem;">Adaptive Trigger</span>
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                    <input type="checkbox" id="adaptiveTriggerEnabled" style="cursor: pointer;">
+                                    <span style="font-size: 0.75rem;">Enable</span>
+                                </label>
+                            </div>
+                            
+                            <div id="adaptiveTriggerStatus" style="padding: 8px; border-radius: 6px; text-align: center; font-size: 0.75rem; background: var(--bg-tertiary); color: var(--text-dim);">
+                                Adaptive: OFF | Trigger: <span id="currentTriggerDisplay">6</span>
+                            </div>
+                        </div>
+                        
                         <!-- Autopilot Section -->
                         <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -995,7 +1039,25 @@
                 inSimRecovery: false,
                 simDirection: null,
                 simLevel: 0,
-                history: []
+                history: [],
+                
+                // Streak tracking
+                currentLossStreak: 0,
+                maxLossStreak: 0,
+                cyclesCompleted: 0,
+                fourPlusStreaks: 0,
+                streakHistory: [],  // Track last 50 cycles
+                
+                // Adaptive trigger
+                adaptiveTrigger: {
+                    enabled: false,
+                    baseTrigger: 6,
+                    currentTrigger: 6,
+                    maxTrigger: 10,
+                    checkWindow: 50,      // Check over last 50 cycles
+                    maxStreakRate: 3,     // Max 3% of cycles can hit 4+ losses
+                    adjustments: 0        // How many times we've adjusted
+                }
             },
             
             // Autopilot
@@ -1438,21 +1500,66 @@
                 if (won) {
                     state.shadow.wins++;
                     state.shadow.lastResult = 'WON ✓';
+                    
+                    // Record streak for this cycle
+                    const streakForCycle = state.shadow.currentLossStreak;
+                    state.shadow.streakHistory.push(streakForCycle);
+                    
+                    // Keep only last 50 cycles
+                    if (state.shadow.streakHistory.length > 50) {
+                        state.shadow.streakHistory.shift();
+                    }
+                    
+                    // Update 4+ streak counter
+                    if (streakForCycle >= 4) {
+                        state.shadow.fourPlusStreaks++;
+                    }
+                    
+                    state.shadow.cyclesCompleted++;
+                    state.shadow.currentLossStreak = 0;
                     state.shadow.inSimRecovery = false;
                     state.shadow.simDirection = null;
                     state.shadow.simLevel = 0;
+                    
+                    // Check adaptive trigger
+                    checkAdaptiveTrigger();
+                    
                 } else {
                     state.shadow.losses++;
                     state.shadow.lastResult = 'LOST ✗';
+                    state.shadow.currentLossStreak++;
+                    
+                    // Update max streak
+                    if (state.shadow.currentLossStreak > state.shadow.maxLossStreak) {
+                        state.shadow.maxLossStreak = state.shadow.currentLossStreak;
+                    }
+                    
                     state.shadow.inSimRecovery = true;
                     state.shadow.simDirection = evalSignal.direction;
                     state.shadow.simLevel++;
                     
                     // Check if bust (max depth)
                     if (state.shadow.simLevel >= state.config.maxDepth) {
+                        // Record streak for this busted cycle
+                        const streakForCycle = state.shadow.currentLossStreak;
+                        state.shadow.streakHistory.push(streakForCycle);
+                        
+                        if (state.shadow.streakHistory.length > 50) {
+                            state.shadow.streakHistory.shift();
+                        }
+                        
+                        if (streakForCycle >= 4) {
+                            state.shadow.fourPlusStreaks++;
+                        }
+                        
+                        state.shadow.cyclesCompleted++;
+                        state.shadow.currentLossStreak = 0;
                         state.shadow.inSimRecovery = false;
                         state.shadow.simDirection = null;
                         state.shadow.simLevel = 0;
+                        
+                        // Check adaptive trigger
+                        checkAdaptiveTrigger();
                     }
                 }
                 
@@ -1525,6 +1632,98 @@
             }
         }
         
+        function checkAdaptiveTrigger() {
+            if (!state.shadow.adaptiveTrigger.enabled) return;
+            
+            const history = state.shadow.streakHistory;
+            const window = state.shadow.adaptiveTrigger.checkWindow;
+            const maxRate = state.shadow.adaptiveTrigger.maxStreakRate;
+            const currentTrigger = state.shadow.adaptiveTrigger.currentTrigger;
+            const maxTrigger = state.shadow.adaptiveTrigger.maxTrigger;
+            
+            // Need at least 20 cycles to evaluate
+            if (history.length < 20) return;
+            
+            // Calculate 4+ streak rate in recent cycles
+            const recentCycles = history.slice(-Math.min(history.length, window));
+            const fourPlusCount = recentCycles.filter(s => s >= 4).length;
+            const streakRate = (fourPlusCount / recentCycles.length) * 100;
+            
+            // If rate exceeds threshold, increase trigger
+            if (streakRate > maxRate && currentTrigger < maxTrigger) {
+                const oldTrigger = currentTrigger;
+                state.shadow.adaptiveTrigger.currentTrigger++;
+                state.shadow.adaptiveTrigger.adjustments++;
+                
+                // Update actual config
+                state.config.consecutiveTrigger = state.shadow.adaptiveTrigger.currentTrigger;
+                document.getElementById('consecutiveTrigger').value = state.shadow.adaptiveTrigger.currentTrigger;
+                
+                log('system', `🔧 ADAPTIVE: Trigger increased ${oldTrigger} → ${state.shadow.adaptiveTrigger.currentTrigger}`);
+                log('info', `Reason: 4+ streak rate ${streakRate.toFixed(1)}% > ${maxRate}% threshold`);
+                log('info', `Adjustments made: ${state.shadow.adaptiveTrigger.adjustments}`);
+                
+                // Reset streak history after adjustment to give new trigger a fresh evaluation
+                state.shadow.streakHistory = [];
+                state.shadow.fourPlusStreaks = 0;
+                state.shadow.cyclesCompleted = 0;
+            }
+            
+            updateAdaptiveTriggerUI();
+        }
+        
+        function updateStreakUI() {
+            document.getElementById('currentLossStreak').textContent = state.shadow.currentLossStreak;
+            document.getElementById('maxLossStreak').textContent = state.shadow.maxLossStreak;
+            document.getElementById('cyclesCompleted').textContent = state.shadow.cyclesCompleted;
+            document.getElementById('fourPlusStreaks').textContent = state.shadow.fourPlusStreaks;
+            
+            // Calculate streak rate
+            const rate = state.shadow.cyclesCompleted > 0 
+                ? ((state.shadow.fourPlusStreaks / state.shadow.cyclesCompleted) * 100).toFixed(1)
+                : '0.0';
+            
+            const rateEl = document.getElementById('streakRate');
+            rateEl.textContent = rate + '%';
+            
+            // Color code the rate
+            if (parseFloat(rate) > 5) {
+                rateEl.style.color = 'var(--accent-red)';
+            } else if (parseFloat(rate) > 3) {
+                rateEl.style.color = 'var(--accent-yellow)';
+            } else {
+                rateEl.style.color = 'var(--accent-green)';
+            }
+            
+            // Color current streak
+            const currentStreakEl = document.getElementById('currentLossStreak');
+            if (state.shadow.currentLossStreak >= 4) {
+                currentStreakEl.style.color = 'var(--accent-red)';
+            } else if (state.shadow.currentLossStreak >= 2) {
+                currentStreakEl.style.color = 'var(--accent-yellow)';
+            } else {
+                currentStreakEl.style.color = 'var(--text-primary)';
+            }
+        }
+        
+        function updateAdaptiveTriggerUI() {
+            const statusEl = document.getElementById('adaptiveTriggerStatus');
+            const triggerDisplay = document.getElementById('currentTriggerDisplay');
+            const adaptive = state.shadow.adaptiveTrigger;
+            
+            triggerDisplay.textContent = adaptive.currentTrigger;
+            
+            if (!adaptive.enabled) {
+                statusEl.style.background = 'var(--bg-tertiary)';
+                statusEl.style.color = 'var(--text-dim)';
+                statusEl.innerHTML = `Adaptive: OFF | Trigger: <span id="currentTriggerDisplay">${state.config.consecutiveTrigger}</span>`;
+            } else {
+                statusEl.style.background = 'rgba(139, 92, 246, 0.2)';
+                statusEl.style.color = 'var(--accent-purple)';
+                statusEl.innerHTML = `Adaptive: ON | Trigger: <span style="font-weight:700;">${adaptive.currentTrigger}</span> | Adjustments: ${adaptive.adjustments}`;
+            }
+        }
+        
         function updateShadowUI() {
             document.getElementById('shadowWins').textContent = state.shadow.wins;
             document.getElementById('shadowLosses').textContent = state.shadow.losses;
@@ -1575,6 +1774,9 @@
                 recText.style.color = 'var(--text-secondary)';
             }
             
+            // Update streak UI
+            updateStreakUI();
+            updateAdaptiveTriggerUI();
             updateAutopilotUI();
         }
         
@@ -1614,6 +1816,19 @@
             state.shadow.history = [];
             state.shadow.pendingSignal = null;
             state.shadow.pendingEval = null;
+            
+            // Reset streak tracking
+            state.shadow.currentLossStreak = 0;
+            state.shadow.maxLossStreak = 0;
+            state.shadow.cyclesCompleted = 0;
+            state.shadow.fourPlusStreaks = 0;
+            state.shadow.streakHistory = [];
+            
+            // Reset adaptive trigger to base (but keep enabled state)
+            state.shadow.adaptiveTrigger.currentTrigger = state.shadow.adaptiveTrigger.baseTrigger;
+            state.shadow.adaptiveTrigger.adjustments = 0;
+            state.config.consecutiveTrigger = state.shadow.adaptiveTrigger.baseTrigger;
+            document.getElementById('consecutiveTrigger').value = state.shadow.adaptiveTrigger.baseTrigger;
             
             // Also reset autopilot pause state
             state.autopilot.isPaused = false;
@@ -2227,6 +2442,20 @@
             document.getElementById(id).addEventListener('change', updateMartingaleTable);
         });
         
+        // Sync consecutive trigger with adaptive trigger
+        document.getElementById('consecutiveTrigger').addEventListener('change', (e) => {
+            const newTrigger = parseInt(e.target.value);
+            state.config.consecutiveTrigger = newTrigger;
+            
+            // Update adaptive trigger base if not enabled
+            if (!state.shadow.adaptiveTrigger.enabled) {
+                state.shadow.adaptiveTrigger.baseTrigger = newTrigger;
+                state.shadow.adaptiveTrigger.currentTrigger = newTrigger;
+            }
+            
+            updateAdaptiveTriggerUI();
+        });
+        
         // Shadow Tracker controls
         document.getElementById('shadowEnabled').addEventListener('change', (e) => {
             state.shadow.enabled = e.target.checked;
@@ -2264,6 +2493,30 @@
             }
             updateShadowUI();
         });
+        
+        // Adaptive Trigger controls
+        document.getElementById('adaptiveTriggerEnabled').addEventListener('change', (e) => {
+            state.shadow.adaptiveTrigger.enabled = e.target.checked;
+            
+            if (e.target.checked) {
+                // Store current trigger as base
+                state.shadow.adaptiveTrigger.baseTrigger = parseInt(document.getElementById('consecutiveTrigger').value);
+                state.shadow.adaptiveTrigger.currentTrigger = state.shadow.adaptiveTrigger.baseTrigger;
+                state.shadow.adaptiveTrigger.adjustments = 0;
+                
+                // Reset streak history to start fresh evaluation
+                state.shadow.streakHistory = [];
+                state.shadow.fourPlusStreaks = 0;
+                state.shadow.cyclesCompleted = 0;
+                
+                log('system', `🔧 ADAPTIVE TRIGGER ENABLED - Base: ${state.shadow.adaptiveTrigger.baseTrigger}, Max: ${state.shadow.adaptiveTrigger.maxTrigger}`);
+                log('info', `Will increase trigger if 4+ loss streak rate exceeds 3%`);
+            } else {
+                log('system', '🔧 ADAPTIVE TRIGGER DISABLED');
+            }
+            
+            updateAdaptiveTriggerUI();
+        });
 
         // ========================================
         // INITIALIZATION
@@ -2278,11 +2531,14 @@
             updateDigitDistribution();
             updateMartingaleTable();
             updateShadowUI();
+            updateStreakUI();
+            updateAdaptiveTriggerUI();
             updateAutopilotUI();
             
             log('system', 'Hybrid Martingale Bot initialized');
             log('info', 'Enter your API token and click Start to begin');
             log('info', '💡 Shadow Tracker will monitor market even when bot is off');
+            log('info', '💡 Enable Adaptive Trigger to auto-adjust based on loss streaks');
         }
         
         init();
