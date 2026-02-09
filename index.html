@@ -1457,6 +1457,13 @@
             updateRecentDigits();
             updateTrendIndicators();
             
+            // Update observation progress when watching or running
+            if (state.isWatching || state.isRunning) {
+                const observationCount = Math.min(state.digits.length, state.config.observationTicks);
+                updateObservationProgress(observationCount);
+                updateSnipeModeUI();
+            }
+            
             // Process trading logic
             if (state.isRunning) {
                 processTrading(digit);
@@ -1482,6 +1489,11 @@
             if (state.digits.length < state.config.observationTicks) {
                 updateShadowUI();
                 return;
+            }
+            
+            // Log once when observation completes
+            if (state.digits.length === state.config.observationTicks && state.isWatching) {
+                log('system', `📊 Observation complete! Now watching for entry signal...`);
             }
             
             const trigger = state.config.consecutiveTrigger;
@@ -1743,6 +1755,11 @@
             if (!state.snipeMode.isWaitingForEntry) return;
             if (!state.isWatching) return;
             
+            // Need enough observation data first
+            if (state.digits.length < state.config.observationTicks) {
+                return;
+            }
+            
             const diff = state.shadow.diff;
             const entryThreshold = -Math.abs(state.snipeMode.entryThreshold);
             
@@ -1823,18 +1840,24 @@
             const snipe = state.snipeMode;
             const diff = state.shadow.diff;
             const entryThreshold = -Math.abs(snipe.entryThreshold);
+            const observationCount = Math.min(state.digits.length, state.config.observationTicks);
+            const observationComplete = observationCount >= state.config.observationTicks;
             
             if (!state.isWatching && !state.isRunning) {
                 // Bot not started
                 statusEl.style.background = 'var(--bg-tertiary)';
                 statusEl.style.color = 'var(--text-dim)';
                 statusEl.textContent = 'Click Start to begin';
+            } else if (state.isWatching && !observationComplete) {
+                // Still collecting observation data
+                statusEl.style.background = 'rgba(59, 130, 246, 0.2)';
+                statusEl.style.color = 'var(--accent-blue)';
+                statusEl.innerHTML = `📊 Collecting data: <strong>${observationCount}/${state.config.observationTicks}</strong> ticks`;
             } else if (state.isWatching && snipe.isWaitingForEntry) {
                 // Watching, waiting for entry
-                const distance = diff - entryThreshold;
                 statusEl.style.background = 'rgba(245, 158, 11, 0.2)';
                 statusEl.style.color = 'var(--accent-yellow)';
-                statusEl.innerHTML = `⏳ Observing... Diff: <strong>${diff >= 0 ? '+' : ''}${diff}</strong> | Need: <strong>${entryThreshold}</strong>`;
+                statusEl.innerHTML = `⏳ Waiting... Diff: <strong>${diff >= 0 ? '+' : ''}${diff}</strong> | Need: <strong>${entryThreshold}</strong>`;
             } else if (state.isRunning) {
                 // Actively trading
                 statusEl.style.background = 'rgba(16, 185, 129, 0.2)';
@@ -2474,6 +2497,9 @@
             state.isWatching = true;  // But watching/observing
             state.phase = 'observation';
             state.martingaleLevel = 0;
+            state.digits = [];  // Clear digits for fresh observation
+            state.consecutiveLow = 0;
+            state.consecutiveHigh = 0;
             
             // Reset shadow tracker for fresh session
             resetShadow();
@@ -2482,11 +2508,13 @@
             updateMartingaleTable();
             updateMartingaleHighlight();
             updateSnipeModeUI();
+            updateObservationProgress(0);  // Initialize to 0
             
             elements.btnStart.style.display = 'none';
             elements.btnStop.style.display = 'block';
             
             log('system', '🎯 Bot started - Observing market');
+            log('info', `Collecting ${state.config.observationTicks} ticks first...`);
             log('info', `Entry: diff ≤ -${state.snipeMode.entryThreshold} | Exit: diff ≥ +${state.snipeMode.exitThreshold}`);
             log('info', `Will take up to ${state.snipeMode.maxTrades} trades per snipe`);
             
