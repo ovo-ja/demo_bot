@@ -708,6 +708,15 @@
                     </div>
                     
                     <div class="form-group">
+                        <label>Recovery Mode</label>
+                        <div class="strategy-toggle">
+                            <button class="strategy-btn active" data-mode="flat" id="btnFlat">Flat Bet</button>
+                            <button class="strategy-btn" data-mode="martingale" id="btnMartingale">Martingale</button>
+                        </div>
+                        <small style="color: var(--text-dim); font-size: 0.7rem;">Flat = same stake always | Martingale = double on loss</small>
+                    </div>
+                    
+                    <div class="form-group">
                         <label>Consecutive Trigger</label>
                         <input type="number" id="consecutiveTrigger" value="6" min="2" max="10">
                         <small style="color: var(--text-dim); font-size: 0.75rem;">Consecutive digits before signal</small>
@@ -960,6 +969,32 @@
                                 Autopilot Disabled
                             </div>
                         </div>
+                        
+                        <!-- Snipe Mode Section -->
+                        <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="font-weight: 600; font-size: 0.9rem;">🎯 Snipe Mode</span>
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                    <input type="checkbox" id="snipeModeEnabled" style="cursor: pointer;">
+                                    <span style="font-size: 0.8rem;">Enable</span>
+                                </label>
+                            </div>
+                            
+                            <div class="form-row" style="margin-bottom: 8px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label style="font-size: 0.7rem;">Trades per Snipe</label>
+                                    <input type="number" id="snipeMaxTrades" value="2" min="1" max="10" style="padding: 6px 10px;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label style="font-size: 0.7rem;">Enter at Diff -</label>
+                                    <input type="number" id="snipeEntryThreshold" value="3" min="0" max="10" style="padding: 6px 10px;">
+                                </div>
+                            </div>
+                            
+                            <div id="snipeModeStatus" style="padding: 10px; border-radius: 6px; text-align: center; font-size: 0.8rem; background: var(--bg-tertiary); color: var(--text-dim);">
+                                Snipe Mode Disabled
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -1071,6 +1106,15 @@
                 pauseReason: ''
             },
             
+            // Snipe Mode
+            snipeMode: {
+                enabled: false,
+                maxTrades: 2,        // Take only 2 trades per snipe
+                tradesTaken: 0,      // Trades taken this snipe session
+                isWaitingForEntry: true,  // Waiting for good entry point
+                entryThreshold: -3   // Enter when diff <= -3
+            },
+            
             // Watch only mode (no trading, just shadow tracking)
             isWatching: false,
             
@@ -1102,7 +1146,8 @@
                 strategy: 'trend',
                 consecutiveTrigger: 6,
                 stopLoss: 0,
-                takeProfit: 0
+                takeProfit: 0,
+                martingaleEnabled: false  // Martingale on/off
             },
             
             // Contract tracking
@@ -1702,6 +1747,121 @@
             updateAdaptiveTriggerUI();
         }
         
+        function checkSnipeEntry() {
+            if (!state.snipeMode.enabled) return;
+            if (!state.snipeMode.isWaitingForEntry) return;
+            
+            const diff = state.shadow.diff;
+            const entryThreshold = -Math.abs(state.snipeMode.entryThreshold);
+            
+            // Check if conditions are good to enter
+            if (diff <= entryThreshold) {
+                // Good entry point - start sniping!
+                state.snipeMode.isWaitingForEntry = false;
+                state.snipeMode.tradesTaken = 0;
+                
+                log('system', `🎯 SNIPE: Entry signal! Diff ${diff} ≤ ${entryThreshold}`);
+                log('info', `Taking ${state.snipeMode.maxTrades} trades then stopping...`);
+                
+                // Start the bot
+                startBotForSnipe();
+            }
+            
+            updateSnipeModeUI();
+        }
+        
+        function startBotForSnipe() {
+            // Read config
+            state.config.apiToken = document.getElementById('apiToken').value;
+            state.config.market = document.getElementById('market').value;
+            state.config.baseStake = parseFloat(document.getElementById('baseStake').value);
+            state.config.payout = parseFloat(document.getElementById('payout').value);
+            state.config.maxDepth = parseInt(document.getElementById('maxDepth').value);
+            state.config.observationTicks = parseInt(document.getElementById('observationTicks').value);
+            state.config.consecutiveTrigger = parseInt(document.getElementById('consecutiveTrigger').value);
+            
+            state.isRunning = true;
+            state.phase = 'analyzing';  // Skip observation since we've been watching
+            state.martingaleLevel = 0;
+            state.isWatching = false;
+            
+            setPhase('analyzing');
+            updateMartingaleTable();
+            updateMartingaleHighlight();
+            
+            elements.btnStart.style.display = 'none';
+            elements.btnStop.style.display = 'block';
+            document.getElementById('btnWatch').style.display = 'none';
+            document.getElementById('btnStopWatch').style.display = 'none';
+            
+            log('system', '🎯 Snipe trading started');
+            
+            // Request wake lock
+            requestWakeLock();
+        }
+        
+        function onSnipeTradeComplete() {
+            if (!state.snipeMode.enabled) return false;
+            
+            // Only count completed cycles (wins at Level 0 or busts)
+            if (state.martingaleLevel === 0) {
+                state.snipeMode.tradesTaken++;
+                log('info', `🎯 Snipe trade ${state.snipeMode.tradesTaken}/${state.snipeMode.maxTrades} complete`);
+                
+                updateSnipeModeUI();
+                
+                // Check if we've hit max trades
+                if (state.snipeMode.tradesTaken >= state.snipeMode.maxTrades) {
+                    log('system', `🎯 SNIPE: Max trades reached (${state.snipeMode.maxTrades}). Stopping.`);
+                    log('info', 'Returning to watch mode. Waiting for next entry...');
+                    
+                    // Reset snipe state
+                    state.snipeMode.isWaitingForEntry = true;
+                    state.snipeMode.tradesTaken = 0;
+                    
+                    // Stop bot and go to watch mode
+                    stopBot();
+                    
+                    // Continue watching
+                    state.isWatching = true;
+                    document.getElementById('btnWatch').style.display = 'none';
+                    document.getElementById('btnStopWatch').style.display = 'block';
+                    document.getElementById('btnStart').style.display = 'none';
+                    
+                    updateSnipeModeUI();
+                    return true;  // Signal that snipe stopped the bot
+                }
+            }
+            
+            return false;  // Continue trading
+        }
+        
+        function updateSnipeModeUI() {
+            const statusEl = document.getElementById('snipeModeStatus');
+            const snipe = state.snipeMode;
+            const diff = state.shadow.diff;
+            const entryThreshold = -Math.abs(snipe.entryThreshold);
+            
+            if (!snipe.enabled) {
+                statusEl.style.background = 'var(--bg-tertiary)';
+                statusEl.style.color = 'var(--text-dim)';
+                statusEl.textContent = 'Snipe Mode Disabled';
+            } else if (snipe.isWaitingForEntry) {
+                const distance = diff - entryThreshold;
+                statusEl.style.background = 'rgba(245, 158, 11, 0.2)';
+                statusEl.style.color = 'var(--accent-yellow)';
+                statusEl.innerHTML = `⏳ Waiting... Diff: ${diff} | Need: ${entryThreshold} | Distance: ${distance}`;
+            } else if (state.isRunning) {
+                statusEl.style.background = 'rgba(16, 185, 129, 0.2)';
+                statusEl.style.color = 'var(--accent-green)';
+                statusEl.innerHTML = `🎯 Sniping: ${snipe.tradesTaken}/${snipe.maxTrades} trades`;
+            } else {
+                statusEl.style.background = 'rgba(59, 130, 246, 0.2)';
+                statusEl.style.color = 'var(--accent-blue)';
+                statusEl.textContent = 'Snipe Ready - Start Watch Mode';
+            }
+        }
+        
         function updateStreakUI() {
             document.getElementById('currentLossStreak').textContent = state.shadow.currentLossStreak;
             document.getElementById('maxLossStreak').textContent = state.shadow.maxLossStreak;
@@ -1817,6 +1977,12 @@
             updateStreakUI();
             updateAdaptiveTriggerUI();
             updateAutopilotUI();
+            updateSnipeModeUI();
+            
+            // Check snipe mode entry
+            if (state.snipeMode.enabled && state.snipeMode.isWaitingForEntry && !state.isRunning) {
+                checkSnipeEntry();
+            }
         }
         
         function updateAutopilotUI() {
@@ -1997,6 +2163,11 @@
         }
         
         function calculateStake() {
+            // If martingale disabled, always use base stake
+            if (!state.config.martingaleEnabled) {
+                return state.config.baseStake;
+            }
+            
             const multiplier = 100 / state.config.payout; // ~1.053 for 95% payout
             const adjustedMultiplier = multiplier + 0.05; // Add buffer for profit
             return parseFloat((state.config.baseStake * Math.pow(adjustedMultiplier * 2, state.martingaleLevel)).toFixed(2));
@@ -2051,29 +2222,45 @@
                 state.phase = 'analyzing';
                 setPhase('analyzing');
                 updateMartingaleHighlight();
+                
+                // Check snipe mode - if max trades hit, this will stop the bot
+                if (onSnipeTradeComplete()) {
+                    return;  // Bot was stopped by snipe mode
+                }
             } else {
                 state.losses++;
                 log('loss', `LOSS! Loss: $${profit.toFixed(2)} | Total: $${state.profitLoss.toFixed(2)}`);
                 
+                // Check if martingale is disabled (flat betting)
+                if (!state.config.martingaleEnabled) {
+                    log('info', 'Flat bet mode - waiting for new signal');
+                    state.martingaleLevel = 0;
+                    state.phase = 'analyzing';
+                    setPhase('analyzing');
+                    
+                    // Check snipe mode - count as completed cycle
+                    if (onSnipeTradeComplete()) {
+                        return;  // Bot was stopped by snipe mode
+                    }
+                }
                 // Check if max depth reached
-                if (state.martingaleLevel >= state.config.maxDepth - 1) {
+                else if (state.martingaleLevel >= state.config.maxDepth - 1) {
                     log('system', 'Max martingale depth reached! Resetting...');
                     state.martingaleLevel = 0;
                     state.phase = 'analyzing';
                     setPhase('analyzing');
+                    
+                    // Check snipe mode - count bust as a completed cycle
+                    if (onSnipeTradeComplete()) {
+                        return;  // Bot was stopped by snipe mode
+                    }
                 } else {
-                    // Continue martingale recovery
+                    // Enter recovery mode - wait for next signal
                     state.martingaleLevel++;
                     state.phase = 'recovery';
                     setPhase('recovery');
                     updateMartingaleHighlight();
-                    
-                    // Place recovery trade immediately
-                    setTimeout(() => {
-                        if (state.isRunning && state.phase === 'recovery') {
-                            placeTrade();
-                        }
-                    }, 500);
+                    log('info', `Waiting for recovery signal... (Level ${state.martingaleLevel})`);
                 }
             }
             
@@ -2202,6 +2389,22 @@
             
             let html = '';
             let totalRisk = 0;
+            
+            // If martingale is disabled, show flat betting info
+            if (!state.config.martingaleEnabled) {
+                html = `
+                    <tr data-level="0" class="active">
+                        <td>ALL</td>
+                        <td>$${baseStake.toFixed(2)}</td>
+                        <td>$${baseStake.toFixed(2)}</td>
+                        <td>$${(baseStake * payout).toFixed(2)}</td>
+                    </tr>
+                `;
+                elements.martingaleBody.innerHTML = html;
+                elements.maxRisk.textContent = `$${baseStake.toFixed(2)} (Flat)`;
+                elements.currentStake.textContent = `$${baseStake.toFixed(2)}`;
+                return;
+            }
             
             for (let i = 0; i < maxDepth; i++) {
                 const stake = parseFloat((baseStake * Math.pow(multiplier * 2, i)).toFixed(2));
@@ -2467,13 +2670,30 @@
             log('system', 'Log cleared');
         });
         
-        // Strategy toggle
-        document.querySelectorAll('.strategy-btn').forEach(btn => {
+        // Strategy toggle (trend/reversal)
+        document.querySelectorAll('.strategy-btn[data-strategy]').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.strategy-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.strategy-btn[data-strategy]').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 state.config.strategy = btn.dataset.strategy;
                 log('info', `Strategy changed to: ${state.config.strategy}`);
+            });
+        });
+        
+        // Recovery mode toggle (flat/martingale)
+        document.querySelectorAll('.strategy-btn[data-mode]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.strategy-btn[data-mode]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.config.martingaleEnabled = (btn.dataset.mode === 'martingale');
+                
+                if (state.config.martingaleEnabled) {
+                    log('info', '🔄 Martingale ENABLED - Will double stake on losses');
+                } else {
+                    log('info', '➡️ Flat Bet ENABLED - Same stake every trade');
+                }
+                
+                updateMartingaleTable();
             });
         });
         
@@ -2557,6 +2777,47 @@
             
             updateAdaptiveTriggerUI();
         });
+        
+        // Snipe Mode controls
+        document.getElementById('snipeModeEnabled').addEventListener('change', (e) => {
+            state.snipeMode.enabled = e.target.checked;
+            
+            if (e.target.checked) {
+                // Disable autopilot if snipe mode is on (they conflict)
+                state.autopilot.enabled = false;
+                document.getElementById('autopilotEnabled').checked = false;
+                
+                state.snipeMode.maxTrades = parseInt(document.getElementById('snipeMaxTrades').value);
+                state.snipeMode.entryThreshold = parseInt(document.getElementById('snipeEntryThreshold').value);
+                state.snipeMode.tradesTaken = 0;
+                state.snipeMode.isWaitingForEntry = true;
+                
+                log('system', `🎯 SNIPE MODE ENABLED - ${state.snipeMode.maxTrades} trades per snipe, enter at diff -${state.snipeMode.entryThreshold}`);
+                log('info', 'Start Watch Mode to begin monitoring for entry...');
+                
+                updateAutopilotUI();
+            } else {
+                log('system', '🎯 SNIPE MODE DISABLED');
+            }
+            
+            updateSnipeModeUI();
+        });
+        
+        document.getElementById('snipeMaxTrades').addEventListener('change', (e) => {
+            state.snipeMode.maxTrades = parseInt(e.target.value);
+            if (state.snipeMode.enabled) {
+                log('info', `Snipe trades per session updated to ${e.target.value}`);
+            }
+            updateSnipeModeUI();
+        });
+        
+        document.getElementById('snipeEntryThreshold').addEventListener('change', (e) => {
+            state.snipeMode.entryThreshold = parseInt(e.target.value);
+            if (state.snipeMode.enabled) {
+                log('info', `Snipe entry threshold updated to -${e.target.value}`);
+            }
+            updateSnipeModeUI();
+        });
 
         // ========================================
         // INITIALIZATION
@@ -2574,11 +2835,13 @@
             updateStreakUI();
             updateAdaptiveTriggerUI();
             updateAutopilotUI();
+            updateSnipeModeUI();
             
             log('system', 'Hybrid Martingale Bot initialized');
             log('info', 'Enter your API token and click Start to begin');
             log('info', '💡 Shadow Tracker will monitor market even when bot is off');
             log('info', '💡 Enable Adaptive Trigger to auto-adjust based on loss streaks');
+            log('info', '🎯 Enable Snipe Mode for disciplined 2-trade sessions');
         }
         
         init();
