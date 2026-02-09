@@ -738,12 +738,6 @@
                     <button class="btn btn-danger" id="btnStop" style="display: none; margin-top: 10px;">
                         <span>■</span> Stop Bot
                     </button>
-                    <button class="btn btn-secondary" id="btnWatch" style="margin-top: 10px;">
-                        <span>👁</span> Watch Only (Shadow)
-                    </button>
-                    <button class="btn btn-secondary" id="btnStopWatch" style="display: none; margin-top: 10px;">
-                        <span>■</span> Stop Watching
-                    </button>
                     
                     <div class="export-buttons">
                         <button class="btn btn-secondary" id="btnExportTicks">Ticks CSV</button>
@@ -970,15 +964,9 @@
                             </div>
                         </div>
                         
-                        <!-- Snipe Mode Section -->
+                        <!-- Snipe Mode Section (always on) -->
                         <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <span style="font-weight: 600; font-size: 0.9rem;">🎯 Snipe Mode</span>
-                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                                    <input type="checkbox" id="snipeModeEnabled" style="cursor: pointer;">
-                                    <span style="font-size: 0.8rem;">Enable</span>
-                                </label>
-                            </div>
+                            <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 10px;">🎯 Snipe Settings</div>
                             
                             <div class="form-row" style="margin-bottom: 8px;">
                                 <div class="form-group" style="margin-bottom: 0;">
@@ -992,7 +980,7 @@
                             </div>
                             
                             <div id="snipeModeStatus" style="padding: 10px; border-radius: 6px; text-align: center; font-size: 0.8rem; background: var(--bg-tertiary); color: var(--text-dim);">
-                                Snipe Mode Disabled
+                                Click Start to begin
                             </div>
                         </div>
                     </div>
@@ -1106,13 +1094,13 @@
                 pauseReason: ''
             },
             
-            // Snipe Mode
+            // Snipe Mode (always on now)
             snipeMode: {
-                enabled: false,
-                maxTrades: 2,        // Take only 2 trades per snipe
-                tradesTaken: 0,      // Trades taken this snipe session
-                isWaitingForEntry: true,  // Waiting for good entry point
-                entryThreshold: -3   // Enter when diff <= -3
+                enabled: true,           // Always enabled
+                maxTrades: 2,            // Take only 2 trades per snipe
+                tradesTaken: 0,          // Trades taken this snipe session
+                isWaitingForEntry: true, // Waiting for good entry point
+                entryThreshold: -3       // Enter when diff <= -3
             },
             
             // Watch only mode (no trading, just shadow tracking)
@@ -1646,15 +1634,13 @@
                     // Autopilot PAUSE - conditions bad
                     state.autopilot.isPaused = true;
                     state.autopilot.pauseReason = `Diff +${diff} (≥ +${exitThreshold})`;
-                    stopBot();
                     
                     // Switch to watch mode
+                    state.isRunning = false;
                     state.isWatching = true;
-                    document.getElementById('btnWatch').style.display = 'none';
-                    document.getElementById('btnStopWatch').style.display = 'block';
                     
                     log('system', `⏸️ AUTOPILOT: Paused trading - ${state.autopilot.pauseReason}`);
-                    log('info', 'Switched to Watch mode. Waiting for correction...');
+                    log('info', 'Waiting for correction...');
                     updateAutopilotUI();
                 }
             }
@@ -1665,16 +1651,14 @@
                 state.autopilot.isPaused = false;
                 state.autopilot.pauseReason = '';
                 
-                // Stop watch mode if active
-                if (state.isWatching) {
-                    state.isWatching = false;
-                    document.getElementById('btnWatch').style.display = 'none';
-                    document.getElementById('btnStopWatch').style.display = 'none';
-                }
+                // Switch from watch to running
+                state.isWatching = false;
+                state.isRunning = true;
+                state.phase = 'analyzing';
+                setPhase('analyzing');
                 
                 log('system', `▶️ AUTOPILOT: Resuming trading - Diff ${diff} (≤ ${entryThreshold})`);
                 log('info', 'Recovery zone detected. Re-entering market.');
-                startBot();
                 updateAutopilotUI();
             }
         }
@@ -1748,8 +1732,8 @@
         }
         
         function checkSnipeEntry() {
-            if (!state.snipeMode.enabled) return;
             if (!state.snipeMode.isWaitingForEntry) return;
+            if (!state.isWatching) return;
             
             const diff = state.shadow.diff;
             const entryThreshold = -Math.abs(state.snipeMode.entryThreshold);
@@ -1760,76 +1744,44 @@
                 state.snipeMode.isWaitingForEntry = false;
                 state.snipeMode.tradesTaken = 0;
                 
-                log('system', `🎯 SNIPE: Entry signal! Diff ${diff} ≤ ${entryThreshold}`);
-                log('info', `Taking ${state.snipeMode.maxTrades} trades then stopping...`);
+                log('system', `🎯 ENTRY SIGNAL! Diff ${diff} ≤ ${entryThreshold}`);
+                log('info', `Taking ${state.snipeMode.maxTrades} trades then pausing...`);
                 
-                // Start the bot
-                startBotForSnipe();
+                // Switch from watching to trading
+                state.isWatching = false;
+                state.isRunning = true;
+                state.phase = 'analyzing';
+                setPhase('analyzing');
             }
             
             updateSnipeModeUI();
         }
         
-        function startBotForSnipe() {
-            // Read config
-            state.config.apiToken = document.getElementById('apiToken').value;
-            state.config.market = document.getElementById('market').value;
-            state.config.baseStake = parseFloat(document.getElementById('baseStake').value);
-            state.config.payout = parseFloat(document.getElementById('payout').value);
-            state.config.maxDepth = parseInt(document.getElementById('maxDepth').value);
-            state.config.observationTicks = parseInt(document.getElementById('observationTicks').value);
-            state.config.consecutiveTrigger = parseInt(document.getElementById('consecutiveTrigger').value);
-            
-            state.isRunning = true;
-            state.phase = 'analyzing';  // Skip observation since we've been watching
-            state.martingaleLevel = 0;
-            state.isWatching = false;
-            
-            setPhase('analyzing');
-            updateMartingaleTable();
-            updateMartingaleHighlight();
-            
-            elements.btnStart.style.display = 'none';
-            elements.btnStop.style.display = 'block';
-            document.getElementById('btnWatch').style.display = 'none';
-            document.getElementById('btnStopWatch').style.display = 'none';
-            
-            log('system', '🎯 Snipe trading started');
-            
-            // Request wake lock
-            requestWakeLock();
-        }
-        
         function onSnipeTradeComplete() {
-            if (!state.snipeMode.enabled) return false;
-            
             // Only count completed cycles (wins at Level 0 or busts)
             if (state.martingaleLevel === 0) {
                 state.snipeMode.tradesTaken++;
-                log('info', `🎯 Snipe trade ${state.snipeMode.tradesTaken}/${state.snipeMode.maxTrades} complete`);
+                log('info', `🎯 Trade ${state.snipeMode.tradesTaken}/${state.snipeMode.maxTrades} complete`);
                 
                 updateSnipeModeUI();
                 
                 // Check if we've hit max trades
                 if (state.snipeMode.tradesTaken >= state.snipeMode.maxTrades) {
-                    log('system', `🎯 SNIPE: Max trades reached (${state.snipeMode.maxTrades}). Stopping.`);
-                    log('info', 'Returning to watch mode. Waiting for next entry...');
+                    log('system', `🎯 ${state.snipeMode.maxTrades} trades complete. Returning to observation.`);
+                    log('info', `Waiting for diff to reach -${state.snipeMode.entryThreshold} again...`);
                     
                     // Reset snipe state
                     state.snipeMode.isWaitingForEntry = true;
                     state.snipeMode.tradesTaken = 0;
                     
-                    // Stop bot and go to watch mode
-                    stopBot();
-                    
-                    // Continue watching
+                    // Go back to watching mode (not full stop)
+                    state.isRunning = false;
                     state.isWatching = true;
-                    document.getElementById('btnWatch').style.display = 'none';
-                    document.getElementById('btnStopWatch').style.display = 'block';
-                    document.getElementById('btnStart').style.display = 'none';
+                    state.phase = 'observation';
+                    setPhase('observation');
                     
                     updateSnipeModeUI();
-                    return true;  // Signal that snipe stopped the bot
+                    return true;  // Signal that snipe paused trading
                 }
             }
             
@@ -1842,23 +1794,22 @@
             const diff = state.shadow.diff;
             const entryThreshold = -Math.abs(snipe.entryThreshold);
             
-            if (!snipe.enabled) {
+            if (!state.isWatching && !state.isRunning) {
+                // Bot not started
                 statusEl.style.background = 'var(--bg-tertiary)';
                 statusEl.style.color = 'var(--text-dim)';
-                statusEl.textContent = 'Snipe Mode Disabled';
-            } else if (snipe.isWaitingForEntry) {
+                statusEl.textContent = 'Click Start to begin';
+            } else if (state.isWatching && snipe.isWaitingForEntry) {
+                // Watching, waiting for entry
                 const distance = diff - entryThreshold;
                 statusEl.style.background = 'rgba(245, 158, 11, 0.2)';
                 statusEl.style.color = 'var(--accent-yellow)';
-                statusEl.innerHTML = `⏳ Waiting... Diff: ${diff} | Need: ${entryThreshold} | Distance: ${distance}`;
+                statusEl.innerHTML = `⏳ Observing... Diff: <strong>${diff >= 0 ? '+' : ''}${diff}</strong> | Need: <strong>${entryThreshold}</strong>`;
             } else if (state.isRunning) {
+                // Actively trading
                 statusEl.style.background = 'rgba(16, 185, 129, 0.2)';
                 statusEl.style.color = 'var(--accent-green)';
-                statusEl.innerHTML = `🎯 Sniping: ${snipe.tradesTaken}/${snipe.maxTrades} trades`;
-            } else {
-                statusEl.style.background = 'rgba(59, 130, 246, 0.2)';
-                statusEl.style.color = 'var(--accent-blue)';
-                statusEl.textContent = 'Snipe Ready - Start Watch Mode';
+                statusEl.innerHTML = `🎯 TRADING: ${snipe.tradesTaken}/${snipe.maxTrades}`;
             }
         }
         
@@ -1979,8 +1930,8 @@
             updateAutopilotUI();
             updateSnipeModeUI();
             
-            // Check snipe mode entry
-            if (state.snipeMode.enabled && state.snipeMode.isWaitingForEntry && !state.isRunning) {
+            // Check snipe mode entry (when watching and waiting for entry)
+            if (state.isWatching && state.snipeMode.isWaitingForEntry) {
                 checkSnipeEntry();
             }
         }
@@ -2481,38 +2432,32 @@
                 return;
             }
             
-            // Update autopilot thresholds
-            state.autopilot.exitThreshold = parseInt(document.getElementById('exitThreshold').value);
-            state.autopilot.entryThreshold = parseInt(document.getElementById('entryThreshold').value);
+            // Update snipe settings
+            state.snipeMode.maxTrades = parseInt(document.getElementById('snipeMaxTrades').value);
+            state.snipeMode.entryThreshold = parseInt(document.getElementById('snipeEntryThreshold').value);
+            state.snipeMode.tradesTaken = 0;
+            state.snipeMode.isWaitingForEntry = true;
             
-            state.isRunning = true;
+            // Start in watching mode (not trading yet)
+            state.isRunning = false;  // Not actively trading yet
+            state.isWatching = true;  // But watching/observing
             state.phase = 'observation';
             state.martingaleLevel = 0;
             
-            // Reset shadow tracker for new session (if not resuming from autopilot)
-            if (!state.autopilot.isPaused && !state.isWatching) {
-                resetShadow();
-            }
-            state.autopilot.isPaused = false;
-            state.isWatching = false;
+            // Reset shadow tracker for fresh session
+            resetShadow();
             
             setPhase('observation');
             updateMartingaleTable();
             updateMartingaleHighlight();
-            updateAutopilotUI();
+            updateSnipeModeUI();
             
             elements.btnStart.style.display = 'none';
             elements.btnStop.style.display = 'block';
-            document.getElementById('btnWatch').style.display = 'none';
-            document.getElementById('btnStopWatch').style.display = 'none';
             
-            log('system', 'Bot started');
-            log('info', `Strategy: ${state.config.strategy} | Trigger: ${state.config.consecutiveTrigger} consec.`);
-            log('info', `Base stake: $${state.config.baseStake} | Max depth: ${state.config.maxDepth}`);
-            
-            if (state.autopilot.enabled) {
-                log('info', `🤖 Autopilot: Exit at +${state.autopilot.exitThreshold}, Enter at -${state.autopilot.entryThreshold}`);
-            }
+            log('system', '🎯 Bot started - Observing market');
+            log('info', `Waiting for diff to reach -${state.snipeMode.entryThreshold} before trading`);
+            log('info', `Will take ${state.snipeMode.maxTrades} trades per snipe`);
             
             if (!state.connected) {
                 connect();
@@ -2526,21 +2471,19 @@
         
         function stopBot() {
             state.isRunning = false;
+            state.isWatching = false;
             state.phase = 'idle';
+            state.snipeMode.isWaitingForEntry = true;
+            state.snipeMode.tradesTaken = 0;
+            
             setPhase('idle');
             
             elements.btnStart.style.display = 'block';
             elements.btnStop.style.display = 'none';
             
-            // Show watch button unless autopilot switched to watch mode
-            if (!state.isWatching) {
-                document.getElementById('btnWatch').style.display = 'block';
-                document.getElementById('btnStopWatch').style.display = 'none';
-            }
-            
             log('system', 'Bot stopped');
             saveState();
-            updateAutopilotUI();
+            updateSnipeModeUI();
         }
 
         // ========================================
@@ -2621,48 +2564,18 @@
         elements.btnStart.addEventListener('click', startBot);
         elements.btnStop.addEventListener('click', stopBot);
         
-        // Watch only mode
-        document.getElementById('btnWatch').addEventListener('click', startWatching);
-        document.getElementById('btnStopWatch').addEventListener('click', stopWatching);
+        // Snipe Mode settings
+        document.getElementById('snipeMaxTrades').addEventListener('change', (e) => {
+            state.snipeMode.maxTrades = parseInt(e.target.value);
+            log('info', `Trades per snipe updated to ${e.target.value}`);
+            updateSnipeModeUI();
+        });
         
-        function startWatching() {
-            state.config.apiToken = document.getElementById('apiToken').value;
-            state.config.market = document.getElementById('market').value;
-            state.config.observationTicks = parseInt(document.getElementById('observationTicks').value);
-            state.config.consecutiveTrigger = parseInt(document.getElementById('consecutiveTrigger').value);
-            
-            if (!state.config.apiToken) {
-                log('system', 'Please enter your API token');
-                return;
-            }
-            
-            state.isWatching = true;
-            resetShadow();
-            
-            document.getElementById('btnWatch').style.display = 'none';
-            document.getElementById('btnStopWatch').style.display = 'block';
-            document.getElementById('btnStart').style.display = 'none';
-            
-            log('system', '👁 Watch Only mode started');
-            log('info', 'Shadow tracker active. Bot will NOT trade.');
-            log('info', 'Use this to monitor conditions before entering.');
-            
-            if (!state.connected) {
-                connect();
-            } else {
-                subscribeToTicks();
-            }
-        }
-        
-        function stopWatching() {
-            state.isWatching = false;
-            
-            document.getElementById('btnWatch').style.display = 'block';
-            document.getElementById('btnStopWatch').style.display = 'none';
-            document.getElementById('btnStart').style.display = 'block';
-            
-            log('system', '👁 Watch Only mode stopped');
-        }
+        document.getElementById('snipeEntryThreshold').addEventListener('change', (e) => {
+            state.snipeMode.entryThreshold = parseInt(e.target.value);
+            log('info', `Entry threshold updated to -${e.target.value}`);
+            updateSnipeModeUI();
+        });
         
         document.getElementById('btnClearLog').addEventListener('click', () => {
             elements.logContainer.innerHTML = '';
@@ -2779,45 +2692,7 @@
         });
         
         // Snipe Mode controls
-        document.getElementById('snipeModeEnabled').addEventListener('change', (e) => {
-            state.snipeMode.enabled = e.target.checked;
-            
-            if (e.target.checked) {
-                // Disable autopilot if snipe mode is on (they conflict)
-                state.autopilot.enabled = false;
-                document.getElementById('autopilotEnabled').checked = false;
-                
-                state.snipeMode.maxTrades = parseInt(document.getElementById('snipeMaxTrades').value);
-                state.snipeMode.entryThreshold = parseInt(document.getElementById('snipeEntryThreshold').value);
-                state.snipeMode.tradesTaken = 0;
-                state.snipeMode.isWaitingForEntry = true;
-                
-                log('system', `🎯 SNIPE MODE ENABLED - ${state.snipeMode.maxTrades} trades per snipe, enter at diff -${state.snipeMode.entryThreshold}`);
-                log('info', 'Start Watch Mode to begin monitoring for entry...');
-                
-                updateAutopilotUI();
-            } else {
-                log('system', '🎯 SNIPE MODE DISABLED');
-            }
-            
-            updateSnipeModeUI();
-        });
-        
-        document.getElementById('snipeMaxTrades').addEventListener('change', (e) => {
-            state.snipeMode.maxTrades = parseInt(e.target.value);
-            if (state.snipeMode.enabled) {
-                log('info', `Snipe trades per session updated to ${e.target.value}`);
-            }
-            updateSnipeModeUI();
-        });
-        
-        document.getElementById('snipeEntryThreshold').addEventListener('change', (e) => {
-            state.snipeMode.entryThreshold = parseInt(e.target.value);
-            if (state.snipeMode.enabled) {
-                log('info', `Snipe entry threshold updated to -${e.target.value}`);
-            }
-            updateSnipeModeUI();
-        });
+
 
         // ========================================
         // INITIALIZATION
@@ -2837,11 +2712,9 @@
             updateAutopilotUI();
             updateSnipeModeUI();
             
-            log('system', 'Hybrid Martingale Bot initialized');
-            log('info', 'Enter your API token and click Start to begin');
-            log('info', '💡 Shadow Tracker will monitor market even when bot is off');
-            log('info', '💡 Enable Adaptive Trigger to auto-adjust based on loss streaks');
-            log('info', '🎯 Enable Snipe Mode for disciplined 2-trade sessions');
+            log('system', 'Trading Bot initialized');
+            log('info', 'Click Start to begin observing');
+            log('info', '🎯 Bot will wait for ideal conditions, trade 2x, then repeat');
         }
         
         init();
