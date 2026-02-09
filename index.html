@@ -702,14 +702,14 @@
                     <div class="form-group">
                         <label>Entry Strategy</label>
                         <div class="strategy-toggle">
-                            <button class="strategy-btn active" data-strategy="reversal" id="btnReversal">Reversal</button>
-                            <button class="strategy-btn" data-strategy="trend" id="btnTrend">Trend</button>
+                            <button class="strategy-btn" data-strategy="reversal" id="btnReversal">Reversal</button>
+                            <button class="strategy-btn active" data-strategy="trend" id="btnTrend">Trend</button>
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label>Consecutive Trigger</label>
-                        <input type="number" id="consecutiveTrigger" value="3" min="2" max="10">
+                        <input type="number" id="consecutiveTrigger" value="6" min="2" max="10">
                         <small style="color: var(--text-dim); font-size: 0.75rem;">Consecutive digits before signal</small>
                     </div>
                     
@@ -728,6 +728,12 @@
                     </button>
                     <button class="btn btn-danger" id="btnStop" style="display: none; margin-top: 10px;">
                         <span>■</span> Stop Bot
+                    </button>
+                    <button class="btn btn-secondary" id="btnWatch" style="margin-top: 10px;">
+                        <span>👁</span> Watch Only (Shadow)
+                    </button>
+                    <button class="btn btn-secondary" id="btnStopWatch" style="display: none; margin-top: 10px;">
+                        <span>■</span> Stop Watching
                     </button>
                     
                     <div class="export-buttons">
@@ -842,6 +848,77 @@
             
             <!-- Right Panel - Martingale & Trades -->
             <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Shadow Tracker Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Shadow Tracker</span>
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; cursor: pointer;">
+                            <input type="checkbox" id="shadowEnabled" checked style="cursor: pointer;">
+                            Active
+                        </label>
+                    </div>
+                    <div class="panel-content">
+                        <div id="shadowRecommendation" style="padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 12px; background: var(--bg-tertiary);">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">RECOMMENDATION</div>
+                            <div id="shadowRecommendText" style="font-size: 1.1rem; font-weight: 700; color: var(--text-dim);">WAITING...</div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;">
+                            <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; text-align: center;">
+                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent-green);" id="shadowWins">0</div>
+                                <div style="font-size: 0.65rem; color: var(--text-secondary);">WINS</div>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; text-align: center;">
+                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent-red);" id="shadowLosses">0</div>
+                                <div style="font-size: 0.65rem; color: var(--text-secondary);">LOSSES</div>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; text-align: center;">
+                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; font-weight: 700;" id="shadowDiff">0</div>
+                                <div style="font-size: 0.65rem; color: var(--text-secondary);">DIFF</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
+                                <span style="color: var(--text-secondary);">Last Signal:</span>
+                                <span id="shadowLastSignal" style="font-family: 'JetBrains Mono', monospace;">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                                <span style="color: var(--text-secondary);">Would Have:</span>
+                                <span id="shadowLastResult" style="font-family: 'JetBrains Mono', monospace;">-</span>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-secondary" id="btnResetShadow" style="margin-bottom: 12px;">Reset Shadow Tracker</button>
+                        
+                        <!-- Autopilot Section -->
+                        <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="font-weight: 600; font-size: 0.9rem;">Autopilot Mode</span>
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                    <input type="checkbox" id="autopilotEnabled" style="cursor: pointer;">
+                                    <span style="font-size: 0.8rem;">Enable</span>
+                                </label>
+                            </div>
+                            
+                            <div class="form-row" style="margin-bottom: 8px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label style="font-size: 0.7rem;">Exit at Diff +</label>
+                                    <input type="number" id="exitThreshold" value="5" min="3" max="10" style="padding: 6px 10px;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label style="font-size: 0.7rem;">Enter at Diff -</label>
+                                    <input type="number" id="entryThreshold" value="3" min="0" max="10" style="padding: 6px 10px;">
+                                </div>
+                            </div>
+                            
+                            <div id="autopilotStatus" style="padding: 10px; border-radius: 6px; text-align: center; font-size: 0.8rem; background: var(--bg-tertiary); color: var(--text-dim);">
+                                Autopilot Disabled
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="panel">
                     <div class="panel-header">
                         <span>Martingale Progression</span>
@@ -905,6 +982,34 @@
             currentDirection: null, // 'over' or 'under'
             martingaleLevel: 0,
             
+            // Shadow Tracker
+            shadow: {
+                enabled: true,
+                wins: 0,
+                losses: 0,
+                diff: 0,
+                consecutiveLow: 0,
+                consecutiveHigh: 0,
+                lastSignal: null,
+                lastResult: null,
+                inSimRecovery: false,
+                simDirection: null,
+                simLevel: 0,
+                history: []
+            },
+            
+            // Autopilot
+            autopilot: {
+                enabled: false,
+                exitThreshold: 5,    // Exit when diff >= +5
+                entryThreshold: -3,  // Enter when diff <= -3
+                isPaused: false,     // Paused by autopilot (waiting for good entry)
+                pauseReason: ''
+            },
+            
+            // Watch only mode (no trading, just shadow tracking)
+            isWatching: false,
+            
             // Data
             ticks: [],
             digits: [],
@@ -930,8 +1035,8 @@
                 payout: 95,
                 maxDepth: 10,
                 observationTicks: 100,
-                strategy: 'reversal',
-                consecutiveTrigger: 3,
+                strategy: 'trend',
+                consecutiveTrigger: 6,
                 stopLoss: 0,
                 takeProfit: 0
             },
@@ -1251,6 +1356,271 @@
             if (state.isRunning) {
                 processTrading(digit);
             }
+            
+            // Always process shadow tracker (even when bot is off)
+            if (state.shadow.enabled) {
+                processShadowTracker(digit);
+            }
+        }
+        
+        function processShadowTracker(digit) {
+            // Update shadow consecutive counters
+            if (digit <= 4) {
+                state.shadow.consecutiveLow++;
+                state.shadow.consecutiveHigh = 0;
+            } else {
+                state.shadow.consecutiveHigh++;
+                state.shadow.consecutiveLow = 0;
+            }
+            
+            // Need enough data
+            if (state.digits.length < state.config.observationTicks) {
+                updateShadowUI();
+                return;
+            }
+            
+            const trigger = state.config.consecutiveTrigger;
+            const strategy = state.config.strategy;
+            
+            let signalDirection = null;
+            
+            // Check for signal (same logic as real trading)
+            if (state.shadow.inSimRecovery) {
+                // In simulated recovery - check for signal in same direction
+                const dir = state.shadow.simDirection;
+                if (strategy === 'trend') {
+                    if (dir === 'over' && state.shadow.consecutiveHigh >= trigger) {
+                        signalDirection = 'over';
+                    } else if (dir === 'under' && state.shadow.consecutiveLow >= trigger) {
+                        signalDirection = 'under';
+                    }
+                } else {
+                    if (dir === 'over' && state.shadow.consecutiveLow >= trigger) {
+                        signalDirection = 'over';
+                    } else if (dir === 'under' && state.shadow.consecutiveHigh >= trigger) {
+                        signalDirection = 'under';
+                    }
+                }
+            } else {
+                // Look for new signal
+                if (strategy === 'trend') {
+                    if (state.shadow.consecutiveLow >= trigger) {
+                        signalDirection = 'under';
+                    } else if (state.shadow.consecutiveHigh >= trigger) {
+                        signalDirection = 'over';
+                    }
+                } else {
+                    if (state.shadow.consecutiveLow >= trigger) {
+                        signalDirection = 'over';
+                    } else if (state.shadow.consecutiveHigh >= trigger) {
+                        signalDirection = 'under';
+                    }
+                }
+            }
+            
+            // If we have a signal, simulate the trade result with NEXT digit
+            if (signalDirection && state.shadow.lastSignal !== signalDirection + '_' + state.digits.length) {
+                state.shadow.lastSignal = signalDirection;
+                
+                // Store for next tick evaluation
+                state.shadow.pendingSignal = {
+                    direction: signalDirection,
+                    tickIndex: state.digits.length
+                };
+            }
+            
+            // Evaluate previous pending signal
+            if (state.shadow.pendingEval) {
+                const evalSignal = state.shadow.pendingEval;
+                const won = (evalSignal.direction === 'over' && digit >= 5) || 
+                           (evalSignal.direction === 'under' && digit <= 4);
+                
+                if (won) {
+                    state.shadow.wins++;
+                    state.shadow.lastResult = 'WON ✓';
+                    state.shadow.inSimRecovery = false;
+                    state.shadow.simDirection = null;
+                    state.shadow.simLevel = 0;
+                } else {
+                    state.shadow.losses++;
+                    state.shadow.lastResult = 'LOST ✗';
+                    state.shadow.inSimRecovery = true;
+                    state.shadow.simDirection = evalSignal.direction;
+                    state.shadow.simLevel++;
+                    
+                    // Check if bust (max depth)
+                    if (state.shadow.simLevel >= state.config.maxDepth) {
+                        state.shadow.inSimRecovery = false;
+                        state.shadow.simDirection = null;
+                        state.shadow.simLevel = 0;
+                    }
+                }
+                
+                state.shadow.diff = state.shadow.wins - state.shadow.losses;
+                state.shadow.history.push({
+                    direction: evalSignal.direction,
+                    won: won,
+                    diff: state.shadow.diff
+                });
+                
+                state.shadow.pendingEval = null;
+                
+                // Check autopilot conditions
+                checkAutopilot(won);
+            }
+            
+            // Move pending signal to eval
+            if (state.shadow.pendingSignal) {
+                state.shadow.pendingEval = state.shadow.pendingSignal;
+                state.shadow.pendingSignal = null;
+            }
+            
+            updateShadowUI();
+        }
+        
+        function checkAutopilot(lastWon) {
+            if (!state.autopilot.enabled) return;
+            
+            const diff = state.shadow.diff;
+            const exitThreshold = state.autopilot.exitThreshold;
+            const entryThreshold = -Math.abs(state.autopilot.entryThreshold);
+            
+            // Only exit after a WIN (at Level 0)
+            if (state.isRunning && !state.autopilot.isPaused) {
+                // Check exit condition: diff too high AND we just won (clean exit)
+                if (diff >= exitThreshold && lastWon && state.martingaleLevel === 0) {
+                    // Autopilot PAUSE - conditions bad
+                    state.autopilot.isPaused = true;
+                    state.autopilot.pauseReason = `Diff +${diff} (≥ +${exitThreshold})`;
+                    stopBot();
+                    
+                    // Switch to watch mode
+                    state.isWatching = true;
+                    document.getElementById('btnWatch').style.display = 'none';
+                    document.getElementById('btnStopWatch').style.display = 'block';
+                    
+                    log('system', `⏸️ AUTOPILOT: Paused trading - ${state.autopilot.pauseReason}`);
+                    log('info', 'Switched to Watch mode. Waiting for correction...');
+                    updateAutopilotUI();
+                }
+            }
+            
+            // Check entry condition (can be from paused state OR from watch mode)
+            if ((state.autopilot.isPaused || state.isWatching) && diff <= entryThreshold) {
+                // Autopilot RESUME - conditions good
+                state.autopilot.isPaused = false;
+                state.autopilot.pauseReason = '';
+                
+                // Stop watch mode if active
+                if (state.isWatching) {
+                    state.isWatching = false;
+                    document.getElementById('btnWatch').style.display = 'none';
+                    document.getElementById('btnStopWatch').style.display = 'none';
+                }
+                
+                log('system', `▶️ AUTOPILOT: Resuming trading - Diff ${diff} (≤ ${entryThreshold})`);
+                log('info', 'Recovery zone detected. Re-entering market.');
+                startBot();
+                updateAutopilotUI();
+            }
+        }
+        
+        function updateShadowUI() {
+            document.getElementById('shadowWins').textContent = state.shadow.wins;
+            document.getElementById('shadowLosses').textContent = state.shadow.losses;
+            
+            const diffEl = document.getElementById('shadowDiff');
+            diffEl.textContent = (state.shadow.diff >= 0 ? '+' : '') + state.shadow.diff;
+            diffEl.style.color = state.shadow.diff >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+            
+            const lastSignalEl = document.getElementById('shadowLastSignal');
+            if (state.shadow.lastSignal) {
+                lastSignalEl.textContent = state.shadow.lastSignal.toUpperCase();
+                lastSignalEl.style.color = state.shadow.lastSignal === 'over' ? 'var(--accent-green)' : 'var(--accent-red)';
+            }
+            
+            const lastResultEl = document.getElementById('shadowLastResult');
+            if (state.shadow.lastResult) {
+                lastResultEl.textContent = state.shadow.lastResult;
+                lastResultEl.style.color = state.shadow.lastResult.includes('WON') ? 'var(--accent-green)' : 'var(--accent-red)';
+            }
+            
+            // Update recommendation
+            const diff = state.shadow.diff;
+            const exitThreshold = state.autopilot.exitThreshold;
+            const entryThreshold = -Math.abs(state.autopilot.entryThreshold);
+            
+            const recBox = document.getElementById('shadowRecommendation');
+            const recText = document.getElementById('shadowRecommendText');
+            
+            if (diff >= exitThreshold) {
+                recBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                recBox.style.border = '1px solid var(--accent-red)';
+                recText.textContent = '🔴 STAY OUT / EXIT';
+                recText.style.color = 'var(--accent-red)';
+            } else if (diff <= entryThreshold) {
+                recBox.style.background = 'rgba(16, 185, 129, 0.2)';
+                recBox.style.border = '1px solid var(--accent-green)';
+                recText.textContent = '🟢 GOOD TO ENTER';
+                recText.style.color = 'var(--accent-green)';
+            } else if (diff > 0) {
+                recBox.style.background = 'rgba(245, 158, 11, 0.2)';
+                recBox.style.border = '1px solid var(--accent-yellow)';
+                recText.textContent = '🟡 CAUTION';
+                recText.style.color = 'var(--accent-yellow)';
+            } else {
+                recBox.style.background = 'var(--bg-tertiary)';
+                recBox.style.border = '1px solid var(--border-color)';
+                recText.textContent = '⚪ NEUTRAL';
+                recText.style.color = 'var(--text-secondary)';
+            }
+            
+            updateAutopilotUI();
+        }
+        
+        function updateAutopilotUI() {
+            const statusEl = document.getElementById('autopilotStatus');
+            
+            if (!state.autopilot.enabled) {
+                statusEl.textContent = 'Autopilot Disabled';
+                statusEl.style.background = 'var(--bg-tertiary)';
+                statusEl.style.color = 'var(--text-dim)';
+            } else if (state.autopilot.isPaused) {
+                statusEl.textContent = `⏸️ Paused: ${state.autopilot.pauseReason}`;
+                statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
+                statusEl.style.color = 'var(--accent-red)';
+            } else if (state.isRunning) {
+                statusEl.textContent = '▶️ Active - Monitoring...';
+                statusEl.style.background = 'rgba(16, 185, 129, 0.2)';
+                statusEl.style.color = 'var(--accent-green)';
+            } else {
+                statusEl.textContent = '⏹️ Ready - Start bot to activate';
+                statusEl.style.background = 'rgba(59, 130, 246, 0.2)';
+                statusEl.style.color = 'var(--accent-blue)';
+            }
+        }
+        
+        function resetShadow() {
+            state.shadow.wins = 0;
+            state.shadow.losses = 0;
+            state.shadow.diff = 0;
+            state.shadow.consecutiveLow = 0;
+            state.shadow.consecutiveHigh = 0;
+            state.shadow.lastSignal = null;
+            state.shadow.lastResult = null;
+            state.shadow.inSimRecovery = false;
+            state.shadow.simDirection = null;
+            state.shadow.simLevel = 0;
+            state.shadow.history = [];
+            state.shadow.pendingSignal = null;
+            state.shadow.pendingEval = null;
+            
+            // Also reset autopilot pause state
+            state.autopilot.isPaused = false;
+            state.autopilot.pauseReason = '';
+            
+            updateShadowUI();
+            log('system', 'Shadow tracker reset');
         }
 
         // ========================================
@@ -1463,6 +1833,18 @@
                 stopBot();
             }
             
+            // Check autopilot exit conditions (after a win at Level 0)
+            if (won && state.martingaleLevel === 0 && state.autopilot.enabled) {
+                const diff = state.shadow.diff;
+                if (diff >= state.autopilot.exitThreshold) {
+                    state.autopilot.isPaused = true;
+                    state.autopilot.pauseReason = `Diff +${diff} (≥ +${state.autopilot.exitThreshold})`;
+                    log('system', `⏸️ AUTOPILOT: Paused trading - ${state.autopilot.pauseReason}`);
+                    log('info', 'Shadow tracker shows correction likely. Taking cooldown.');
+                    stopBot();
+                }
+            }
+            
             updateStats();
             updateTradeHistory(trade);
         }
@@ -1641,20 +2023,38 @@
                 return;
             }
             
+            // Update autopilot thresholds
+            state.autopilot.exitThreshold = parseInt(document.getElementById('exitThreshold').value);
+            state.autopilot.entryThreshold = parseInt(document.getElementById('entryThreshold').value);
+            
             state.isRunning = true;
             state.phase = 'observation';
             state.martingaleLevel = 0;
             
+            // Reset shadow tracker for new session (if not resuming from autopilot)
+            if (!state.autopilot.isPaused && !state.isWatching) {
+                resetShadow();
+            }
+            state.autopilot.isPaused = false;
+            state.isWatching = false;
+            
             setPhase('observation');
             updateMartingaleTable();
             updateMartingaleHighlight();
+            updateAutopilotUI();
             
             elements.btnStart.style.display = 'none';
             elements.btnStop.style.display = 'block';
+            document.getElementById('btnWatch').style.display = 'none';
+            document.getElementById('btnStopWatch').style.display = 'none';
             
             log('system', 'Bot started');
             log('info', `Strategy: ${state.config.strategy} | Trigger: ${state.config.consecutiveTrigger} consec.`);
             log('info', `Base stake: $${state.config.baseStake} | Max depth: ${state.config.maxDepth}`);
+            
+            if (state.autopilot.enabled) {
+                log('info', `🤖 Autopilot: Exit at +${state.autopilot.exitThreshold}, Enter at -${state.autopilot.entryThreshold}`);
+            }
             
             if (!state.connected) {
                 connect();
@@ -1674,8 +2074,15 @@
             elements.btnStart.style.display = 'block';
             elements.btnStop.style.display = 'none';
             
+            // Show watch button unless autopilot switched to watch mode
+            if (!state.isWatching) {
+                document.getElementById('btnWatch').style.display = 'block';
+                document.getElementById('btnStopWatch').style.display = 'none';
+            }
+            
             log('system', 'Bot stopped');
             saveState();
+            updateAutopilotUI();
         }
 
         // ========================================
@@ -1756,6 +2163,49 @@
         elements.btnStart.addEventListener('click', startBot);
         elements.btnStop.addEventListener('click', stopBot);
         
+        // Watch only mode
+        document.getElementById('btnWatch').addEventListener('click', startWatching);
+        document.getElementById('btnStopWatch').addEventListener('click', stopWatching);
+        
+        function startWatching() {
+            state.config.apiToken = document.getElementById('apiToken').value;
+            state.config.market = document.getElementById('market').value;
+            state.config.observationTicks = parseInt(document.getElementById('observationTicks').value);
+            state.config.consecutiveTrigger = parseInt(document.getElementById('consecutiveTrigger').value);
+            
+            if (!state.config.apiToken) {
+                log('system', 'Please enter your API token');
+                return;
+            }
+            
+            state.isWatching = true;
+            resetShadow();
+            
+            document.getElementById('btnWatch').style.display = 'none';
+            document.getElementById('btnStopWatch').style.display = 'block';
+            document.getElementById('btnStart').style.display = 'none';
+            
+            log('system', '👁 Watch Only mode started');
+            log('info', 'Shadow tracker active. Bot will NOT trade.');
+            log('info', 'Use this to monitor conditions before entering.');
+            
+            if (!state.connected) {
+                connect();
+            } else {
+                subscribeToTicks();
+            }
+        }
+        
+        function stopWatching() {
+            state.isWatching = false;
+            
+            document.getElementById('btnWatch').style.display = 'block';
+            document.getElementById('btnStopWatch').style.display = 'none';
+            document.getElementById('btnStart').style.display = 'block';
+            
+            log('system', '👁 Watch Only mode stopped');
+        }
+        
         document.getElementById('btnClearLog').addEventListener('click', () => {
             elements.logContainer.innerHTML = '';
             state.activityLog = [];
@@ -1776,6 +2226,44 @@
         ['baseStake', 'payout', 'maxDepth'].forEach(id => {
             document.getElementById(id).addEventListener('change', updateMartingaleTable);
         });
+        
+        // Shadow Tracker controls
+        document.getElementById('shadowEnabled').addEventListener('change', (e) => {
+            state.shadow.enabled = e.target.checked;
+            log('info', `Shadow tracker ${e.target.checked ? 'enabled' : 'disabled'}`);
+        });
+        
+        document.getElementById('btnResetShadow').addEventListener('click', resetShadow);
+        
+        // Autopilot controls
+        document.getElementById('autopilotEnabled').addEventListener('change', (e) => {
+            state.autopilot.enabled = e.target.checked;
+            if (e.target.checked) {
+                state.autopilot.exitThreshold = parseInt(document.getElementById('exitThreshold').value);
+                state.autopilot.entryThreshold = parseInt(document.getElementById('entryThreshold').value);
+                log('system', `🤖 AUTOPILOT ENABLED - Exit at +${state.autopilot.exitThreshold}, Enter at -${state.autopilot.entryThreshold}`);
+            } else {
+                state.autopilot.isPaused = false;
+                log('system', '🤖 AUTOPILOT DISABLED');
+            }
+            updateAutopilotUI();
+        });
+        
+        document.getElementById('exitThreshold').addEventListener('change', (e) => {
+            state.autopilot.exitThreshold = parseInt(e.target.value);
+            if (state.autopilot.enabled) {
+                log('info', `Autopilot exit threshold updated to +${e.target.value}`);
+            }
+            updateShadowUI();
+        });
+        
+        document.getElementById('entryThreshold').addEventListener('change', (e) => {
+            state.autopilot.entryThreshold = parseInt(e.target.value);
+            if (state.autopilot.enabled) {
+                log('info', `Autopilot entry threshold updated to -${e.target.value}`);
+            }
+            updateShadowUI();
+        });
 
         // ========================================
         // INITIALIZATION
@@ -1789,9 +2277,12 @@
             }
             updateDigitDistribution();
             updateMartingaleTable();
+            updateShadowUI();
+            updateAutopilotUI();
             
             log('system', 'Hybrid Martingale Bot initialized');
             log('info', 'Enter your API token and click Start to begin');
+            log('info', '💡 Shadow Tracker will monitor market even when bot is off');
         }
         
         init();
