@@ -3,2791 +3,1229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hybrid Martingale Over/Under Bot</title>
+    <title>Trend Signal Over/Under Bot</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
-            --bg-primary: #0a0e17;
-            --bg-secondary: #111827;
-            --bg-tertiary: #1f2937;
-            --accent-green: #10b981;
-            --accent-green-dim: #065f46;
-            --accent-red: #ef4444;
-            --accent-red-dim: #7f1d1d;
-            --accent-blue: #3b82f6;
-            --accent-yellow: #f59e0b;
-            --accent-purple: #8b5cf6;
-            --text-primary: #f9fafb;
-            --text-secondary: #9ca3af;
-            --text-dim: #6b7280;
-            --border-color: #374151;
+            --bg-0: #06080c;
+            --bg-1: #0c1018;
+            --bg-2: #141a26;
+            --bg-3: #1c2536;
+            --green: #22c55e;
+            --green-dim: #14532d;
+            --red: #f43f5e;
+            --red-dim: #4c0519;
+            --blue: #38bdf8;
+            --amber: #fbbf24;
+            --purple: #a78bfa;
+            --text-0: #f1f5f9;
+            --text-1: #94a3b8;
+            --text-2: #475569;
+            --border: #1e293b;
+            --glow-green: rgba(34, 197, 94, 0.15);
+            --glow-red: rgba(244, 63, 94, 0.15);
         }
         
         body {
-            font-family: 'Space Grotesk', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-0);
+            color: var(--text-0);
             min-height: 100vh;
-            padding: 20px;
+            padding: 16px;
         }
         
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
+        .mono { font-family: 'IBM Plex Mono', monospace; }
         
+        /* ── HEADER ── */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
+            padding: 16px 24px;
+            background: var(--bg-1);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            margin-bottom: 16px;
         }
         
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .logo { display: flex; align-items: center; gap: 14px; }
+        
+        .logo-mark {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, var(--green) 0%, var(--blue) 100%);
+            border-radius: 11px;
+            display: grid; place-items: center;
+            font-weight: 800; font-size: 16px; color: var(--bg-0);
+            letter-spacing: -0.5px;
         }
         
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-blue) 100%);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 18px;
-        }
+        .logo h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.3px; }
+        .logo h1 em { font-style: normal; color: var(--green); }
         
-        .logo h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
+        .header-stats { display: flex; gap: 14px; align-items: center; }
         
-        .logo span {
-            color: var(--accent-green);
-        }
-        
-        .connection-status {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .hstat {
+            display: flex; align-items: center; gap: 8px;
             padding: 8px 16px;
-            background: var(--bg-tertiary);
-            border-radius: 8px;
-            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: 9px;
             font-size: 0.85rem;
         }
         
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--accent-red);
+        .hstat.balance {
+            background: linear-gradient(135deg, var(--green-dim), var(--bg-2));
+            border-color: rgba(34,197,94,0.3);
+        }
+        
+        .dot {
+            width: 9px; height: 9px; border-radius: 50%;
+            background: var(--red);
             animation: pulse 2s infinite;
         }
+        .dot.on { background: var(--green); }
         
-        .status-dot.connected {
-            background: var(--accent-green);
-        }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .reconnect-count {
-            color: var(--accent-yellow);
-        }
-        
-        .main-grid {
+        /* ── GRID ── */
+        .grid {
             display: grid;
-            grid-template-columns: 320px 1fr 350px;
-            gap: 20px;
+            grid-template-columns: 300px 1fr 320px;
+            gap: 16px;
         }
         
         .panel {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
+            background: var(--bg-1);
+            border: 1px solid var(--border);
+            border-radius: 14px;
             overflow: hidden;
         }
         
-        .panel-header {
-            padding: 16px 20px;
-            background: var(--bg-tertiary);
-            border-bottom: 1px solid var(--border-color);
-            font-weight: 600;
-            font-size: 0.95rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .ph {
+            padding: 14px 20px;
+            background: var(--bg-2);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600; font-size: 0.9rem;
+            display: flex; justify-content: space-between; align-items: center;
         }
         
-        .panel-content {
-            padding: 20px;
-        }
+        .pc { padding: 18px; }
         
-        .form-group {
-            margin-bottom: 16px;
-        }
+        /* ── FORMS ── */
+        .fg { margin-bottom: 14px; }
+        .fg label { display: block; margin-bottom: 5px; font-size: 0.8rem; color: var(--text-1); font-weight: 500; }
         
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            font-weight: 500;
+        .fg input, .fg select {
+            width: 100%; padding: 9px 12px;
+            background: var(--bg-3); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text-0);
+            font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
+            transition: border-color .2s;
         }
+        .fg input:focus, .fg select:focus { outline: none; border-color: var(--blue); }
         
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 10px 14px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
-            transition: border-color 0.2s;
-        }
-        
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        .fr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
         .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            width: 100%; padding: 13px; border: none; border-radius: 9px;
+            font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.95rem;
+            cursor: pointer; transition: all .15s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-green) 0%, #059669 100%);
-            color: white;
+        .btn-go { background: linear-gradient(135deg, var(--green), #16a34a); color: #fff; }
+        .btn-go:hover { box-shadow: 0 0 20px var(--glow-green); transform: translateY(-1px); }
+        .btn-stop { background: linear-gradient(135deg, var(--red), #e11d48); color: #fff; }
+        .btn-sm { background: var(--bg-2); color: var(--text-1); border: 1px solid var(--border); }
+        .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .exports { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 14px; }
+        .exports .btn { padding: 9px; font-size: 0.75rem; }
+        
+        /* ── STATS ── */
+        .sg { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 16px; }
+        
+        .sc {
+            background: var(--bg-2); padding: 14px; border-radius: 10px; text-align: center;
+        }
+        .sc.wide { grid-column: span 2; }
+        
+        .sv { font-family: 'IBM Plex Mono', monospace; font-size: 1.45rem; font-weight: 700; }
+        .sv.w { color: var(--green); }
+        .sv.l { color: var(--red); }
+        .sl { font-size: 0.7rem; color: var(--text-1); text-transform: uppercase; letter-spacing: .6px; margin-top: 3px; }
+        
+        /* ── TICK ── */
+        .tick-row {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px; background: var(--bg-2); border-radius: 10px; margin-bottom: 14px;
         }
         
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        .big-digit {
+            width: 56px; height: 56px;
+            background: var(--bg-0); border-radius: 10px;
+            display: grid; place-items: center;
+            font-family: 'IBM Plex Mono', monospace; font-size: 1.9rem; font-weight: 700;
         }
+        .big-digit.lo { color: var(--red); }
+        .big-digit.hi { color: var(--green); }
         
-        .btn-danger {
-            background: linear-gradient(135deg, var(--accent-red) 0%, #dc2626 100%);
-            color: white;
+        .tick-meta { flex: 1; }
+        .tick-price { font-family: 'IBM Plex Mono', monospace; font-size: 1.05rem; font-weight: 600; }
+        .tick-sub { font-size: 0.78rem; color: var(--text-1); }
+        
+        /* ── PHASE ── */
+        .badge {
+            padding: 5px 12px; border-radius: 6px;
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
         }
+        .badge.idle { background: var(--text-2); color: #fff; }
+        .badge.observation { background: var(--blue); color: var(--bg-0); }
+        .badge.trading { background: var(--green); color: var(--bg-0); }
+        .badge.recovery { background: var(--red); color: #fff; }
         
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
+        /* ── SIGNAL ── */
+        .signal-box {
+            padding: 16px; background: var(--bg-2); border-radius: 10px;
+            text-align: center; margin-bottom: 14px;
         }
+        .sig-dir { font-size: 1.4rem; font-weight: 700; }
+        .sig-dir.over { color: var(--green); }
+        .sig-dir.under { color: var(--red); }
+        .sig-dir.none { color: var(--text-2); }
+        .sig-sub { font-size: 0.8rem; color: var(--text-1); margin-top: 2px; }
         
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
+        /* ── PROGRESS ── */
+        .pbar { height: 5px; background: var(--bg-3); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+        .pfill { height: 100%; background: var(--blue); transition: width .3s; }
         
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
+        /* ── DIGITS ── */
+        .recent-row { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 14px; }
         
-        .stat-card {
-            background: var(--bg-tertiary);
-            padding: 16px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        
-        .stat-card.full-width {
-            grid-column: span 2;
-        }
-        
-        .stat-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        
-        .stat-value.profit {
-            color: var(--accent-green);
-        }
-        
-        .stat-value.loss {
-            color: var(--accent-red);
-        }
-        
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .phase-indicator {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px;
-            background: var(--bg-tertiary);
-            border-radius: 10px;
-            margin-bottom: 16px;
-        }
-        
-        .phase-badge {
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .phase-badge.observation {
-            background: var(--accent-blue);
-            color: white;
-        }
-        
-        .phase-badge.analyzing {
-            background: var(--accent-purple);
-            color: white;
-        }
-        
-        .phase-badge.trading {
-            background: var(--accent-green);
-            color: white;
-        }
-        
-        .phase-badge.recovery {
-            background: var(--accent-red);
-            color: white;
-        }
-        
-        .phase-badge.idle {
-            background: var(--text-dim);
-            color: white;
-        }
-        
-        .martingale-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-        }
-        
-        .martingale-table th, .martingale-table td {
-            padding: 8px 10px;
-            text-align: right;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .martingale-table th {
-            color: var(--text-secondary);
-            font-weight: 500;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-        }
-        
-        .martingale-table tr.active {
-            background: rgba(59, 130, 246, 0.2);
-        }
-        
-        .martingale-table tr.active td {
-            color: var(--accent-blue);
-            font-weight: 600;
-        }
-        
-        .digit-distribution {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 4px;
-            margin-bottom: 16px;
-        }
-        
-        .digit-bar {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .digit-bar-fill {
-            width: 100%;
-            height: 60px;
-            background: var(--bg-tertiary);
+        .rd {
+            width: 26px; height: 26px;
+            display: grid; place-items: center;
             border-radius: 4px;
-            position: relative;
-            overflow: hidden;
+            font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; font-weight: 600;
+        }
+        .rd.lo { background: var(--red-dim); color: var(--red); }
+        .rd.hi { background: var(--green-dim); color: var(--green); }
+        
+        /* ── DISTRIBUTION ── */
+        .dist { display: grid; grid-template-columns: repeat(10,1fr); gap: 4px; margin-bottom: 14px; }
+        
+        .dbar { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        .dbar-track { width: 100%; height: 55px; background: var(--bg-3); border-radius: 4px; position: relative; overflow: hidden; }
+        .dbar-fill { position: absolute; bottom: 0; width: 100%; border-radius: 4px; transition: height .3s; }
+        .dbar-fill.lo { background: var(--red); }
+        .dbar-fill.hi { background: var(--green); }
+        .dlbl { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--text-1); }
+        .dpct { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; color: var(--text-2); }
+        
+        /* ── TRENDS ── */
+        .tg { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 14px; }
+        .tc { background: var(--bg-2); padding: 10px; border-radius: 8px; text-align: center; }
+        .tv { font-family: 'IBM Plex Mono', monospace; font-size: 1.15rem; font-weight: 700; }
+        .tl { font-size: 0.65rem; color: var(--text-1); margin-top: 2px; }
+        
+        /* ── LOG ── */
+        .log-box {
+            height: 280px; overflow-y: auto;
+            font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
+            background: var(--bg-0); border-radius: 8px; padding: 10px;
         }
         
-        .digit-bar-inner {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            background: var(--accent-blue);
-            transition: height 0.3s;
-            border-radius: 4px;
+        .le { padding: 3px 0; border-bottom: 1px solid var(--border); display: flex; gap: 8px; }
+        .le-t { color: var(--text-2); min-width: 65px; }
+        .le-k { min-width: 52px; font-weight: 600; }
+        .le-k.info { color: var(--blue); }
+        .le-k.trade { color: var(--green); }
+        .le-k.loss { color: var(--red); }
+        .le-k.signal { color: var(--purple); }
+        .le-k.system { color: var(--amber); }
+        .le-m { color: var(--text-1); flex: 1; }
+        
+        /* ── SHADOW ── */
+        .sh-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+        .sh-card { background: var(--bg-2); padding: 10px; border-radius: 7px; text-align: center; }
+        .sh-v { font-family: 'IBM Plex Mono', monospace; font-size: 1.15rem; font-weight: 700; }
+        .sh-l { font-size: 0.6rem; color: var(--text-1); margin-top: 2px; }
+        
+        .sh-row {
+            display: flex; justify-content: space-between; font-size: 0.78rem;
+            padding: 6px 0; border-bottom: 1px solid var(--border);
         }
+        .sh-row:last-child { border: none; }
         
-        .digit-bar-inner.low {
-            background: var(--accent-red);
+        /* ── TRADES ── */
+        .th { max-height: 220px; overflow-y: auto; }
+        
+        .te {
+            display: flex; justify-content: space-between;
+            padding: 7px 10px; background: var(--bg-2); border-radius: 6px;
+            margin-bottom: 5px;
+            font-family: 'IBM Plex Mono', monospace; font-size: 0.73rem;
         }
+        .te.win { border-left: 3px solid var(--green); }
+        .te.loss { border-left: 3px solid var(--red); }
         
-        .digit-bar-inner.high {
-            background: var(--accent-green);
-        }
+        /* ── STREAK ── */
+        .streak-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 10px; }
         
-        .digit-label {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--bg-2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-2); }
         
-        .digit-percent {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.65rem;
-            color: var(--text-dim);
-        }
-        
-        .trend-indicators {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        
-        .trend-card {
-            background: var(--bg-tertiary);
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .trend-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-        
-        .trend-label {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
-        
-        .log-container {
-            height: 300px;
-            overflow-y: auto;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            background: var(--bg-primary);
-            border-radius: 8px;
-            padding: 12px;
-        }
-        
-        .log-entry {
-            padding: 4px 0;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            gap: 8px;
-        }
-        
-        .log-time {
-            color: var(--text-dim);
-            min-width: 70px;
-        }
-        
-        .log-type {
-            min-width: 60px;
-            font-weight: 600;
-        }
-        
-        .log-type.info { color: var(--accent-blue); }
-        .log-type.trade { color: var(--accent-green); }
-        .log-type.loss { color: var(--accent-red); }
-        .log-type.signal { color: var(--accent-purple); }
-        .log-type.system { color: var(--accent-yellow); }
-        
-        .log-message {
-            color: var(--text-secondary);
-            flex: 1;
-        }
-        
-        .tick-display {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px;
-            background: var(--bg-tertiary);
-            border-radius: 10px;
-            margin-bottom: 16px;
-        }
-        
-        .current-digit {
-            width: 60px;
-            height: 60px;
-            background: var(--bg-primary);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 2rem;
-            font-weight: 700;
-        }
-        
-        .current-digit.low { color: var(--accent-red); }
-        .current-digit.high { color: var(--accent-green); }
-        
-        .tick-info {
-            flex: 1;
-        }
-        
-        .tick-price {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-        
-        .tick-count {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-        
-        .signal-display {
-            padding: 16px;
-            background: var(--bg-tertiary);
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 16px;
-        }
-        
-        .signal-direction {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        
-        .signal-direction.over { color: var(--accent-green); }
-        .signal-direction.under { color: var(--accent-red); }
-        .signal-direction.none { color: var(--text-dim); }
-        
-        .signal-confidence {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-        
-        .export-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 16px;
-        }
-        
-        .export-buttons .btn {
-            padding: 10px;
-            font-size: 0.8rem;
-        }
-        
-        .recent-digits {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-        
-        .recent-digit {
-            width: 28px;
-            height: 28px;
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        .recent-digit.low { background: var(--accent-red-dim); color: var(--accent-red); }
-        .recent-digit.high { background: var(--accent-green-dim); color: var(--accent-green); }
-        
-        .trade-history {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .trade-entry {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px;
-            background: var(--bg-tertiary);
-            border-radius: 6px;
-            margin-bottom: 6px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-        }
-        
-        .trade-entry.win { border-left: 3px solid var(--accent-green); }
-        .trade-entry.loss { border-left: 3px solid var(--accent-red); }
-        
-        .strategy-toggle {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-        
-        .strategy-btn {
-            flex: 1;
-            padding: 10px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .strategy-btn.active {
-            background: var(--accent-blue);
-            border-color: var(--accent-blue);
-            color: white;
-        }
-        
-        .progress-bar {
-            height: 6px;
-            background: var(--bg-tertiary);
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: var(--accent-blue);
-            transition: width 0.3s;
-        }
-        
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: var(--bg-tertiary);
-            border-radius: 3px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 3px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-dim);
+        @media (max-width: 1200px) {
+            .grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo">
-                <div class="logo-icon">M+</div>
-                <h1>Hybrid <span>Martingale</span> Bot</h1>
+<div style="max-width:1580px; margin:0 auto;">
+
+    <!-- HEADER -->
+    <header>
+        <div class="logo">
+            <div class="logo-mark">T→</div>
+            <h1>Trend <em>Signal</em> Bot</h1>
+        </div>
+        <div class="header-stats">
+            <div class="hstat balance">
+                <span style="color:var(--text-1)">Balance:</span>
+                <span id="xBalance" class="mono" style="color:var(--green);font-weight:700;font-size:1.05rem">$0.00</span>
             </div>
-            <div class="connection-status">
-                <div class="status-indicator" style="background: linear-gradient(135deg, var(--accent-green-dim) 0%, var(--bg-tertiary) 100%); border: 1px solid var(--accent-green);">
-                    <span style="color: var(--text-secondary);">Balance:</span>
-                    <span style="color: var(--accent-green); font-weight: 700; font-size: 1.1rem;" id="accountBalance">$0.00</span>
-                </div>
-                <div class="status-indicator">
-                    <div class="status-dot" id="statusDot"></div>
-                    <span id="statusText">Disconnected</span>
-                </div>
-                <div class="status-indicator">
-                    <span>Reconnects: </span>
-                    <span class="reconnect-count" id="reconnectCount">0</span>
-                </div>
+            <div class="hstat">
+                <div class="dot" id="xDot"></div>
+                <span id="xConn">Disconnected</span>
             </div>
-        </header>
-        
-        <div class="main-grid">
-            <!-- Left Panel - Controls -->
-            <div class="panel">
-                <div class="panel-header">Trading Configuration</div>
-                <div class="panel-content">
-                    <div class="form-group">
-                        <label>API Token</label>
-                        <input type="password" id="apiToken" placeholder="Enter your Deriv API token">
+            <div class="hstat">
+                <span>Reconnects:</span>
+                <span id="xRecon" class="mono" style="color:var(--amber)">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN GRID -->
+    <div class="grid">
+
+        <!-- ═══ LEFT: CONFIG ═══ -->
+        <div class="panel">
+            <div class="ph">Configuration</div>
+            <div class="pc">
+                <div class="fg">
+                    <label>API Token</label>
+                    <input type="password" id="cfgToken" placeholder="Deriv API token">
+                </div>
+                <div class="fg">
+                    <label>Market</label>
+                    <select id="cfgMarket">
+                        <option value="R_10">Volatility 10 Index</option>
+                        <option value="R_25">Volatility 25 Index</option>
+                        <option value="R_50">Volatility 50 Index</option>
+                        <option value="R_75">Volatility 75 Index</option>
+                        <option value="R_100">Volatility 100 Index</option>
+                        <option value="1HZ10V">Volatility 10 (1s)</option>
+                        <option value="1HZ25V">Volatility 25 (1s)</option>
+                        <option value="1HZ50V">Volatility 50 (1s)</option>
+                        <option value="1HZ75V">Volatility 75 (1s)</option>
+                        <option value="1HZ100V">Volatility 100 (1s)</option>
+                    </select>
+                </div>
+                <div class="fr">
+                    <div class="fg">
+                        <label>Stake ($)</label>
+                        <input type="number" id="cfgStake" value="0.35" min="0.35" step="0.01">
                     </div>
-                    
-                    <div class="form-group">
-                        <label>Market</label>
-                        <select id="market">
-                            <option value="R_10">Volatility 10 Index</option>
-                            <option value="R_25">Volatility 25 Index</option>
-                            <option value="R_50">Volatility 50 Index</option>
-                            <option value="R_75">Volatility 75 Index</option>
-                            <option value="R_100">Volatility 100 Index</option>
-                            <option value="1HZ10V">Volatility 10 (1s) Index</option>
-                            <option value="1HZ25V">Volatility 25 (1s) Index</option>
-                            <option value="1HZ50V">Volatility 50 (1s) Index</option>
-                            <option value="1HZ75V">Volatility 75 (1s) Index</option>
-                            <option value="1HZ100V">Volatility 100 (1s) Index</option>
-                        </select>
+                    <div class="fg">
+                        <label>Payout (%)</label>
+                        <input type="number" id="cfgPayout" value="95" min="80" max="100">
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Base Stake ($)</label>
-                            <input type="number" id="baseStake" value="0.35" min="0.35" step="0.01">
-                        </div>
-                        <div class="form-group">
-                            <label>Payout (%)</label>
-                            <input type="number" id="payout" value="95" min="80" max="100" step="1">
-                        </div>
+                </div>
+                <div class="fr">
+                    <div class="fg">
+                        <label>Observation Ticks</label>
+                        <input type="number" id="cfgObs" value="100" min="10" max="500" step="10">
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Max Martingale Depth</label>
-                            <input type="number" id="maxDepth" value="10" min="1" max="15">
-                        </div>
-                        <div class="form-group">
-                            <label>Observation Ticks</label>
-                            <input type="number" id="observationTicks" value="100" min="10" max="500" step="10">
-                        </div>
+                    <div class="fg">
+                        <label>Consec. Trigger</label>
+                        <input type="number" id="cfgTrigger" value="6" min="2" max="10">
                     </div>
-                    
-                    <div class="form-group">
-                        <label>Entry Strategy</label>
-                        <div class="strategy-toggle">
-                            <button class="strategy-btn" data-strategy="reversal" id="btnReversal">Reversal</button>
-                            <button class="strategy-btn active" data-strategy="trend" id="btnTrend">Trend</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Recovery Mode</label>
-                        <div class="strategy-toggle">
-                            <button class="strategy-btn active" data-mode="flat" id="btnFlat">Flat Bet</button>
-                            <button class="strategy-btn" data-mode="martingale" id="btnMartingale">Martingale</button>
-                        </div>
-                        <small style="color: var(--text-dim); font-size: 0.7rem;">Flat = same stake always | Martingale = double on loss</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Consecutive Trigger</label>
-                        <input type="number" id="consecutiveTrigger" value="6" min="2" max="10">
-                        <small style="color: var(--text-dim); font-size: 0.75rem;">Consecutive digits before signal</small>
-                    </div>
-                    
-                    <div class="form-group">
+                </div>
+                <div class="fr">
+                    <div class="fg">
                         <label>Stop Loss ($)</label>
-                        <input type="number" id="stopLoss" value="0" min="0" step="10" placeholder="0 = disabled">
+                        <input type="number" id="cfgSL" value="0" min="0" step="5" placeholder="0 = off">
                     </div>
-                    
-                    <div class="form-group">
+                    <div class="fg">
                         <label>Take Profit ($)</label>
-                        <input type="number" id="takeProfit" value="0" min="0" step="10" placeholder="0 = disabled">
+                        <input type="number" id="cfgTP" value="0" min="0" step="5" placeholder="0 = off">
                     </div>
-                    
-                    <button class="btn btn-primary" id="btnStart">
-                        <span>▶</span> Start Bot
-                    </button>
-                    <button class="btn btn-danger" id="btnStop" style="display: none; margin-top: 10px;">
-                        <span>■</span> Stop Bot
-                    </button>
-                    
-                    <div class="export-buttons">
-                        <button class="btn btn-secondary" id="btnExportTicks">Ticks CSV</button>
-                        <button class="btn btn-secondary" id="btnExportTrades">Trades CSV</button>
-                        <button class="btn btn-secondary" id="btnExportLog">Log CSV</button>
+                </div>
+                
+                <div class="fg">
+                    <label>Session Limit (trades)</label>
+                    <input type="number" id="cfgMaxTrades" value="0" min="0" step="10" placeholder="0 = unlimited">
+                    <div style="font-size:.68rem;color:var(--text-2);margin-top:3px;">Auto-stop after N trades (0 = run forever)</div>
+                </div>
+
+                <button class="btn btn-go" id="btnStart">▶ Start Bot</button>
+                <button class="btn btn-stop" id="btnStop" style="display:none;margin-top:10px;">■ Stop Bot</button>
+
+                <div class="exports">
+                    <button class="btn btn-sm" id="btnExpTicks">Ticks CSV</button>
+                    <button class="btn btn-sm" id="btnExpTrades">Trades CSV</button>
+                    <button class="btn btn-sm" id="btnExpLog">Log CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ CENTER: DASHBOARD ═══ -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+            <!-- Status & Stats -->
+            <div class="panel">
+                <div class="ph">
+                    <span>Trading Status</span>
+                    <div class="badge idle" id="xPhase">IDLE</div>
+                </div>
+                <div class="pc">
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:.78rem;color:var(--text-1)">Observation Progress</div>
+                        <div class="mono" style="font-size:1rem;" id="xObsProg">0 / 100</div>
+                        <div class="pbar"><div class="pfill" id="xObsFill" style="width:0%"></div></div>
+                    </div>
+
+                    <div class="tick-row">
+                        <div class="big-digit" id="xDigit">-</div>
+                        <div class="tick-meta">
+                            <div class="tick-price" id="xPrice">0.00000</div>
+                            <div class="tick-sub">Tick #<span id="xTickN">0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="sg">
+                        <div class="sc"><div class="sv" id="xTotalT">0</div><div class="sl">Trades</div></div>
+                        <div class="sc"><div class="sv" id="xWinR">0%</div><div class="sl">Win Rate</div></div>
+                        <div class="sc"><div class="sv" id="xWins">0</div><div class="sl">Wins</div></div>
+                        <div class="sc"><div class="sv" id="xLosses">0</div><div class="sl">Losses</div></div>
+                        <div class="sc wide"><div class="sv w" id="xPL">$0.00</div><div class="sl">Profit / Loss</div></div>
+                    </div>
+
+                    <div class="signal-box">
+                        <div class="sig-dir none" id="xSigDir">WAITING</div>
+                        <div class="sig-sub" id="xSigSub">Collecting data…</div>
+                    </div>
+
+                    <div style="font-size:.78rem;color:var(--text-1);margin-bottom:6px;">Recent Digits (30)</div>
+                    <div class="recent-row" id="xRecent"></div>
+                </div>
+            </div>
+
+            <!-- Pattern Analysis -->
+            <div class="panel">
+                <div class="ph">Pattern Analysis</div>
+                <div class="pc">
+                    <div style="font-size:.78rem;color:var(--text-1);margin-bottom:6px;">Digit Distribution</div>
+                    <div class="dist" id="xDist"></div>
+
+                    <div class="tg">
+                        <div class="tc"><div class="tv" id="xLoPct">50%</div><div class="tl">Low (0–4)</div></div>
+                        <div class="tc"><div class="tv" id="xHiPct">50%</div><div class="tl">High (5–9)</div></div>
+                        <div class="tc"><div class="tv" id="xCLo">0</div><div class="tl">Consec Low</div></div>
+                        <div class="tc"><div class="tv" id="xCHi">0</div><div class="tl">Consec High</div></div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Center Panel - Main Display -->
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                <!-- Phase & Stats -->
-                <div class="panel">
-                    <div class="panel-header">
-                        <span>Trading Status</span>
-                        <div class="phase-badge idle" id="phaseBadge">IDLE</div>
-                    </div>
-                    <div class="panel-content">
-                        <div class="phase-indicator">
-                            <div>
-                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Observation Progress</div>
-                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem;" id="observationProgress">0 / 100</div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="tick-display">
-                            <div class="current-digit" id="currentDigit">-</div>
-                            <div class="tick-info">
-                                <div class="tick-price" id="tickPrice">0.00000</div>
-                                <div class="tick-count">Tick #<span id="tickCount">0</span></div>
-                            </div>
-                        </div>
-                        
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-value" id="totalTrades">0</div>
-                                <div class="stat-label">Total Trades</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="winRate">0%</div>
-                                <div class="stat-label">Win Rate</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="wins">0</div>
-                                <div class="stat-label">Wins</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="losses">0</div>
-                                <div class="stat-label">Losses</div>
-                            </div>
-                            <div class="stat-card full-width">
-                                <div class="stat-value profit" id="profitLoss">$0.00</div>
-                                <div class="stat-label">Profit / Loss</div>
-                            </div>
-                        </div>
-                        
-                        <div class="signal-display">
-                            <div class="signal-direction none" id="signalDirection">WAITING</div>
-                            <div class="signal-confidence" id="signalConfidence">Collecting data...</div>
-                        </div>
-                        
-                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px;">Recent Digits (Last 30)</div>
-                        <div class="recent-digits" id="recentDigits"></div>
-                    </div>
+
+            <!-- Log -->
+            <div class="panel">
+                <div class="ph">
+                    <span>Activity Log</span>
+                    <button class="btn btn-sm" style="width:auto;padding:5px 12px;font-size:.7rem;" id="btnClearLog">Clear</button>
                 </div>
-                
-                <!-- Pattern Analysis -->
-                <div class="panel">
-                    <div class="panel-header">Pattern Analysis</div>
-                    <div class="panel-content">
-                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px;">Digit Distribution</div>
-                        <div class="digit-distribution" id="digitDistribution">
-                            <!-- Generated by JS -->
-                        </div>
-                        
-                        <div class="trend-indicators">
-                            <div class="trend-card">
-                                <div class="trend-value" id="lowPercent">50%</div>
-                                <div class="trend-label">Low (0-4)</div>
-                            </div>
-                            <div class="trend-card">
-                                <div class="trend-value" id="highPercent">50%</div>
-                                <div class="trend-label">High (5-9)</div>
-                            </div>
-                            <div class="trend-card">
-                                <div class="trend-value" id="consecutiveLow">0</div>
-                                <div class="trend-label">Consec. Low</div>
-                            </div>
-                            <div class="trend-card">
-                                <div class="trend-value" id="consecutiveHigh">0</div>
-                                <div class="trend-label">Consec. High</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="pc">
+                    <div class="log-box" id="xLog"></div>
                 </div>
-                
-                <!-- Activity Log -->
-                <div class="panel">
-                    <div class="panel-header">
-                        <span>Activity Log</span>
-                        <button class="btn btn-secondary" style="width: auto; padding: 6px 12px; font-size: 0.75rem;" id="btnClearLog">Clear</button>
+            </div>
+        </div>
+
+        <!-- ═══ RIGHT: SHADOW & HISTORY ═══ -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+            <!-- Shadow Tracker -->
+            <div class="panel">
+                <div class="ph">
+                    <span>Shadow Performance</span>
+                    <button class="btn btn-sm" style="width:auto;padding:5px 10px;font-size:.7rem;" id="btnResetSh">Reset</button>
+                </div>
+                <div class="pc">
+                    <div style="padding:10px;border-radius:8px;text-align:center;margin-bottom:12px;background:var(--bg-2);">
+                        <div style="font-size:.68rem;color:var(--text-1);margin-bottom:3px;">SIGNAL PERFORMANCE</div>
+                        <div id="xShRec" style="font-size:1.05rem;font-weight:700;color:var(--text-2);">COLLECTING…</div>
                     </div>
-                    <div class="panel-content">
-                        <div class="log-container" id="logContainer"></div>
+                    
+                    <div class="sh-grid">
+                        <div class="sh-card"><div class="sh-v" style="color:var(--green)" id="xShW">0</div><div class="sh-l">WINS</div></div>
+                        <div class="sh-card"><div class="sh-v" style="color:var(--red)" id="xShL">0</div><div class="sh-l">LOSSES</div></div>
+                        <div class="sh-card"><div class="sh-v" id="xShD">0</div><div class="sh-l">DIFF</div></div>
+                    </div>
+
+                    <div style="background:var(--bg-2);padding:10px;border-radius:7px;margin-bottom:12px;">
+                        <div class="sh-row">
+                            <span style="color:var(--text-1)">Win Rate:</span>
+                            <span class="mono" id="xShWR">–</span>
+                        </div>
+                        <div class="sh-row">
+                            <span style="color:var(--text-1)">Last Signal:</span>
+                            <span class="mono" id="xShSig">–</span>
+                        </div>
+                        <div class="sh-row">
+                            <span style="color:var(--text-1)">Last Result:</span>
+                            <span class="mono" id="xShRes">–</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Streak Monitor -->
+                    <div style="border-top:1px solid var(--border);padding-top:12px;">
+                        <div style="font-weight:600;font-size:.82rem;margin-bottom:8px;">Loss Streak Monitor</div>
+                        <div class="streak-grid">
+                            <div class="sh-card">
+                                <div class="sh-v" id="xCurStrk">0</div>
+                                <div class="sh-l">CURRENT</div>
+                            </div>
+                            <div class="sh-card">
+                                <div class="sh-v" style="color:var(--red)" id="xMaxStrk">0</div>
+                                <div class="sh-l">MAX STREAK</div>
+                            </div>
+                        </div>
+                        <div style="background:var(--bg-2);padding:10px;border-radius:7px;">
+                            <div class="sh-row">
+                                <span style="color:var(--text-1)">Total Cycles:</span>
+                                <span class="mono" id="xCycles">0</span>
+                            </div>
+                            <div class="sh-row">
+                                <span style="color:var(--text-1)">4+ Streaks:</span>
+                                <span class="mono" style="color:var(--red)" id="xBadStrk">0</span>
+                            </div>
+                            <div class="sh-row">
+                                <span style="color:var(--text-1)">Streak Rate:</span>
+                                <span class="mono" id="xStrkRate">0%</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Right Panel - Martingale & Trades -->
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                <!-- Shadow Tracker Panel -->
-                <div class="panel">
-                    <div class="panel-header">
-                        <span>Shadow Tracker</span>
-                        <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; cursor: pointer;">
-                            <input type="checkbox" id="shadowEnabled" checked style="cursor: pointer;">
-                            Active
-                        </label>
-                    </div>
-                    <div class="panel-content">
-                        <div id="shadowRecommendation" style="padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 12px; background: var(--bg-tertiary);">
-                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">RECOMMENDATION</div>
-                            <div id="shadowRecommendText" style="font-size: 1.1rem; font-weight: 700; color: var(--text-dim);">WAITING...</div>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;">
-                            <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; text-align: center;">
-                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent-green);" id="shadowWins">0</div>
-                                <div style="font-size: 0.65rem; color: var(--text-secondary);">WINS</div>
-                            </div>
-                            <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; text-align: center;">
-                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent-red);" id="shadowLosses">0</div>
-                                <div style="font-size: 0.65rem; color: var(--text-secondary);">LOSSES</div>
-                            </div>
-                            <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; text-align: center;">
-                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; font-weight: 700;" id="shadowDiff">0</div>
-                                <div style="font-size: 0.65rem; color: var(--text-secondary);">DIFF</div>
-                            </div>
-                        </div>
-                        
-                        <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; margin-bottom: 12px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
-                                <span style="color: var(--text-secondary);">Last Signal:</span>
-                                <span id="shadowLastSignal" style="font-family: 'JetBrains Mono', monospace;">-</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
-                                <span style="color: var(--text-secondary);">Would Have:</span>
-                                <span id="shadowLastResult" style="font-family: 'JetBrains Mono', monospace;">-</span>
-                            </div>
-                        </div>
-                        
-                        <button class="btn btn-secondary" id="btnResetShadow" style="margin-bottom: 12px;">Reset Shadow Tracker</button>
-                        
-                        <!-- Streak Tracking Section -->
-                        <div style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-bottom: 12px;">
-                            <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 8px;">Loss Streak Monitor</div>
-                            
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px;">
-                                <div style="background: var(--bg-tertiary); padding: 8px; border-radius: 6px; text-align: center;">
-                                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700;" id="currentLossStreak">0</div>
-                                    <div style="font-size: 0.6rem; color: var(--text-secondary);">CURRENT STREAK</div>
-                                </div>
-                                <div style="background: var(--bg-tertiary); padding: 8px; border-radius: 6px; text-align: center;">
-                                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; color: var(--accent-red);" id="maxLossStreak">0</div>
-                                    <div style="font-size: 0.6rem; color: var(--text-secondary);">MAX STREAK</div>
-                                </div>
-                            </div>
-                            
-                            <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; margin-bottom: 10px;">
-                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
-                                    <span style="color: var(--text-secondary);">Cycles Completed:</span>
-                                    <span style="font-family: 'JetBrains Mono', monospace;" id="cyclesCompleted">0</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
-                                    <span style="color: var(--text-secondary);">4+ Loss Streaks:</span>
-                                    <span style="font-family: 'JetBrains Mono', monospace; color: var(--accent-red);" id="fourPlusStreaks">0</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
-                                    <span style="color: var(--text-secondary);">Streak Rate:</span>
-                                    <span style="font-family: 'JetBrains Mono', monospace;" id="streakRate">0%</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Adaptive Trigger -->
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <span style="font-size: 0.8rem;">Adaptive Trigger</span>
-                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                                    <input type="checkbox" id="adaptiveTriggerEnabled" style="cursor: pointer;">
-                                    <span style="font-size: 0.75rem;">Enable</span>
-                                </label>
-                            </div>
-                            
-                            <div id="adaptiveTriggerStatus" style="padding: 8px; border-radius: 6px; text-align: center; font-size: 0.75rem; background: var(--bg-tertiary); color: var(--text-dim);">
-                                Adaptive: OFF | Trigger: <span id="currentTriggerDisplay">6</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Autopilot Section -->
-                        <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                <span style="font-weight: 600; font-size: 0.9rem;">Autopilot Mode</span>
-                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                                    <input type="checkbox" id="autopilotEnabled" style="cursor: pointer;">
-                                    <span style="font-size: 0.8rem;">Enable</span>
-                                </label>
-                            </div>
-                            
-                            <div class="form-row" style="margin-bottom: 8px;">
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label style="font-size: 0.7rem;">Exit at Diff +</label>
-                                    <input type="number" id="exitThreshold" value="5" min="3" max="10" style="padding: 6px 10px;">
-                                </div>
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label style="font-size: 0.7rem;">Enter at Diff -</label>
-                                    <input type="number" id="entryThreshold" value="3" min="0" max="10" style="padding: 6px 10px;">
-                                </div>
-                            </div>
-                            
-                            <div id="autopilotStatus" style="padding: 10px; border-radius: 6px; text-align: center; font-size: 0.8rem; background: var(--bg-tertiary); color: var(--text-dim);">
-                                Autopilot Disabled
-                            </div>
-                        </div>
-                        
-                        <!-- Snipe Mode Section (always on) -->
-                        <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
-                            <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 10px;">🎯 Snipe Settings</div>
-                            
-                            <div class="form-row" style="margin-bottom: 8px;">
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label style="font-size: 0.7rem;">Trades per Snipe</label>
-                                    <input type="number" id="snipeMaxTrades" value="2" min="1" max="10" style="padding: 6px 10px;">
-                                </div>
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label style="font-size: 0.7rem;">Enter at Diff -</label>
-                                    <input type="number" id="snipeEntryThreshold" value="3" min="0" max="10" style="padding: 6px 10px;">
-                                </div>
-                            </div>
-                            
-                            <div class="form-row" style="margin-bottom: 8px;">
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label style="font-size: 0.7rem;">Exit Early at Diff +</label>
-                                    <input type="number" id="snipeExitThreshold" value="5" min="1" max="15" style="padding: 6px 10px;">
-                                </div>
-                            </div>
-                            
-                            <div id="snipeModeStatus" style="padding: 10px; border-radius: 6px; text-align: center; font-size: 0.8rem; background: var(--bg-tertiary); color: var(--text-dim);">
-                                Click Start to begin
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="panel">
-                    <div class="panel-header">
-                        <span>Martingale Progression</span>
-                        <span style="font-size: 0.75rem; color: var(--text-secondary);">Level: <span id="currentLevel">0</span></span>
-                    </div>
-                    <div class="panel-content">
-                        <table class="martingale-table" id="martingaleTable">
-                            <thead>
-                                <tr>
-                                    <th>Lvl</th>
-                                    <th>Stake</th>
-                                    <th>Total Risk</th>
-                                    <th>Win Profit</th>
-                                </tr>
-                            </thead>
-                            <tbody id="martingaleBody">
-                                <!-- Generated by JS -->
-                            </tbody>
-                        </table>
-                        <div style="margin-top: 12px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
-                                <span style="color: var(--text-secondary);">Max Risk:</span>
-                                <span style="font-family: 'JetBrains Mono', monospace; color: var(--accent-red);" id="maxRisk">$0.00</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 6px;">
-                                <span style="color: var(--text-secondary);">Current Stake:</span>
-                                <span style="font-family: 'JetBrains Mono', monospace; color: var(--accent-blue);" id="currentStake">$0.35</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="panel">
-                    <div class="panel-header">Trade History</div>
-                    <div class="panel-content">
-                        <div class="trade-history" id="tradeHistory">
-                            <div style="text-align: center; color: var(--text-dim); padding: 20px;">No trades yet</div>
-                        </div>
+
+            <!-- Trade History -->
+            <div class="panel">
+                <div class="ph">Trade History</div>
+                <div class="pc">
+                    <div class="th" id="xHistory">
+                        <div style="text-align:center;color:var(--text-2);padding:20px;">No trades yet</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // ========================================
-        // STATE MANAGEMENT
-        // ========================================
-        const state = {
-            // Connection
-            ws: null,
-            connected: false,
-            reconnectAttempts: 0,
-            reconnectTimer: null,
-            keepAliveInterval: null,
-            lastPingTime: null,
-            
-            // Trading
-            isRunning: false,
-            phase: 'idle', // idle, observation, analyzing, trading, recovery
-            currentDirection: null, // 'over' or 'under'
-            martingaleLevel: 0,
-            
-            // Shadow Tracker
-            shadow: {
-                enabled: true,
-                wins: 0,
-                losses: 0,
-                diff: 0,
-                consecutiveLow: 0,
-                consecutiveHigh: 0,
-                lastSignal: null,
-                lastResult: null,
-                inSimRecovery: false,
-                simDirection: null,
-                simLevel: 0,
-                history: [],
-                
-                // Streak tracking
-                currentLossStreak: 0,
-                maxLossStreak: 0,
-                cyclesCompleted: 0,
-                fourPlusStreaks: 0,
-                streakHistory: [],  // Track last 50 cycles
-                
-                // Adaptive trigger
-                adaptiveTrigger: {
-                    enabled: false,
-                    baseTrigger: 6,
-                    currentTrigger: 6,
-                    maxTrigger: 10,
-                    checkWindow: 50,      // Check over last 50 cycles
-                    maxStreakRate: 3,     // Max 3% of cycles can hit 4+ losses
-                    adjustments: 0,       // How many times we've adjusted
-                    cyclesAtCurrentTrigger: 0,  // Cycles since last trigger change
-                    cooldownCycles: 100   // Cycles before trying to decrease
-                }
-            },
-            
-            // Autopilot
-            autopilot: {
-                enabled: false,
-                exitThreshold: 5,    // Exit when diff >= +5
-                entryThreshold: -3,  // Enter when diff <= -3
-                isPaused: false,     // Paused by autopilot (waiting for good entry)
-                pauseReason: ''
-            },
-            
-            // Snipe Mode (always on now)
-            snipeMode: {
-                enabled: true,           // Always enabled
-                maxTrades: 2,            // Take only 2 trades per snipe
-                tradesTaken: 0,          // Trades taken this snipe session
-                isWaitingForEntry: true, // Waiting for good entry point
-                entryThreshold: -3,      // Enter when diff <= -3
-                exitThreshold: 5         // Exit early if diff >= +5 (after a win)
-            },
-            
-            // Watch only mode (no trading, just shadow tracking)
-            isWatching: false,
-            
-            // Data
-            ticks: [],
-            digits: [],
-            digitCounts: [0,0,0,0,0,0,0,0,0,0],
-            trades: [],
-            activityLog: [],
-            
-            // Stats
-            totalTrades: 0,
-            wins: 0,
-            losses: 0,
-            profitLoss: 0,
-            
-            // Pattern
-            consecutiveLow: 0,
-            consecutiveHigh: 0,
-            
-            // Config
-            config: {
-                apiToken: '',
-                market: 'R_10',
-                baseStake: 0.35,
-                payout: 95,
-                maxDepth: 10,
-                observationTicks: 100,
-                strategy: 'trend',
-                consecutiveTrigger: 6,
-                stopLoss: 0,
-                takeProfit: 0,
-                martingaleEnabled: false  // Martingale on/off
-            },
-            
-            // Contract tracking
-            currentContractId: null,
-            pendingTrade: null
+<script>
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
+const S = {
+    ws: null,
+    connected: false,
+    reconAttempts: 0,
+    reconTimer: null,
+    keepAlive: null,
+    lastPing: null,
+    
+    running: false,
+    phase: 'idle',  // idle | observation | trading | recovery
+    direction: null,
+    
+    // Shadow tracker (passive performance monitor)
+    shadow: {
+        wins: 0, losses: 0, diff: 0,
+        cLo: 0, cHi: 0,
+        lastSig: null, lastRes: null,
+        pending: null, pendingEval: null,
+        curStreak: 0, maxStreak: 0,
+        cycles: 0, badStreaks: 0,
+        history: []
+    },
+    
+    ticks: [],
+    digits: [],
+    dCounts: new Array(10).fill(0),
+    trades: [],
+    logs: [],
+    
+    total: 0, wins: 0, losses: 0, pnl: 0,
+    cLo: 0, cHi: 0,
+    
+    cfg: {
+        token: '', market: 'R_10', stake: 0.35, payout: 95,
+        obs: 100, trigger: 6, sl: 0, tp: 0, maxTrades: 0
+    },
+    
+    contractId: null,
+    pendingTrade: null
+};
+
+// ════════════════════════════════════════
+// DB
+// ════════════════════════════════════════
+let db = null;
+
+async function initDB() {
+    return new Promise((res, rej) => {
+        const r = indexedDB.open('TrendBot', 1);
+        r.onerror = () => rej(r.error);
+        r.onsuccess = () => { db = r.result; res(db); };
+        r.onupgradeneeded = e => {
+            const d = e.target.result;
+            if (!d.objectStoreNames.contains('ticks')) d.createObjectStore('ticks', { keyPath: 'id', autoIncrement: true });
+            if (!d.objectStoreNames.contains('trades')) d.createObjectStore('trades', { keyPath: 'id', autoIncrement: true });
+            if (!d.objectStoreNames.contains('state')) d.createObjectStore('state', { keyPath: 'key' });
         };
+    });
+}
 
-        // ========================================
-        // DOM ELEMENTS
-        // ========================================
-        const elements = {
-            statusDot: document.getElementById('statusDot'),
-            statusText: document.getElementById('statusText'),
-            reconnectCount: document.getElementById('reconnectCount'),
-            accountBalance: document.getElementById('accountBalance'),
-            btnStart: document.getElementById('btnStart'),
-            btnStop: document.getElementById('btnStop'),
-            phaseBadge: document.getElementById('phaseBadge'),
-            observationProgress: document.getElementById('observationProgress'),
-            progressFill: document.getElementById('progressFill'),
-            currentDigit: document.getElementById('currentDigit'),
-            tickPrice: document.getElementById('tickPrice'),
-            tickCount: document.getElementById('tickCount'),
-            totalTrades: document.getElementById('totalTrades'),
-            winRate: document.getElementById('winRate'),
-            wins: document.getElementById('wins'),
-            losses: document.getElementById('losses'),
-            profitLoss: document.getElementById('profitLoss'),
-            signalDirection: document.getElementById('signalDirection'),
-            signalConfidence: document.getElementById('signalConfidence'),
-            recentDigits: document.getElementById('recentDigits'),
-            digitDistribution: document.getElementById('digitDistribution'),
-            lowPercent: document.getElementById('lowPercent'),
-            highPercent: document.getElementById('highPercent'),
-            consecutiveLow: document.getElementById('consecutiveLow'),
-            consecutiveHigh: document.getElementById('consecutiveHigh'),
-            martingaleBody: document.getElementById('martingaleBody'),
-            currentLevel: document.getElementById('currentLevel'),
-            maxRisk: document.getElementById('maxRisk'),
-            currentStake: document.getElementById('currentStake'),
-            tradeHistory: document.getElementById('tradeHistory'),
-            logContainer: document.getElementById('logContainer')
-        };
+function dbSave(store, data) {
+    if (!db) return;
+    const tx = db.transaction(store, 'readwrite');
+    tx.objectStore(store).add(data);
+}
 
-        // ========================================
-        // INDEXEDDB FOR PERSISTENCE
-        // ========================================
-        let db = null;
-        
-        async function initDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open('MartingaleBot', 1);
-                
-                request.onerror = () => reject(request.error);
-                request.onsuccess = () => {
-                    db = request.result;
-                    resolve(db);
-                };
-                
-                request.onupgradeneeded = (event) => {
-                    const database = event.target.result;
-                    if (!database.objectStoreNames.contains('ticks')) {
-                        database.createObjectStore('ticks', { keyPath: 'id', autoIncrement: true });
-                    }
-                    if (!database.objectStoreNames.contains('trades')) {
-                        database.createObjectStore('trades', { keyPath: 'id', autoIncrement: true });
-                    }
-                    if (!database.objectStoreNames.contains('state')) {
-                        database.createObjectStore('state', { keyPath: 'key' });
-                    }
-                };
-            });
-        }
-        
-        async function saveToDB(store, data) {
-            if (!db) return;
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(store, 'readwrite');
-                const objectStore = tx.objectStore(store);
-                const request = objectStore.add(data);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
-        
-        async function saveState() {
-            if (!db) return;
-            const tx = db.transaction('state', 'readwrite');
-            const store = tx.objectStore('state');
-            store.put({ key: 'appState', value: {
-                profitLoss: state.profitLoss,
-                wins: state.wins,
-                losses: state.losses,
-                totalTrades: state.totalTrades
-            }});
-        }
+function dbState() {
+    if (!db) return;
+    const tx = db.transaction('state', 'readwrite');
+    tx.objectStore('state').put({ key: 'appState', value: { pnl: S.pnl, wins: S.wins, losses: S.losses, total: S.total } });
+}
 
-        // ========================================
-        // LOGGING
-        // ========================================
-        function log(type, message) {
-            const now = new Date();
-            const time = now.toTimeString().slice(0, 8);
-            const entry = { time, type, message, timestamp: now.toISOString() };
-            
-            state.activityLog.push(entry);
-            
-            const logEntry = document.createElement('div');
-            logEntry.className = 'log-entry';
-            logEntry.innerHTML = `
-                <span class="log-time">${time}</span>
-                <span class="log-type ${type}">${type.toUpperCase()}</span>
-                <span class="log-message">${message}</span>
-            `;
-            
-            elements.logContainer.insertBefore(logEntry, elements.logContainer.firstChild);
-            
-            // Keep only last 200 entries in DOM
-            while (elements.logContainer.children.length > 200) {
-                elements.logContainer.removeChild(elements.logContainer.lastChild);
-            }
-        }
+// ════════════════════════════════════════
+// LOG
+// ════════════════════════════════════════
+const $log = document.getElementById('xLog');
 
-        // ========================================
-        // WEBSOCKET CONNECTION
-        // ========================================
-        function connect() {
-            if (state.ws && state.ws.readyState === WebSocket.OPEN) return;
-            
-            log('system', 'Connecting to Deriv API...');
-            state.ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
-            
-            state.ws.onopen = () => {
-                state.connected = true;
-                state.reconnectAttempts = 0;
-                updateConnectionStatus(true);
-                log('system', 'Connected to Deriv API');
-                
-                // Authorize if token exists
-                if (state.config.apiToken) {
-                    authorize();
-                }
-                
-                // Start keep-alive
-                startKeepAlive();
-            };
-            
-            state.ws.onclose = () => {
-                state.connected = false;
-                updateConnectionStatus(false);
-                log('system', 'Disconnected from Deriv API');
-                
-                stopKeepAlive();
-                scheduleReconnect();
-            };
-            
-            state.ws.onerror = (error) => {
-                log('system', 'WebSocket error occurred');
-                console.error('WebSocket error:', error);
-            };
-            
-            state.ws.onmessage = (event) => {
-                handleMessage(JSON.parse(event.data));
-            };
-        }
-        
-        function authorize() {
-            send({ authorize: state.config.apiToken });
-        }
-        
-        function send(data) {
-            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-                state.ws.send(JSON.stringify(data));
-            }
-        }
-        
-        function updateConnectionStatus(connected) {
-            elements.statusDot.classList.toggle('connected', connected);
-            elements.statusText.textContent = connected ? 'Connected' : 'Disconnected';
-        }
-        
-        function updateBalance(balanceData) {
-            const balance = parseFloat(balanceData.balance).toFixed(2);
-            const currency = balanceData.currency || 'USD';
-            elements.accountBalance.textContent = `$${balance}`;
-            log('info', `Balance updated: $${balance} ${currency}`);
-        }
-        
-        function scheduleReconnect() {
-            if (state.reconnectTimer) return;
-            
-            const delay = Math.min(1000 * Math.pow(2, state.reconnectAttempts), 30000);
-            state.reconnectAttempts++;
-            elements.reconnectCount.textContent = state.reconnectAttempts;
-            
-            log('system', `Reconnecting in ${delay/1000}s (attempt ${state.reconnectAttempts})`);
-            
-            state.reconnectTimer = setTimeout(() => {
-                state.reconnectTimer = null;
-                connect();
-            }, delay);
-        }
-        
-        function startKeepAlive() {
-            stopKeepAlive();
-            state.keepAliveInterval = setInterval(() => {
-                if (state.connected) {
-                    send({ ping: 1 });
-                    state.lastPingTime = Date.now();
-                    
-                    // Check for stale connection
-                    setTimeout(() => {
-                        if (state.lastPingTime && Date.now() - state.lastPingTime > 20000) {
-                            log('system', 'Stale connection detected, reconnecting...');
-                            state.ws.close();
-                        }
-                    }, 15000);
+function log(type, msg) {
+    const t = new Date().toTimeString().slice(0, 8);
+    S.logs.push({ timestamp: new Date().toISOString(), type, message: msg });
+    
+    const el = document.createElement('div');
+    el.className = 'le';
+    el.innerHTML = `<span class="le-t">${t}</span><span class="le-k ${type}">${type.toUpperCase()}</span><span class="le-m">${msg}</span>`;
+    $log.insertBefore(el, $log.firstChild);
+    
+    while ($log.children.length > 200) $log.removeChild($log.lastChild);
+}
+
+// ════════════════════════════════════════
+// WEBSOCKET
+// ════════════════════════════════════════
+function connect() {
+    if (S.ws && S.ws.readyState === WebSocket.OPEN) return;
+    
+    log('system', 'Connecting…');
+    S.ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+    
+    S.ws.onopen = () => {
+        S.connected = true;
+        S.reconAttempts = 0;
+        setConn(true);
+        log('system', 'Connected');
+        if (S.cfg.token) send({ authorize: S.cfg.token });
+        startKA();
+    };
+    
+    S.ws.onclose = () => {
+        S.connected = false;
+        setConn(false);
+        log('system', 'Disconnected');
+        stopKA();
+        schedRecon();
+    };
+    
+    S.ws.onerror = () => log('system', 'WebSocket error');
+    S.ws.onmessage = e => handle(JSON.parse(e.data));
+}
+
+function send(d) { if (S.ws?.readyState === WebSocket.OPEN) S.ws.send(JSON.stringify(d)); }
+
+function setConn(on) {
+    document.getElementById('xDot').classList.toggle('on', on);
+    document.getElementById('xConn').textContent = on ? 'Connected' : 'Disconnected';
+}
+
+function schedRecon() {
+    if (S.reconTimer) return;
+    const delay = Math.min(1000 * 2 ** S.reconAttempts, 30000);
+    S.reconAttempts++;
+    document.getElementById('xRecon').textContent = S.reconAttempts;
+    log('system', `Reconnect in ${delay/1000}s (#${S.reconAttempts})`);
+    S.reconTimer = setTimeout(() => { S.reconTimer = null; connect(); }, delay);
+}
+
+function startKA() {
+    stopKA();
+    S.keepAlive = setInterval(() => {
+        if (S.connected) {
+            send({ ping: 1 });
+            S.lastPing = Date.now();
+            setTimeout(() => {
+                if (S.lastPing && Date.now() - S.lastPing > 20000) {
+                    log('system', 'Stale connection, reconnecting…');
+                    S.ws.close();
                 }
             }, 15000);
         }
-        
-        function stopKeepAlive() {
-            if (state.keepAliveInterval) {
-                clearInterval(state.keepAliveInterval);
-                state.keepAliveInterval = null;
-            }
-        }
+    }, 15000);
+}
 
-        // ========================================
-        // MESSAGE HANDLER
-        // ========================================
-        function handleMessage(data) {
-            if (data.error) {
-                log('system', `Error: ${data.error.message}`);
-                return;
-            }
-            
-            if (data.msg_type === 'authorize') {
-                log('system', 'Authorization successful');
-                // Subscribe to balance updates
-                send({ balance: 1, subscribe: 1 });
-                subscribeToTicks();
-            }
-            
-            if (data.msg_type === 'balance') {
-                updateBalance(data.balance);
-            }
-            
-            if (data.msg_type === 'tick') {
-                handleTick(data.tick);
-            }
-            
-            if (data.msg_type === 'buy') {
-                handleBuyResponse(data);
-            }
-            
-            if (data.msg_type === 'proposal_open_contract') {
-                handleContractUpdate(data.proposal_open_contract);
-            }
-            
-            if (data.msg_type === 'ping') {
-                state.lastPingTime = null; // Reset stale detection
-            }
-        }
-        
-        function subscribeToTicks() {
-            send({
-                ticks: state.config.market,
-                subscribe: 1
-            });
-            log('info', `Subscribed to ${state.config.market}`);
-        }
-        
-        function handleTick(tick) {
-            const price = parseFloat(tick.quote);
-            const digit = parseInt(price.toString().slice(-1));
-            const timestamp = new Date(tick.epoch * 1000).toISOString();
-            
-            // Store tick data
-            const tickData = { timestamp, price, digit, epoch: tick.epoch };
-            state.ticks.push(tickData);
-            saveToDB('ticks', tickData);
-            
-            // Keep only last 5000 ticks in memory
-            if (state.ticks.length > 5000) {
-                state.ticks.shift();
-            }
-            
-            // Update digits
-            state.digits.push(digit);
-            state.digitCounts[digit]++;
-            
-            // Keep only relevant digits in memory
-            if (state.digits.length > 1000) {
-                const removed = state.digits.shift();
-                state.digitCounts[removed]--;
-            }
-            
-            // Update consecutive counters
-            if (digit <= 4) {
-                state.consecutiveLow++;
-                state.consecutiveHigh = 0;
-            } else {
-                state.consecutiveHigh++;
-                state.consecutiveLow = 0;
-            }
-            
-            // Update UI
-            updateTickDisplay(price, digit);
-            updateDigitDistribution();
-            updateRecentDigits();
-            updateTrendIndicators();
-            
-            // ALWAYS update observation progress (no condition)
-            const observationCount = state.digits.length;
-            const target = state.config.observationTicks || 100;
-            console.log('Observation:', observationCount, '/', target);  // DEBUG
-            document.getElementById('observationProgress').textContent = `${observationCount} / ${target}`;
-            document.getElementById('progressFill').style.width = `${Math.min((observationCount / target) * 100, 100)}%`;
-            
-            // Update snipe UI when watching or running
-            if (state.isWatching || state.isRunning) {
-                updateSnipeModeUI();
-            }
-            
-            // Process trading logic
-            if (state.isRunning) {
-                processTrading(digit);
-            }
-            
-            // Always process shadow tracker (even when bot is off)
-            if (state.shadow.enabled) {
-                processShadowTracker(digit);
-            }
-        }
-        
-        function processShadowTracker(digit) {
-            // Update shadow consecutive counters
-            if (digit <= 4) {
-                state.shadow.consecutiveLow++;
-                state.shadow.consecutiveHigh = 0;
-            } else {
-                state.shadow.consecutiveHigh++;
-                state.shadow.consecutiveLow = 0;
-            }
-            
-            // Need enough data
-            if (state.digits.length < state.config.observationTicks) {
-                updateShadowUI();
-                return;
-            }
-            
-            // Log once when observation completes
-            if (state.digits.length === state.config.observationTicks && state.isWatching) {
-                log('system', `📊 Observation complete! Now watching for entry signal...`);
-            }
-            
-            const trigger = state.config.consecutiveTrigger;
-            const strategy = state.config.strategy;
-            
-            let signalDirection = null;
-            
-            // Check for signal (same logic as real trading)
-            if (state.shadow.inSimRecovery) {
-                // In simulated recovery - check for signal in same direction
-                const dir = state.shadow.simDirection;
-                if (strategy === 'trend') {
-                    if (dir === 'over' && state.shadow.consecutiveHigh >= trigger) {
-                        signalDirection = 'over';
-                    } else if (dir === 'under' && state.shadow.consecutiveLow >= trigger) {
-                        signalDirection = 'under';
-                    }
-                } else {
-                    if (dir === 'over' && state.shadow.consecutiveLow >= trigger) {
-                        signalDirection = 'over';
-                    } else if (dir === 'under' && state.shadow.consecutiveHigh >= trigger) {
-                        signalDirection = 'under';
-                    }
-                }
-            } else {
-                // Look for new signal
-                if (strategy === 'trend') {
-                    if (state.shadow.consecutiveLow >= trigger) {
-                        signalDirection = 'under';
-                    } else if (state.shadow.consecutiveHigh >= trigger) {
-                        signalDirection = 'over';
-                    }
-                } else {
-                    if (state.shadow.consecutiveLow >= trigger) {
-                        signalDirection = 'over';
-                    } else if (state.shadow.consecutiveHigh >= trigger) {
-                        signalDirection = 'under';
-                    }
-                }
-            }
-            
-            // If we have a signal, simulate the trade result with NEXT digit
-            if (signalDirection && state.shadow.lastSignal !== signalDirection + '_' + state.digits.length) {
-                state.shadow.lastSignal = signalDirection;
-                
-                // Store for next tick evaluation
-                state.shadow.pendingSignal = {
-                    direction: signalDirection,
-                    tickIndex: state.digits.length
-                };
-            }
-            
-            // Evaluate previous pending signal
-            if (state.shadow.pendingEval) {
-                const evalSignal = state.shadow.pendingEval;
-                const won = (evalSignal.direction === 'over' && digit >= 5) || 
-                           (evalSignal.direction === 'under' && digit <= 4);
-                
-                if (won) {
-                    state.shadow.wins++;
-                    state.shadow.lastResult = 'WON ✓';
-                    
-                    // Record streak for this cycle
-                    const streakForCycle = state.shadow.currentLossStreak;
-                    state.shadow.streakHistory.push(streakForCycle);
-                    
-                    // Keep only last 50 cycles
-                    if (state.shadow.streakHistory.length > 50) {
-                        state.shadow.streakHistory.shift();
-                    }
-                    
-                    // Update 4+ streak counter
-                    if (streakForCycle >= 4) {
-                        state.shadow.fourPlusStreaks++;
-                    }
-                    
-                    state.shadow.cyclesCompleted++;
-                    state.shadow.currentLossStreak = 0;
-                    state.shadow.inSimRecovery = false;
-                    state.shadow.simDirection = null;
-                    state.shadow.simLevel = 0;
-                    
-                    // Check adaptive trigger
-                    checkAdaptiveTrigger();
-                    
-                } else {
-                    state.shadow.losses++;
-                    state.shadow.lastResult = 'LOST ✗';
-                    state.shadow.currentLossStreak++;
-                    
-                    // Update max streak
-                    if (state.shadow.currentLossStreak > state.shadow.maxLossStreak) {
-                        state.shadow.maxLossStreak = state.shadow.currentLossStreak;
-                    }
-                    
-                    state.shadow.inSimRecovery = true;
-                    state.shadow.simDirection = evalSignal.direction;
-                    state.shadow.simLevel++;
-                    
-                    // Check if bust (max depth)
-                    if (state.shadow.simLevel >= state.config.maxDepth) {
-                        // Record streak for this busted cycle
-                        const streakForCycle = state.shadow.currentLossStreak;
-                        state.shadow.streakHistory.push(streakForCycle);
-                        
-                        if (state.shadow.streakHistory.length > 50) {
-                            state.shadow.streakHistory.shift();
-                        }
-                        
-                        if (streakForCycle >= 4) {
-                            state.shadow.fourPlusStreaks++;
-                        }
-                        
-                        state.shadow.cyclesCompleted++;
-                        state.shadow.currentLossStreak = 0;
-                        state.shadow.inSimRecovery = false;
-                        state.shadow.simDirection = null;
-                        state.shadow.simLevel = 0;
-                        
-                        // Check adaptive trigger
-                        checkAdaptiveTrigger();
-                    }
-                }
-                
-                state.shadow.diff = state.shadow.wins - state.shadow.losses;
-                state.shadow.history.push({
-                    direction: evalSignal.direction,
-                    won: won,
-                    diff: state.shadow.diff
-                });
-                
-                state.shadow.pendingEval = null;
-                
-                // Check autopilot conditions
-                checkAutopilot(won);
-            }
-            
-            // Move pending signal to eval
-            if (state.shadow.pendingSignal) {
-                state.shadow.pendingEval = state.shadow.pendingSignal;
-                state.shadow.pendingSignal = null;
-            }
-            
-            updateShadowUI();
-        }
-        
-        function checkAutopilot(lastWon) {
-            if (!state.autopilot.enabled) return;
-            
-            const diff = state.shadow.diff;
-            const exitThreshold = state.autopilot.exitThreshold;
-            const entryThreshold = -Math.abs(state.autopilot.entryThreshold);
-            
-            // Only exit after a WIN (at Level 0)
-            if (state.isRunning && !state.autopilot.isPaused) {
-                // Check exit condition: diff too high AND we just won (clean exit)
-                if (diff >= exitThreshold && lastWon && state.martingaleLevel === 0) {
-                    // Autopilot PAUSE - conditions bad
-                    state.autopilot.isPaused = true;
-                    state.autopilot.pauseReason = `Diff +${diff} (≥ +${exitThreshold})`;
-                    
-                    // Switch to watch mode
-                    state.isRunning = false;
-                    state.isWatching = true;
-                    
-                    log('system', `⏸️ AUTOPILOT: Paused trading - ${state.autopilot.pauseReason}`);
-                    log('info', 'Waiting for correction...');
-                    updateAutopilotUI();
-                }
-            }
-            
-            // Check entry condition (can be from paused state OR from watch mode)
-            if ((state.autopilot.isPaused || state.isWatching) && diff <= entryThreshold) {
-                // Autopilot RESUME - conditions good
-                state.autopilot.isPaused = false;
-                state.autopilot.pauseReason = '';
-                
-                // Switch from watch to running
-                state.isWatching = false;
-                state.isRunning = true;
-                state.phase = 'analyzing';
-                setPhase('analyzing');
-                
-                log('system', `▶️ AUTOPILOT: Resuming trading - Diff ${diff} (≤ ${entryThreshold})`);
-                log('info', 'Recovery zone detected. Re-entering market.');
-                updateAutopilotUI();
-            }
-        }
-        
-        function checkAdaptiveTrigger() {
-            if (!state.shadow.adaptiveTrigger.enabled) return;
-            
-            const adaptive = state.shadow.adaptiveTrigger;
-            const history = state.shadow.streakHistory;
-            const window = adaptive.checkWindow;
-            const maxRate = adaptive.maxStreakRate;
-            const currentTrigger = adaptive.currentTrigger;
-            const baseTrigger = adaptive.baseTrigger;
-            const maxTrigger = adaptive.maxTrigger;
-            const cooldown = adaptive.cooldownCycles;
-            
-            // Increment cycles at current trigger
-            adaptive.cyclesAtCurrentTrigger++;
-            
-            // Need at least 20 cycles to evaluate
-            if (history.length < 20) return;
-            
-            // Calculate 4+ streak rate in recent cycles
-            const recentCycles = history.slice(-Math.min(history.length, window));
-            const fourPlusCount = recentCycles.filter(s => s >= 4).length;
-            const streakRate = (fourPlusCount / recentCycles.length) * 100;
-            
-            // INCREASE: If rate exceeds threshold, increase trigger
-            if (streakRate > maxRate && currentTrigger < maxTrigger) {
-                const oldTrigger = currentTrigger;
-                adaptive.currentTrigger++;
-                adaptive.adjustments++;
-                adaptive.cyclesAtCurrentTrigger = 0;  // Reset counter
-                
-                // Update actual config
-                state.config.consecutiveTrigger = adaptive.currentTrigger;
-                document.getElementById('consecutiveTrigger').value = adaptive.currentTrigger;
-                
-                log('system', `🔧 ADAPTIVE: Trigger increased ${oldTrigger} → ${adaptive.currentTrigger}`);
-                log('info', `Reason: 4+ streak rate ${streakRate.toFixed(1)}% > ${maxRate}% threshold`);
-                
-                // Reset streak history after adjustment
-                state.shadow.streakHistory = [];
-                state.shadow.fourPlusStreaks = 0;
-                state.shadow.cyclesCompleted = 0;
-            }
-            // DECREASE: After cooldown period, try lowering trigger if rate is safe
-            else if (currentTrigger > baseTrigger && 
-                     adaptive.cyclesAtCurrentTrigger >= cooldown && 
-                     streakRate <= maxRate) {
-                const oldTrigger = currentTrigger;
-                adaptive.currentTrigger--;
-                adaptive.adjustments++;
-                adaptive.cyclesAtCurrentTrigger = 0;  // Reset counter
-                
-                // Update actual config
-                state.config.consecutiveTrigger = adaptive.currentTrigger;
-                document.getElementById('consecutiveTrigger').value = adaptive.currentTrigger;
-                
-                log('system', `🔧 ADAPTIVE: Trigger decreased ${oldTrigger} → ${adaptive.currentTrigger}`);
-                log('info', `Reason: ${cooldown} cycles passed, rate ${streakRate.toFixed(1)}% is safe`);
-                log('info', `Testing if lower trigger is sustainable...`);
-                
-                // Reset streak history after adjustment
-                state.shadow.streakHistory = [];
-                state.shadow.fourPlusStreaks = 0;
-                state.shadow.cyclesCompleted = 0;
-            }
-            
-            updateAdaptiveTriggerUI();
-        }
-        
-        function checkSnipeEntry() {
-            if (!state.snipeMode.isWaitingForEntry) return;
-            if (!state.isWatching) return;
-            
-            // Need enough observation data first
-            if (state.digits.length < state.config.observationTicks) {
-                return;
-            }
-            
-            const diff = state.shadow.diff;
-            const entryThreshold = -Math.abs(state.snipeMode.entryThreshold);
-            
-            // Check if conditions are good to enter
-            if (diff <= entryThreshold) {
-                // Good entry point - start sniping!
-                state.snipeMode.isWaitingForEntry = false;
-                state.snipeMode.tradesTaken = 0;
-                
-                log('system', `🎯 ENTRY SIGNAL! Diff ${diff} ≤ ${entryThreshold}`);
-                log('info', `Taking ${state.snipeMode.maxTrades} trades then pausing...`);
-                
-                // Switch from watching to trading
-                state.isWatching = false;
-                state.isRunning = true;
-                state.phase = 'analyzing';
-                setPhase('analyzing');
-            }
-            
-            updateSnipeModeUI();
-        }
-        
-        function onSnipeTradeComplete() {
-            // Only count completed cycles (wins at Level 0 or busts)
-            if (state.martingaleLevel === 0) {
-                state.snipeMode.tradesTaken++;
-                log('info', `🎯 Trade ${state.snipeMode.tradesTaken}/${state.snipeMode.maxTrades} complete`);
-                
-                updateSnipeModeUI();
-                
-                const diff = state.shadow.diff;
-                const exitThreshold = state.snipeMode.exitThreshold;
-                
-                // Check for EARLY EXIT: diff too high (correction likely)
-                if (diff >= exitThreshold && state.snipeMode.tradesTaken < state.snipeMode.maxTrades) {
-                    log('system', `🎯 EARLY EXIT! Diff +${diff} ≥ +${exitThreshold}`);
-                    log('info', `Only completed ${state.snipeMode.tradesTaken}/${state.snipeMode.maxTrades} trades. Correction likely.`);
-                    log('info', `Returning to observation. Waiting for diff -${state.snipeMode.entryThreshold}...`);
-                    
-                    // Reset and go back to watching
-                    state.snipeMode.isWaitingForEntry = true;
-                    state.snipeMode.tradesTaken = 0;
-                    
-                    state.isRunning = false;
-                    state.isWatching = true;
-                    state.phase = 'observation';
-                    setPhase('observation');
-                    
-                    updateSnipeModeUI();
-                    return true;
-                }
-                
-                // Check if we've hit max trades
-                if (state.snipeMode.tradesTaken >= state.snipeMode.maxTrades) {
-                    log('system', `🎯 ${state.snipeMode.maxTrades} trades complete. Returning to observation.`);
-                    log('info', `Waiting for diff to reach -${state.snipeMode.entryThreshold} again...`);
-                    
-                    // Reset snipe state
-                    state.snipeMode.isWaitingForEntry = true;
-                    state.snipeMode.tradesTaken = 0;
-                    
-                    // Go back to watching mode (not full stop)
-                    state.isRunning = false;
-                    state.isWatching = true;
-                    state.phase = 'observation';
-                    setPhase('observation');
-                    
-                    updateSnipeModeUI();
-                    return true;  // Signal that snipe paused trading
-                }
-            }
-            
-            return false;  // Continue trading
-        }
-        
-        function updateSnipeModeUI() {
-            const statusEl = document.getElementById('snipeModeStatus');
-            const snipe = state.snipeMode;
-            const diff = state.shadow.diff;
-            const entryThreshold = -Math.abs(snipe.entryThreshold);
-            const observationCount = Math.min(state.digits.length, state.config.observationTicks);
-            const observationComplete = observationCount >= state.config.observationTicks;
-            
-            if (!state.isWatching && !state.isRunning) {
-                // Bot not started
-                statusEl.style.background = 'var(--bg-tertiary)';
-                statusEl.style.color = 'var(--text-dim)';
-                statusEl.textContent = 'Click Start to begin';
-            } else if (state.isWatching && !observationComplete) {
-                // Still collecting observation data
-                statusEl.style.background = 'rgba(59, 130, 246, 0.2)';
-                statusEl.style.color = 'var(--accent-blue)';
-                statusEl.innerHTML = `📊 Collecting data: <strong>${observationCount}/${state.config.observationTicks}</strong> ticks`;
-            } else if (state.isWatching && snipe.isWaitingForEntry) {
-                // Watching, waiting for entry
-                statusEl.style.background = 'rgba(245, 158, 11, 0.2)';
-                statusEl.style.color = 'var(--accent-yellow)';
-                statusEl.innerHTML = `⏳ Waiting... Diff: <strong>${diff >= 0 ? '+' : ''}${diff}</strong> | Need: <strong>${entryThreshold}</strong>`;
-            } else if (state.isRunning) {
-                // Actively trading
-                statusEl.style.background = 'rgba(16, 185, 129, 0.2)';
-                statusEl.style.color = 'var(--accent-green)';
-                statusEl.innerHTML = `🎯 TRADING: ${snipe.tradesTaken}/${snipe.maxTrades}`;
-            }
-        }
-        
-        function updateStreakUI() {
-            document.getElementById('currentLossStreak').textContent = state.shadow.currentLossStreak;
-            document.getElementById('maxLossStreak').textContent = state.shadow.maxLossStreak;
-            document.getElementById('cyclesCompleted').textContent = state.shadow.cyclesCompleted;
-            document.getElementById('fourPlusStreaks').textContent = state.shadow.fourPlusStreaks;
-            
-            // Calculate streak rate
-            const rate = state.shadow.cyclesCompleted > 0 
-                ? ((state.shadow.fourPlusStreaks / state.shadow.cyclesCompleted) * 100).toFixed(1)
-                : '0.0';
-            
-            const rateEl = document.getElementById('streakRate');
-            rateEl.textContent = rate + '%';
-            
-            // Color code the rate
-            if (parseFloat(rate) > 5) {
-                rateEl.style.color = 'var(--accent-red)';
-            } else if (parseFloat(rate) > 3) {
-                rateEl.style.color = 'var(--accent-yellow)';
-            } else {
-                rateEl.style.color = 'var(--accent-green)';
-            }
-            
-            // Color current streak
-            const currentStreakEl = document.getElementById('currentLossStreak');
-            if (state.shadow.currentLossStreak >= 4) {
-                currentStreakEl.style.color = 'var(--accent-red)';
-            } else if (state.shadow.currentLossStreak >= 2) {
-                currentStreakEl.style.color = 'var(--accent-yellow)';
-            } else {
-                currentStreakEl.style.color = 'var(--text-primary)';
-            }
-        }
-        
-        function updateAdaptiveTriggerUI() {
-            const statusEl = document.getElementById('adaptiveTriggerStatus');
-            const triggerDisplay = document.getElementById('currentTriggerDisplay');
-            const adaptive = state.shadow.adaptiveTrigger;
-            
-            triggerDisplay.textContent = adaptive.currentTrigger;
-            
-            if (!adaptive.enabled) {
-                statusEl.style.background = 'var(--bg-tertiary)';
-                statusEl.style.color = 'var(--text-dim)';
-                statusEl.innerHTML = `Adaptive: OFF | Trigger: <span id="currentTriggerDisplay">${state.config.consecutiveTrigger}</span>`;
-            } else {
-                statusEl.style.background = 'rgba(139, 92, 246, 0.2)';
-                statusEl.style.color = 'var(--accent-purple)';
-                
-                // Show cooldown progress if above base trigger
-                let cooldownInfo = '';
-                if (adaptive.currentTrigger > adaptive.baseTrigger) {
-                    const progress = Math.min(adaptive.cyclesAtCurrentTrigger, adaptive.cooldownCycles);
-                    const pct = ((progress / adaptive.cooldownCycles) * 100).toFixed(0);
-                    cooldownInfo = ` | Cooldown: ${progress}/${adaptive.cooldownCycles} (${pct}%)`;
-                }
-                
-                statusEl.innerHTML = `Adaptive: ON | Trigger: <span style="font-weight:700;">${adaptive.currentTrigger}</span> (base: ${adaptive.baseTrigger})${cooldownInfo}`;
-            }
-        }
-        
-        function updateShadowUI() {
-            document.getElementById('shadowWins').textContent = state.shadow.wins;
-            document.getElementById('shadowLosses').textContent = state.shadow.losses;
-            
-            const diffEl = document.getElementById('shadowDiff');
-            diffEl.textContent = (state.shadow.diff >= 0 ? '+' : '') + state.shadow.diff;
-            diffEl.style.color = state.shadow.diff >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-            
-            const lastSignalEl = document.getElementById('shadowLastSignal');
-            if (state.shadow.lastSignal) {
-                lastSignalEl.textContent = state.shadow.lastSignal.toUpperCase();
-                lastSignalEl.style.color = state.shadow.lastSignal === 'over' ? 'var(--accent-green)' : 'var(--accent-red)';
-            }
-            
-            const lastResultEl = document.getElementById('shadowLastResult');
-            if (state.shadow.lastResult) {
-                lastResultEl.textContent = state.shadow.lastResult;
-                lastResultEl.style.color = state.shadow.lastResult.includes('WON') ? 'var(--accent-green)' : 'var(--accent-red)';
-            }
-            
-            // Update recommendation
-            const diff = state.shadow.diff;
-            const exitThreshold = state.autopilot.exitThreshold;
-            const entryThreshold = -Math.abs(state.autopilot.entryThreshold);
-            
-            const recBox = document.getElementById('shadowRecommendation');
-            const recText = document.getElementById('shadowRecommendText');
-            
-            if (diff >= exitThreshold) {
-                recBox.style.background = 'rgba(239, 68, 68, 0.2)';
-                recBox.style.border = '1px solid var(--accent-red)';
-                recText.textContent = '🔴 STAY OUT / EXIT';
-                recText.style.color = 'var(--accent-red)';
-            } else if (diff <= entryThreshold) {
-                recBox.style.background = 'rgba(16, 185, 129, 0.2)';
-                recBox.style.border = '1px solid var(--accent-green)';
-                recText.textContent = '🟢 GOOD TO ENTER';
-                recText.style.color = 'var(--accent-green)';
-            } else if (diff > 0) {
-                recBox.style.background = 'rgba(245, 158, 11, 0.2)';
-                recBox.style.border = '1px solid var(--accent-yellow)';
-                recText.textContent = '🟡 CAUTION';
-                recText.style.color = 'var(--accent-yellow)';
-            } else {
-                recBox.style.background = 'var(--bg-tertiary)';
-                recBox.style.border = '1px solid var(--border-color)';
-                recText.textContent = '⚪ NEUTRAL';
-                recText.style.color = 'var(--text-secondary)';
-            }
-            
-            // Update streak UI
-            updateStreakUI();
-            updateAdaptiveTriggerUI();
-            updateAutopilotUI();
-            updateSnipeModeUI();
-            
-            // Check snipe mode entry (when watching and waiting for entry)
-            if (state.isWatching && state.snipeMode.isWaitingForEntry) {
-                checkSnipeEntry();
-            }
-        }
-        
-        function updateAutopilotUI() {
-            const statusEl = document.getElementById('autopilotStatus');
-            
-            if (!state.autopilot.enabled) {
-                statusEl.textContent = 'Autopilot Disabled';
-                statusEl.style.background = 'var(--bg-tertiary)';
-                statusEl.style.color = 'var(--text-dim)';
-            } else if (state.autopilot.isPaused) {
-                statusEl.textContent = `⏸️ Paused: ${state.autopilot.pauseReason}`;
-                statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
-                statusEl.style.color = 'var(--accent-red)';
-            } else if (state.isRunning) {
-                statusEl.textContent = '▶️ Active - Monitoring...';
-                statusEl.style.background = 'rgba(16, 185, 129, 0.2)';
-                statusEl.style.color = 'var(--accent-green)';
-            } else {
-                statusEl.textContent = '⏹️ Ready - Start bot to activate';
-                statusEl.style.background = 'rgba(59, 130, 246, 0.2)';
-                statusEl.style.color = 'var(--accent-blue)';
-            }
-        }
-        
-        function resetShadow() {
-            state.shadow.wins = 0;
-            state.shadow.losses = 0;
-            state.shadow.diff = 0;
-            state.shadow.consecutiveLow = 0;
-            state.shadow.consecutiveHigh = 0;
-            state.shadow.lastSignal = null;
-            state.shadow.lastResult = null;
-            state.shadow.inSimRecovery = false;
-            state.shadow.simDirection = null;
-            state.shadow.simLevel = 0;
-            state.shadow.history = [];
-            state.shadow.pendingSignal = null;
-            state.shadow.pendingEval = null;
-            
-            // Reset streak tracking
-            state.shadow.currentLossStreak = 0;
-            state.shadow.maxLossStreak = 0;
-            state.shadow.cyclesCompleted = 0;
-            state.shadow.fourPlusStreaks = 0;
-            state.shadow.streakHistory = [];
-            
-            // Reset adaptive trigger to base (but keep enabled state)
-            state.shadow.adaptiveTrigger.currentTrigger = state.shadow.adaptiveTrigger.baseTrigger;
-            state.shadow.adaptiveTrigger.adjustments = 0;
-            state.shadow.adaptiveTrigger.cyclesAtCurrentTrigger = 0;
-            state.config.consecutiveTrigger = state.shadow.adaptiveTrigger.baseTrigger;
-            document.getElementById('consecutiveTrigger').value = state.shadow.adaptiveTrigger.baseTrigger;
-            
-            // Also reset autopilot pause state
-            state.autopilot.isPaused = false;
-            state.autopilot.pauseReason = '';
-            
-            updateShadowUI();
-            log('system', 'Shadow tracker reset');
-        }
+function stopKA() { if (S.keepAlive) { clearInterval(S.keepAlive); S.keepAlive = null; } }
 
-        // ========================================
-        // TRADING LOGIC
-        // ========================================
-        function processTrading(digit) {
-            const observationCount = Math.min(state.digits.length, state.config.observationTicks);
-            
-            switch (state.phase) {
-                case 'observation':
-                    // Still collecting data
-                    updateObservationProgress(observationCount);
-                    
-                    if (observationCount >= state.config.observationTicks) {
-                        state.phase = 'analyzing';
-                        setPhase('analyzing');
-                        log('info', 'Observation complete, analyzing patterns...');
-                    }
-                    break;
-                    
-                case 'analyzing':
-                    // Look for entry signal
-                    const signal = analyzePattern();
-                    if (signal) {
-                        state.currentDirection = signal.direction;
-                        state.phase = 'trading';
-                        setPhase('trading');
-                        updateSignalDisplay(signal);
-                        log('signal', `Entry signal: ${signal.direction.toUpperCase()} (confidence: ${signal.confidence}%)`);
-                        placeTrade();
-                    }
-                    break;
-                    
-                case 'trading':
-                case 'recovery':
-                    // Wait for contract result
-                    break;
-            }
-        }
-        
-        function analyzePattern() {
-            const trigger = state.config.consecutiveTrigger;
-            const strategy = state.config.strategy;
-            
-            // Calculate recent bias
-            const recentDigits = state.digits.slice(-50);
-            const lowCount = recentDigits.filter(d => d <= 4).length;
-            const highCount = recentDigits.length - lowCount;
-            const lowPercent = (lowCount / recentDigits.length) * 100;
-            const highPercent = (highCount / recentDigits.length) * 100;
-            
-            let signal = null;
-            
-            if (strategy === 'reversal') {
-                // Wait for consecutive pattern, then bet on reversal
-                if (state.consecutiveLow >= trigger) {
-                    signal = {
-                        direction: 'over',
-                        confidence: Math.min(50 + (state.consecutiveLow - trigger + 1) * 10, 85),
-                        reason: `${state.consecutiveLow} consecutive low digits`
-                    };
-                } else if (state.consecutiveHigh >= trigger) {
-                    signal = {
-                        direction: 'under',
-                        confidence: Math.min(50 + (state.consecutiveHigh - trigger + 1) * 10, 85),
-                        reason: `${state.consecutiveHigh} consecutive high digits`
-                    };
-                }
-            } else {
-                // Trend following
-                if (state.consecutiveLow >= trigger) {
-                    signal = {
-                        direction: 'under',
-                        confidence: Math.min(50 + (lowPercent - 50) * 2, 75),
-                        reason: `Trend: ${state.consecutiveLow} consecutive lows`
-                    };
-                } else if (state.consecutiveHigh >= trigger) {
-                    signal = {
-                        direction: 'over',
-                        confidence: Math.min(50 + (highPercent - 50) * 2, 75),
-                        reason: `Trend: ${state.consecutiveHigh} consecutive highs`
-                    };
-                }
-            }
-            
-            return signal;
-        }
-        
-        function placeTrade() {
-            const stake = calculateStake();
-            const barrier = state.currentDirection === 'over' ? '4' : '5';
-            const contractType = state.currentDirection === 'over' ? 'DIGITOVER' : 'DIGITUNDER';
-            
-            state.pendingTrade = {
-                direction: state.currentDirection,
-                stake: stake,
-                level: state.martingaleLevel,
-                timestamp: new Date().toISOString()
-            };
-            
-            log('trade', `Placing ${state.currentDirection.toUpperCase()} trade - Stake: $${stake.toFixed(2)} (Level ${state.martingaleLevel})`);
-            
-            send({
-                buy: 1,
-                price: stake,
-                parameters: {
-                    contract_type: contractType,
-                    symbol: state.config.market,
-                    duration: 1,
-                    duration_unit: 't',
-                    basis: 'stake',
-                    amount: stake,
-                    currency: 'USD',
-                    barrier: barrier
-                }
-            });
-            
-            elements.currentStake.textContent = `$${stake.toFixed(2)}`;
-        }
-        
-        function calculateStake() {
-            // If martingale disabled, always use base stake
-            if (!state.config.martingaleEnabled) {
-                return state.config.baseStake;
-            }
-            
-            const multiplier = 100 / state.config.payout; // ~1.053 for 95% payout
-            const adjustedMultiplier = multiplier + 0.05; // Add buffer for profit
-            return parseFloat((state.config.baseStake * Math.pow(adjustedMultiplier * 2, state.martingaleLevel)).toFixed(2));
-        }
-        
-        function handleBuyResponse(data) {
-            if (data.buy) {
-                state.currentContractId = data.buy.contract_id;
-                log('info', `Contract opened: ${state.currentContractId}`);
-                
-                // Subscribe to contract updates
-                send({
-                    proposal_open_contract: 1,
-                    contract_id: state.currentContractId,
-                    subscribe: 1
-                });
-            }
-        }
-        
-        function handleContractUpdate(contract) {
-            if (contract.is_sold) {
-                const won = contract.status === 'won';
-                const profit = parseFloat(contract.profit);
-                
-                processTrade(won, profit, contract);
-            }
-        }
-        
-        function processTrade(won, profit, contract) {
-            state.totalTrades++;
-            state.profitLoss += profit;
-            
-            const trade = {
-                ...state.pendingTrade,
-                won,
-                profit,
-                balance: state.profitLoss,
-                contractId: contract?.contract_id,
-                timestamp: new Date().toISOString()
-            };
-            
-            state.trades.push(trade);
-            saveToDB('trades', trade);
-            saveState();
-            
-            if (won) {
-                state.wins++;
-                log('trade', `WIN! Profit: $${profit.toFixed(2)} | Total: $${state.profitLoss.toFixed(2)}`);
-                
-                // Reset martingale and go back to analyzing
-                state.martingaleLevel = 0;
-                state.phase = 'analyzing';
-                setPhase('analyzing');
-                updateMartingaleHighlight();
-                
-                // Check snipe mode - if max trades hit, this will stop the bot
-                if (onSnipeTradeComplete()) {
-                    return;  // Bot was stopped by snipe mode
-                }
-            } else {
-                state.losses++;
-                log('loss', `LOSS! Loss: $${profit.toFixed(2)} | Total: $${state.profitLoss.toFixed(2)}`);
-                
-                // Check if martingale is disabled (flat betting)
-                if (!state.config.martingaleEnabled) {
-                    log('info', 'Flat bet mode - waiting for new signal');
-                    state.martingaleLevel = 0;
-                    state.phase = 'analyzing';
-                    setPhase('analyzing');
-                    
-                    // Check snipe mode - count as completed cycle
-                    if (onSnipeTradeComplete()) {
-                        return;  // Bot was stopped by snipe mode
-                    }
-                }
-                // Check if max depth reached
-                else if (state.martingaleLevel >= state.config.maxDepth - 1) {
-                    log('system', 'Max martingale depth reached! Resetting...');
-                    state.martingaleLevel = 0;
-                    state.phase = 'analyzing';
-                    setPhase('analyzing');
-                    
-                    // Check snipe mode - count bust as a completed cycle
-                    if (onSnipeTradeComplete()) {
-                        return;  // Bot was stopped by snipe mode
-                    }
-                } else {
-                    // Enter recovery mode - wait for next signal
-                    state.martingaleLevel++;
-                    state.phase = 'recovery';
-                    setPhase('recovery');
-                    updateMartingaleHighlight();
-                    log('info', `Waiting for recovery signal... (Level ${state.martingaleLevel})`);
-                }
-            }
-            
-            // Check stop loss / take profit
-            if (state.config.stopLoss > 0 && state.profitLoss <= -state.config.stopLoss) {
-                log('system', `Stop loss hit! Stopping bot.`);
-                stopBot();
-            }
-            
-            if (state.config.takeProfit > 0 && state.profitLoss >= state.config.takeProfit) {
-                log('system', `Take profit hit! Stopping bot.`);
-                stopBot();
-            }
-            
-            // Check autopilot exit conditions (after a win at Level 0)
-            if (won && state.martingaleLevel === 0 && state.autopilot.enabled) {
-                const diff = state.shadow.diff;
-                if (diff >= state.autopilot.exitThreshold) {
-                    state.autopilot.isPaused = true;
-                    state.autopilot.pauseReason = `Diff +${diff} (≥ +${state.autopilot.exitThreshold})`;
-                    log('system', `⏸️ AUTOPILOT: Paused trading - ${state.autopilot.pauseReason}`);
-                    log('info', 'Shadow tracker shows correction likely. Taking cooldown.');
-                    stopBot();
-                }
-            }
-            
-            updateStats();
-            updateTradeHistory(trade);
-        }
+// ════════════════════════════════════════
+// MESSAGE HANDLER
+// ════════════════════════════════════════
+function handle(d) {
+    if (d.error) { log('system', `Error: ${d.error.message}`); return; }
+    
+    if (d.msg_type === 'authorize') {
+        log('system', 'Authorized');
+        send({ balance: 1, subscribe: 1 });
+        subTicks();
+    }
+    if (d.msg_type === 'balance') {
+        document.getElementById('xBalance').textContent = `$${parseFloat(d.balance.balance).toFixed(2)}`;
+    }
+    if (d.msg_type === 'tick') onTick(d.tick);
+    if (d.msg_type === 'buy') onBuy(d);
+    if (d.msg_type === 'proposal_open_contract') onContract(d.proposal_open_contract);
+    if (d.msg_type === 'ping') S.lastPing = null;
+}
 
-        // ========================================
-        // UI UPDATES
-        // ========================================
-        function updateTickDisplay(price, digit) {
-            elements.tickPrice.textContent = price.toFixed(5);
-            elements.currentDigit.textContent = digit;
-            elements.currentDigit.className = 'current-digit ' + (digit <= 4 ? 'low' : 'high');
-            elements.tickCount.textContent = state.ticks.length;
-        }
-        
-        function updateDigitDistribution() {
-            const total = state.digits.length || 1;
-            let html = '';
-            
-            for (let i = 0; i < 10; i++) {
-                const percent = (state.digitCounts[i] / total * 100);
-                const heightPercent = Math.min(percent * 5, 100);
-                const colorClass = i <= 4 ? 'low' : 'high';
-                
-                html += `
-                    <div class="digit-bar">
-                        <div class="digit-bar-fill">
-                            <div class="digit-bar-inner ${colorClass}" style="height: ${heightPercent}%"></div>
-                        </div>
-                        <div class="digit-label">${i}</div>
-                        <div class="digit-percent">${percent.toFixed(1)}%</div>
-                    </div>
-                `;
-            }
-            
-            elements.digitDistribution.innerHTML = html;
-        }
-        
-        function updateRecentDigits() {
-            const recent = state.digits.slice(-30);
-            let html = '';
-            
-            recent.forEach(d => {
-                const colorClass = d <= 4 ? 'low' : 'high';
-                html += `<div class="recent-digit ${colorClass}">${d}</div>`;
-            });
-            
-            elements.recentDigits.innerHTML = html;
-        }
-        
-        function updateTrendIndicators() {
-            const recent = state.digits.slice(-100);
-            const lowCount = recent.filter(d => d <= 4).length;
-            const highCount = recent.length - lowCount;
-            const total = recent.length || 1;
-            
-            elements.lowPercent.textContent = `${(lowCount / total * 100).toFixed(1)}%`;
-            elements.highPercent.textContent = `${(highCount / total * 100).toFixed(1)}%`;
-            elements.consecutiveLow.textContent = state.consecutiveLow;
-            elements.consecutiveHigh.textContent = state.consecutiveHigh;
-        }
-        
-        function updateObservationProgress(count) {
-            const target = state.config.observationTicks;
-            const percent = Math.min((count / target) * 100, 100);
-            
-            elements.observationProgress.textContent = `${count} / ${target}`;
-            elements.progressFill.style.width = `${percent}%`;
-        }
-        
-        function updateSignalDisplay(signal) {
-            if (signal) {
-                elements.signalDirection.textContent = signal.direction.toUpperCase();
-                elements.signalDirection.className = `signal-direction ${signal.direction}`;
-                elements.signalConfidence.textContent = signal.reason;
-            } else {
-                elements.signalDirection.textContent = 'WAITING';
-                elements.signalDirection.className = 'signal-direction none';
-                elements.signalConfidence.textContent = 'Analyzing patterns...';
-            }
-        }
-        
-        function updateStats() {
-            elements.totalTrades.textContent = state.totalTrades;
-            elements.wins.textContent = state.wins;
-            elements.losses.textContent = state.losses;
-            elements.winRate.textContent = state.totalTrades > 0 
-                ? `${(state.wins / state.totalTrades * 100).toFixed(1)}%` 
-                : '0%';
-            
-            const pl = state.profitLoss;
-            elements.profitLoss.textContent = `$${pl >= 0 ? '' : ''}${pl.toFixed(2)}`;
-            elements.profitLoss.className = `stat-value ${pl >= 0 ? 'profit' : 'loss'}`;
-        }
-        
-        function updateMartingaleTable() {
-            const baseStake = state.config.baseStake;
-            const payout = state.config.payout / 100;
-            const maxDepth = state.config.maxDepth;
-            const multiplier = (100 / state.config.payout) + 0.05;
-            
-            let html = '';
-            let totalRisk = 0;
-            
-            // If martingale is disabled, show flat betting info
-            if (!state.config.martingaleEnabled) {
-                html = `
-                    <tr data-level="0" class="active">
-                        <td>ALL</td>
-                        <td>$${baseStake.toFixed(2)}</td>
-                        <td>$${baseStake.toFixed(2)}</td>
-                        <td>$${(baseStake * payout).toFixed(2)}</td>
-                    </tr>
-                `;
-                elements.martingaleBody.innerHTML = html;
-                elements.maxRisk.textContent = `$${baseStake.toFixed(2)} (Flat)`;
-                elements.currentStake.textContent = `$${baseStake.toFixed(2)}`;
-                return;
-            }
-            
-            for (let i = 0; i < maxDepth; i++) {
-                const stake = parseFloat((baseStake * Math.pow(multiplier * 2, i)).toFixed(2));
-                totalRisk += stake;
-                const winProfit = stake * payout - totalRisk + stake;
-                
-                html += `
-                    <tr data-level="${i}">
-                        <td>${i + 1}</td>
-                        <td>$${stake.toFixed(2)}</td>
-                        <td>$${totalRisk.toFixed(2)}</td>
-                        <td>$${winProfit.toFixed(2)}</td>
-                    </tr>
-                `;
-            }
-            
-            elements.martingaleBody.innerHTML = html;
-            elements.maxRisk.textContent = `$${totalRisk.toFixed(2)}`;
-            elements.currentStake.textContent = `$${baseStake.toFixed(2)}`;
-        }
-        
-        function updateMartingaleHighlight() {
-            const rows = elements.martingaleBody.querySelectorAll('tr');
-            rows.forEach((row, i) => {
-                row.classList.toggle('active', i === state.martingaleLevel);
-            });
-            elements.currentLevel.textContent = state.martingaleLevel;
-        }
-        
-        function updateTradeHistory(trade) {
-            if (state.trades.length === 1) {
-                elements.tradeHistory.innerHTML = '';
-            }
-            
-            const entry = document.createElement('div');
-            entry.className = `trade-entry ${trade.won ? 'win' : 'loss'}`;
-            entry.innerHTML = `
-                <span>${trade.direction.toUpperCase()} L${trade.level + 1}</span>
-                <span>${trade.won ? '+' : ''}$${trade.profit.toFixed(2)}</span>
-            `;
-            
-            elements.tradeHistory.insertBefore(entry, elements.tradeHistory.firstChild);
-            
-            // Keep only last 50 in DOM
-            while (elements.tradeHistory.children.length > 50) {
-                elements.tradeHistory.removeChild(elements.tradeHistory.lastChild);
-            }
-        }
-        
-        function setPhase(phase) {
-            state.phase = phase;
-            const badge = elements.phaseBadge;
-            badge.className = `phase-badge ${phase}`;
-            badge.textContent = phase.toUpperCase();
-        }
+function subTicks() {
+    send({ ticks: S.cfg.market, subscribe: 1 });
+    log('info', `Subscribed: ${S.cfg.market}`);
+}
 
-        // ========================================
-        // BOT CONTROLS
-        // ========================================
-        function startBot() {
-            // Read config
-            state.config.apiToken = document.getElementById('apiToken').value;
-            state.config.market = document.getElementById('market').value;
-            state.config.baseStake = parseFloat(document.getElementById('baseStake').value);
-            state.config.payout = parseFloat(document.getElementById('payout').value);
-            state.config.maxDepth = parseInt(document.getElementById('maxDepth').value);
-            state.config.observationTicks = parseInt(document.getElementById('observationTicks').value);
-            state.config.consecutiveTrigger = parseInt(document.getElementById('consecutiveTrigger').value);
-            state.config.stopLoss = parseFloat(document.getElementById('stopLoss').value) || 0;
-            state.config.takeProfit = parseFloat(document.getElementById('takeProfit').value) || 0;
-            
-            if (!state.config.apiToken) {
-                log('system', 'Please enter your API token');
-                return;
-            }
-            
-            // Update snipe settings
-            state.snipeMode.maxTrades = parseInt(document.getElementById('snipeMaxTrades').value);
-            state.snipeMode.entryThreshold = parseInt(document.getElementById('snipeEntryThreshold').value);
-            state.snipeMode.exitThreshold = parseInt(document.getElementById('snipeExitThreshold').value);
-            state.snipeMode.tradesTaken = 0;
-            state.snipeMode.isWaitingForEntry = true;
-            
-            // Start in watching mode (not trading yet)
-            state.isRunning = false;  // Not actively trading yet
-            state.isWatching = true;  // But watching/observing
-            state.phase = 'observation';
-            state.martingaleLevel = 0;
-            state.digits = [];  // Clear digits for fresh observation
-            state.consecutiveLow = 0;
-            state.consecutiveHigh = 0;
-            
-            // Reset shadow tracker for fresh session
-            resetShadow();
-            
-            setPhase('observation');
-            updateMartingaleTable();
-            updateMartingaleHighlight();
-            updateSnipeModeUI();
-            updateObservationProgress(0);  // Initialize to 0
-            
-            elements.btnStart.style.display = 'none';
-            elements.btnStop.style.display = 'block';
-            
-            log('system', '🎯 Bot started - Observing market');
-            log('info', `Collecting ${state.config.observationTicks} ticks first...`);
-            log('info', `Entry: diff ≤ -${state.snipeMode.entryThreshold} | Exit: diff ≥ +${state.snipeMode.exitThreshold}`);
-            log('info', `Will take up to ${state.snipeMode.maxTrades} trades per snipe`);
-            
-            if (!state.connected) {
-                connect();
-            } else {
-                subscribeToTicks();
-            }
-            
-            // Request wake lock
-            requestWakeLock();
+// ════════════════════════════════════════
+// TICK PROCESSING
+// ════════════════════════════════════════
+function onTick(tick) {
+    const price = parseFloat(tick.quote);
+    const digit = parseInt(price.toString().slice(-1));
+    
+    const td = { timestamp: new Date(tick.epoch * 1000).toISOString(), price, digit, epoch: tick.epoch };
+    S.ticks.push(td);
+    dbSave('ticks', td);
+    if (S.ticks.length > 5000) S.ticks.shift();
+    
+    S.digits.push(digit);
+    S.dCounts[digit]++;
+    if (S.digits.length > 1000) { S.dCounts[S.digits.shift()]--; }
+    
+    // Consecutive counters
+    if (digit <= 4) { S.cLo++; S.cHi = 0; }
+    else { S.cHi++; S.cLo = 0; }
+    
+    // UI updates
+    uiTick(price, digit);
+    uiDist();
+    uiRecent();
+    uiTrend();
+    uiObs();
+    
+    // Shadow tracker (always runs)
+    runShadow(digit);
+    
+    // Trading logic
+    if (S.running) processTrade(digit);
+}
+
+// ════════════════════════════════════════
+// SHADOW TRACKER (passive monitor)
+// ════════════════════════════════════════
+function runShadow(digit) {
+    const sh = S.shadow;
+    
+    if (digit <= 4) { sh.cLo++; sh.cHi = 0; }
+    else { sh.cHi++; sh.cLo = 0; }
+    
+    if (S.digits.length < S.cfg.obs) { uiShadow(); return; }
+    
+    const trigger = S.cfg.trigger;
+    let sig = null;
+    
+    // Trend-following: consecutive lows → under, consecutive highs → over
+    if (sh.cLo >= trigger) sig = 'under';
+    else if (sh.cHi >= trigger) sig = 'over';
+    
+    // Queue signal for next-tick evaluation
+    if (sig && sh.pending === null) {
+        sh.pending = { direction: sig, idx: S.digits.length };
+        sh.lastSig = sig;
+    }
+    
+    // Evaluate previous pending
+    if (sh.pendingEval) {
+        const ev = sh.pendingEval;
+        const won = (ev.direction === 'over' && digit >= 5) || (ev.direction === 'under' && digit <= 4);
+        
+        if (won) {
+            sh.wins++;
+            sh.lastRes = 'WON ✓';
+            sh.cycles++;
+            if (sh.curStreak >= 4) sh.badStreaks++;
+            sh.curStreak = 0;
+        } else {
+            sh.losses++;
+            sh.lastRes = 'LOST ✗';
+            sh.curStreak++;
+            if (sh.curStreak > sh.maxStreak) sh.maxStreak = sh.curStreak;
         }
         
-        function stopBot() {
-            state.isRunning = false;
-            state.isWatching = false;
-            state.phase = 'idle';
-            state.snipeMode.isWaitingForEntry = true;
-            state.snipeMode.tradesTaken = 0;
+        sh.diff = sh.wins - sh.losses;
+        sh.history.push({ direction: ev.direction, won, diff: sh.diff });
+        sh.pendingEval = null;
+    }
+    
+    // Move pending → eval
+    if (sh.pending) {
+        sh.pendingEval = sh.pending;
+        sh.pending = null;
+    }
+    
+    uiShadow();
+}
+
+function resetShadow() {
+    const sh = S.shadow;
+    sh.wins = sh.losses = sh.diff = sh.cLo = sh.cHi = 0;
+    sh.curStreak = sh.maxStreak = sh.cycles = sh.badStreaks = 0;
+    sh.lastSig = sh.lastRes = null;
+    sh.pending = sh.pendingEval = null;
+    sh.history = [];
+    uiShadow();
+    log('system', 'Shadow tracker reset');
+}
+
+// ════════════════════════════════════════
+// TRADING LOGIC — SIMPLE & DIRECT
+// ════════════════════════════════════════
+function processTrade(digit) {
+    const obsCount = Math.min(S.digits.length, S.cfg.obs);
+    
+    switch (S.phase) {
+        case 'observation':
+            if (obsCount >= S.cfg.obs) {
+                S.phase = 'trading';
+                setPhase('trading');
+                log('info', '✅ Observation complete — trading every signal');
+            }
+            break;
             
-            setPhase('idle');
+        case 'trading':
+            const sig = getSignal();
+            if (sig) {
+                S.direction = sig.direction;
+                uiSignal(sig);
+                log('signal', `${sig.direction.toUpperCase()} — ${sig.reason}`);
+                placeTrade();
+            }
+            break;
             
-            elements.btnStart.style.display = 'block';
-            elements.btnStop.style.display = 'none';
-            
-            log('system', 'Bot stopped');
-            saveState();
-            updateSnipeModeUI();
+        case 'recovery':
+            // Waiting for contract result
+            break;
+    }
+}
+
+function getSignal() {
+    const trigger = S.cfg.trigger;
+    
+    // Trend-following only: consecutive pattern → continue direction
+    if (S.cLo >= trigger) {
+        return { direction: 'under', reason: `${S.cLo} consecutive lows → trend UNDER` };
+    }
+    if (S.cHi >= trigger) {
+        return { direction: 'over', reason: `${S.cHi} consecutive highs → trend OVER` };
+    }
+    
+    return null;
+}
+
+function placeTrade() {
+    const stake = S.cfg.stake;
+    const barrier = S.direction === 'over' ? '4' : '5';
+    const type = S.direction === 'over' ? 'DIGITOVER' : 'DIGITUNDER';
+    
+    S.pendingTrade = {
+        direction: S.direction,
+        stake,
+        timestamp: new Date().toISOString()
+    };
+    
+    S.phase = 'recovery';  // Wait for result
+    setPhase('recovery');
+    
+    log('trade', `${S.direction.toUpperCase()} $${stake.toFixed(2)}`);
+    
+    send({
+        buy: 1,
+        price: stake,
+        parameters: {
+            contract_type: type,
+            symbol: S.cfg.market,
+            duration: 1,
+            duration_unit: 't',
+            basis: 'stake',
+            amount: stake,
+            currency: 'USD',
+            barrier
         }
+    });
+}
 
-        // ========================================
-        // WAKE LOCK API
-        // ========================================
-        let wakeLock = null;
-        
-        async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    log('system', 'Wake lock acquired');
-                    
-                    wakeLock.addEventListener('release', () => {
-                        log('system', 'Wake lock released');
-                    });
-                }
-            } catch (err) {
-                log('system', `Wake lock failed: ${err.message}`);
-            }
+function onBuy(data) {
+    if (data.buy) {
+        S.contractId = data.buy.contract_id;
+        log('info', `Contract: ${S.contractId}`);
+        send({ proposal_open_contract: 1, contract_id: S.contractId, subscribe: 1 });
+    }
+}
+
+function onContract(c) {
+    if (!c.is_sold) return;
+    
+    const won = c.status === 'won';
+    const profit = parseFloat(c.profit);
+    
+    S.total++;
+    S.pnl += profit;
+    
+    const trade = { ...S.pendingTrade, won, profit, balance: S.pnl, contractId: c.contract_id };
+    S.trades.push(trade);
+    dbSave('trades', trade);
+    dbState();
+    
+    if (won) {
+        S.wins++;
+        log('trade', `WIN +$${profit.toFixed(2)} | Total: $${S.pnl.toFixed(2)}`);
+    } else {
+        S.losses++;
+        log('loss', `LOSS $${profit.toFixed(2)} | Total: $${S.pnl.toFixed(2)}`);
+    }
+    
+    // Back to scanning for next signal
+    S.phase = 'trading';
+    setPhase('trading');
+    S.direction = null;
+    
+    uiStats();
+    uiTradeEntry(trade);
+    
+    // Check limits
+    if (S.cfg.sl > 0 && S.pnl <= -S.cfg.sl) {
+        log('system', `⛔ Stop loss hit ($${S.pnl.toFixed(2)})`);
+        stopBot();
+        return;
+    }
+    if (S.cfg.tp > 0 && S.pnl >= S.cfg.tp) {
+        log('system', `🎯 Take profit hit ($${S.pnl.toFixed(2)})`);
+        stopBot();
+        return;
+    }
+    if (S.cfg.maxTrades > 0 && S.total >= S.cfg.maxTrades) {
+        log('system', `📊 Session limit reached (${S.total} trades)`);
+        stopBot();
+        return;
+    }
+}
+
+// ════════════════════════════════════════
+// UI UPDATES
+// ════════════════════════════════════════
+function uiTick(price, digit) {
+    document.getElementById('xPrice').textContent = price.toFixed(5);
+    const el = document.getElementById('xDigit');
+    el.textContent = digit;
+    el.className = 'big-digit ' + (digit <= 4 ? 'lo' : 'hi');
+    document.getElementById('xTickN').textContent = S.ticks.length;
+}
+
+function uiObs() {
+    const n = Math.min(S.digits.length, S.cfg.obs);
+    document.getElementById('xObsProg').textContent = `${n} / ${S.cfg.obs}`;
+    document.getElementById('xObsFill').style.width = `${Math.min(n / S.cfg.obs * 100, 100)}%`;
+}
+
+function uiDist() {
+    const total = S.digits.length || 1;
+    let h = '';
+    for (let i = 0; i < 10; i++) {
+        const pct = S.dCounts[i] / total * 100;
+        const hPct = Math.min(pct * 5, 100);
+        h += `<div class="dbar">
+            <div class="dbar-track"><div class="dbar-fill ${i<=4?'lo':'hi'}" style="height:${hPct}%"></div></div>
+            <div class="dlbl">${i}</div>
+            <div class="dpct">${pct.toFixed(1)}%</div>
+        </div>`;
+    }
+    document.getElementById('xDist').innerHTML = h;
+}
+
+function uiRecent() {
+    const r = S.digits.slice(-30);
+    document.getElementById('xRecent').innerHTML = r.map(d =>
+        `<div class="rd ${d<=4?'lo':'hi'}">${d}</div>`
+    ).join('');
+}
+
+function uiTrend() {
+    const r = S.digits.slice(-100);
+    const lo = r.filter(d => d <= 4).length;
+    const t = r.length || 1;
+    document.getElementById('xLoPct').textContent = `${(lo/t*100).toFixed(1)}%`;
+    document.getElementById('xHiPct').textContent = `${((t-lo)/t*100).toFixed(1)}%`;
+    document.getElementById('xCLo').textContent = S.cLo;
+    document.getElementById('xCHi').textContent = S.cHi;
+}
+
+function uiStats() {
+    document.getElementById('xTotalT').textContent = S.total;
+    document.getElementById('xWins').textContent = S.wins;
+    document.getElementById('xLosses').textContent = S.losses;
+    document.getElementById('xWinR').textContent = S.total ? `${(S.wins/S.total*100).toFixed(1)}%` : '0%';
+    
+    const el = document.getElementById('xPL');
+    el.textContent = `$${S.pnl.toFixed(2)}`;
+    el.className = `sv ${S.pnl >= 0 ? 'w' : 'l'}`;
+}
+
+function uiSignal(sig) {
+    if (sig) {
+        document.getElementById('xSigDir').textContent = sig.direction.toUpperCase();
+        document.getElementById('xSigDir').className = `sig-dir ${sig.direction}`;
+        document.getElementById('xSigSub').textContent = sig.reason;
+    } else {
+        document.getElementById('xSigDir').textContent = 'SCANNING';
+        document.getElementById('xSigDir').className = 'sig-dir none';
+        document.getElementById('xSigSub').textContent = 'Waiting for trend signal…';
+    }
+}
+
+function uiTradeEntry(trade) {
+    const box = document.getElementById('xHistory');
+    if (S.trades.length === 1) box.innerHTML = '';
+    
+    const el = document.createElement('div');
+    el.className = `te ${trade.won ? 'win' : 'loss'}`;
+    el.innerHTML = `<span>${trade.direction.toUpperCase()}</span><span>${trade.won?'+':''}$${trade.profit.toFixed(2)}</span>`;
+    box.insertBefore(el, box.firstChild);
+    while (box.children.length > 50) box.removeChild(box.lastChild);
+}
+
+function uiShadow() {
+    const sh = S.shadow;
+    
+    document.getElementById('xShW').textContent = sh.wins;
+    document.getElementById('xShL').textContent = sh.losses;
+    
+    const dEl = document.getElementById('xShD');
+    dEl.textContent = (sh.diff >= 0 ? '+' : '') + sh.diff;
+    dEl.style.color = sh.diff >= 0 ? 'var(--green)' : 'var(--red)';
+    
+    const total = sh.wins + sh.losses;
+    document.getElementById('xShWR').textContent = total ? `${(sh.wins/total*100).toFixed(1)}%` : '–';
+    
+    const sigEl = document.getElementById('xShSig');
+    if (sh.lastSig) {
+        sigEl.textContent = sh.lastSig.toUpperCase();
+        sigEl.style.color = sh.lastSig === 'over' ? 'var(--green)' : 'var(--red)';
+    }
+    
+    const resEl = document.getElementById('xShRes');
+    if (sh.lastRes) {
+        resEl.textContent = sh.lastRes;
+        resEl.style.color = sh.lastRes.includes('WON') ? 'var(--green)' : 'var(--red)';
+    }
+    
+    // Performance indicator
+    const rec = document.getElementById('xShRec');
+    if (total < 10) {
+        rec.textContent = `COLLECTING… (${total}/10)`;
+        rec.style.color = 'var(--text-2)';
+    } else {
+        const wr = (sh.wins / total * 100).toFixed(1);
+        rec.textContent = `${wr}% WIN RATE (${total} signals)`;
+        rec.style.color = parseFloat(wr) >= 52 ? 'var(--green)' : parseFloat(wr) >= 48 ? 'var(--amber)' : 'var(--red)';
+    }
+    
+    // Streak
+    document.getElementById('xCurStrk').textContent = sh.curStreak;
+    document.getElementById('xMaxStrk').textContent = sh.maxStreak;
+    document.getElementById('xCycles').textContent = sh.cycles;
+    document.getElementById('xBadStrk').textContent = sh.badStreaks;
+    
+    const rate = sh.cycles ? ((sh.badStreaks / sh.cycles) * 100).toFixed(1) : '0.0';
+    const rEl = document.getElementById('xStrkRate');
+    rEl.textContent = rate + '%';
+    rEl.style.color = parseFloat(rate) > 5 ? 'var(--red)' : parseFloat(rate) > 3 ? 'var(--amber)' : 'var(--green)';
+    
+    const csEl = document.getElementById('xCurStrk');
+    csEl.style.color = sh.curStreak >= 4 ? 'var(--red)' : sh.curStreak >= 2 ? 'var(--amber)' : 'var(--text-0)';
+}
+
+function setPhase(p) {
+    S.phase = p;
+    const el = document.getElementById('xPhase');
+    el.className = `badge ${p}`;
+    el.textContent = p.toUpperCase();
+}
+
+// ════════════════════════════════════════
+// CONTROLS
+// ════════════════════════════════════════
+function startBot() {
+    S.cfg.token = document.getElementById('cfgToken').value;
+    S.cfg.market = document.getElementById('cfgMarket').value;
+    S.cfg.stake = parseFloat(document.getElementById('cfgStake').value);
+    S.cfg.payout = parseFloat(document.getElementById('cfgPayout').value);
+    S.cfg.obs = parseInt(document.getElementById('cfgObs').value);
+    S.cfg.trigger = parseInt(document.getElementById('cfgTrigger').value);
+    S.cfg.sl = parseFloat(document.getElementById('cfgSL').value) || 0;
+    S.cfg.tp = parseFloat(document.getElementById('cfgTP').value) || 0;
+    S.cfg.maxTrades = parseInt(document.getElementById('cfgMaxTrades').value) || 0;
+    
+    if (!S.cfg.token) { log('system', 'Enter API token'); return; }
+    
+    S.running = true;
+    S.phase = 'observation';
+    S.direction = null;
+    S.digits = [];
+    S.cLo = S.cHi = 0;
+    
+    resetShadow();
+    setPhase('observation');
+    uiObs();
+    uiSignal(null);
+    
+    document.getElementById('btnStart').style.display = 'none';
+    document.getElementById('btnStop').style.display = 'block';
+    
+    log('system', '▶ Bot started — trend-following, flat bet, every signal');
+    log('info', `Stake: $${S.cfg.stake} | Trigger: ${S.cfg.trigger} consec | Obs: ${S.cfg.obs} ticks`);
+    if (S.cfg.maxTrades > 0) log('info', `Session limit: ${S.cfg.maxTrades} trades`);
+    if (S.cfg.sl > 0) log('info', `Stop loss: $${S.cfg.sl}`);
+    if (S.cfg.tp > 0) log('info', `Take profit: $${S.cfg.tp}`);
+    
+    if (!S.connected) connect();
+    else subTicks();
+    
+    reqWL();
+}
+
+function stopBot() {
+    S.running = false;
+    S.phase = 'idle';
+    setPhase('idle');
+    
+    document.getElementById('btnStart').style.display = 'block';
+    document.getElementById('btnStop').style.display = 'none';
+    
+    log('system', `■ Bot stopped | ${S.total} trades | $${S.pnl.toFixed(2)}`);
+    dbState();
+}
+
+// ════════════════════════════════════════
+// WAKE LOCK
+// ════════════════════════════════════════
+let wakeLock = null;
+
+async function reqWL() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            log('system', 'Wake lock acquired');
+            wakeLock.addEventListener('release', () => log('system', 'Wake lock released'));
         }
-        
-        // Re-acquire wake lock on visibility change
-        document.addEventListener('visibilitychange', async () => {
-            if (document.visibilityState === 'visible' && state.isRunning) {
-                await requestWakeLock();
-                
-                // Check connection
-                if (!state.connected) {
-                    log('system', 'Page visible, reconnecting...');
-                    connect();
-                }
-            }
-        });
+    } catch(e) { log('system', `Wake lock: ${e.message}`); }
+}
 
-        // ========================================
-        // CSV EXPORT
-        // ========================================
-        function exportCSV(data, filename, headers) {
-            const csv = [
-                headers.join(','),
-                ...data.map(row => headers.map(h => {
-                    const val = row[h.toLowerCase().replace(/ /g, '')];
-                    return typeof val === 'string' && val.includes(',') ? `"${val}"` : val;
-                }).join(','))
-            ].join('\n');
-            
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-        
-        document.getElementById('btnExportTicks').addEventListener('click', () => {
-            const headers = ['timestamp', 'price', 'digit', 'epoch'];
-            exportCSV(state.ticks, `ticks_${Date.now()}.csv`, headers);
-            log('system', `Exported ${state.ticks.length} ticks`);
-        });
-        
-        document.getElementById('btnExportTrades').addEventListener('click', () => {
-            const headers = ['timestamp', 'direction', 'stake', 'level', 'won', 'profit', 'balance'];
-            exportCSV(state.trades, `trades_${Date.now()}.csv`, headers);
-            log('system', `Exported ${state.trades.length} trades`);
-        });
-        
-        document.getElementById('btnExportLog').addEventListener('click', () => {
-            const headers = ['timestamp', 'type', 'message'];
-            exportCSV(state.activityLog, `log_${Date.now()}.csv`, headers);
-            log('system', `Exported ${state.activityLog.length} log entries`);
-        });
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && S.running) {
+        await reqWL();
+        if (!S.connected) { log('system', 'Reconnecting…'); connect(); }
+    }
+});
 
-        // ========================================
-        // EVENT LISTENERS
-        // ========================================
-        elements.btnStart.addEventListener('click', startBot);
-        elements.btnStop.addEventListener('click', stopBot);
-        
-        // Snipe Mode settings
-        document.getElementById('snipeMaxTrades').addEventListener('change', (e) => {
-            state.snipeMode.maxTrades = parseInt(e.target.value);
-            log('info', `Trades per snipe updated to ${e.target.value}`);
-            updateSnipeModeUI();
-        });
-        
-        document.getElementById('snipeEntryThreshold').addEventListener('change', (e) => {
-            state.snipeMode.entryThreshold = parseInt(e.target.value);
-            log('info', `Entry threshold updated to -${e.target.value}`);
-            updateSnipeModeUI();
-        });
-        
-        document.getElementById('snipeExitThreshold').addEventListener('change', (e) => {
-            state.snipeMode.exitThreshold = parseInt(e.target.value);
-            log('info', `Exit threshold updated to +${e.target.value}`);
-            updateSnipeModeUI();
-        });
-        
-        document.getElementById('btnClearLog').addEventListener('click', () => {
-            elements.logContainer.innerHTML = '';
-            state.activityLog = [];
-            log('system', 'Log cleared');
-        });
-        
-        // Strategy toggle (trend/reversal)
-        document.querySelectorAll('.strategy-btn[data-strategy]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.strategy-btn[data-strategy]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                state.config.strategy = btn.dataset.strategy;
-                log('info', `Strategy changed to: ${state.config.strategy}`);
-            });
-        });
-        
-        // Recovery mode toggle (flat/martingale)
-        document.querySelectorAll('.strategy-btn[data-mode]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.strategy-btn[data-mode]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                state.config.martingaleEnabled = (btn.dataset.mode === 'martingale');
-                
-                if (state.config.martingaleEnabled) {
-                    log('info', '🔄 Martingale ENABLED - Will double stake on losses');
-                } else {
-                    log('info', '➡️ Flat Bet ENABLED - Same stake every trade');
-                }
-                
-                updateMartingaleTable();
-            });
-        });
-        
-        // Update martingale table on config change
-        ['baseStake', 'payout', 'maxDepth'].forEach(id => {
-            document.getElementById(id).addEventListener('change', updateMartingaleTable);
-        });
-        
-        // Sync consecutive trigger with adaptive trigger
-        document.getElementById('consecutiveTrigger').addEventListener('change', (e) => {
-            const newTrigger = parseInt(e.target.value);
-            state.config.consecutiveTrigger = newTrigger;
-            
-            // Update adaptive trigger base if not enabled
-            if (!state.shadow.adaptiveTrigger.enabled) {
-                state.shadow.adaptiveTrigger.baseTrigger = newTrigger;
-                state.shadow.adaptiveTrigger.currentTrigger = newTrigger;
-            }
-            
-            updateAdaptiveTriggerUI();
-        });
-        
-        // Shadow Tracker controls
-        document.getElementById('shadowEnabled').addEventListener('change', (e) => {
-            state.shadow.enabled = e.target.checked;
-            log('info', `Shadow tracker ${e.target.checked ? 'enabled' : 'disabled'}`);
-        });
-        
-        document.getElementById('btnResetShadow').addEventListener('click', resetShadow);
-        
-        // Autopilot controls
-        document.getElementById('autopilotEnabled').addEventListener('change', (e) => {
-            state.autopilot.enabled = e.target.checked;
-            if (e.target.checked) {
-                state.autopilot.exitThreshold = parseInt(document.getElementById('exitThreshold').value);
-                state.autopilot.entryThreshold = parseInt(document.getElementById('entryThreshold').value);
-                log('system', `🤖 AUTOPILOT ENABLED - Exit at +${state.autopilot.exitThreshold}, Enter at -${state.autopilot.entryThreshold}`);
-            } else {
-                state.autopilot.isPaused = false;
-                log('system', '🤖 AUTOPILOT DISABLED');
-            }
-            updateAutopilotUI();
-        });
-        
-        document.getElementById('exitThreshold').addEventListener('change', (e) => {
-            state.autopilot.exitThreshold = parseInt(e.target.value);
-            if (state.autopilot.enabled) {
-                log('info', `Autopilot exit threshold updated to +${e.target.value}`);
-            }
-            updateShadowUI();
-        });
-        
-        document.getElementById('entryThreshold').addEventListener('change', (e) => {
-            state.autopilot.entryThreshold = parseInt(e.target.value);
-            if (state.autopilot.enabled) {
-                log('info', `Autopilot entry threshold updated to -${e.target.value}`);
-            }
-            updateShadowUI();
-        });
-        
-        // Adaptive Trigger controls
-        document.getElementById('adaptiveTriggerEnabled').addEventListener('change', (e) => {
-            state.shadow.adaptiveTrigger.enabled = e.target.checked;
-            
-            if (e.target.checked) {
-                // Store current trigger as base
-                state.shadow.adaptiveTrigger.baseTrigger = parseInt(document.getElementById('consecutiveTrigger').value);
-                state.shadow.adaptiveTrigger.currentTrigger = state.shadow.adaptiveTrigger.baseTrigger;
-                state.shadow.adaptiveTrigger.adjustments = 0;
-                
-                // Reset streak history to start fresh evaluation
-                state.shadow.streakHistory = [];
-                state.shadow.fourPlusStreaks = 0;
-                state.shadow.cyclesCompleted = 0;
-                
-                log('system', `🔧 ADAPTIVE TRIGGER ENABLED - Base: ${state.shadow.adaptiveTrigger.baseTrigger}, Max: ${state.shadow.adaptiveTrigger.maxTrigger}`);
-                log('info', `Will increase trigger if 4+ loss streak rate exceeds 3%`);
-            } else {
-                log('system', '🔧 ADAPTIVE TRIGGER DISABLED');
-            }
-            
-            updateAdaptiveTriggerUI();
-        });
-        
-        // Snipe Mode controls
+// ════════════════════════════════════════
+// CSV EXPORT
+// ════════════════════════════════════════
+function exportCSV(data, filename, headers) {
+    const csv = [
+        headers.join(','),
+        ...data.map(row => headers.map(h => {
+            const v = row[h.toLowerCase().replace(/ /g, '')];
+            return typeof v === 'string' && v.includes(',') ? `"${v}"` : v;
+        }).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
 
+// ════════════════════════════════════════
+// EVENT LISTENERS
+// ════════════════════════════════════════
+document.getElementById('btnStart').addEventListener('click', startBot);
+document.getElementById('btnStop').addEventListener('click', stopBot);
+document.getElementById('btnClearLog').addEventListener('click', () => {
+    $log.innerHTML = '';
+    S.logs = [];
+    log('system', 'Log cleared');
+});
+document.getElementById('btnResetSh').addEventListener('click', resetShadow);
 
-        // ========================================
-        // INITIALIZATION
-        // ========================================
-        async function init() {
-            await initDB();
-            
-            // Initialize digit distribution display
-            for (let i = 0; i < 10; i++) {
-                state.digitCounts[i] = 0;
-            }
-            updateDigitDistribution();
-            updateMartingaleTable();
-            updateShadowUI();
-            updateStreakUI();
-            updateAdaptiveTriggerUI();
-            updateAutopilotUI();
-            updateSnipeModeUI();
-            
-            log('system', 'Trading Bot initialized');
-            log('info', 'Click Start to begin observing');
-            log('info', '🎯 Bot will wait for ideal conditions, trade 2x, then repeat');
-        }
-        
-        init();
-    </script>
+document.getElementById('btnExpTicks').addEventListener('click', () => {
+    exportCSV(S.ticks, `ticks_${Date.now()}.csv`, ['timestamp','price','digit','epoch']);
+    log('system', `Exported ${S.ticks.length} ticks`);
+});
+document.getElementById('btnExpTrades').addEventListener('click', () => {
+    exportCSV(S.trades, `trades_${Date.now()}.csv`, ['timestamp','direction','stake','won','profit','balance']);
+    log('system', `Exported ${S.trades.length} trades`);
+});
+document.getElementById('btnExpLog').addEventListener('click', () => {
+    exportCSV(S.logs, `log_${Date.now()}.csv`, ['timestamp','type','message']);
+    log('system', `Exported ${S.logs.length} log entries`);
+});
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+async function init() {
+    await initDB();
+    uiDist();
+    uiShadow();
+    log('system', 'Trend Signal Bot initialized');
+    log('info', 'Strategy: Trade EVERY trend signal with flat stake');
+    log('info', 'No snipe, no autopilot, no martingale — pure volume at edge');
+}
+
+init();
+</script>
 </body>
 </html>
