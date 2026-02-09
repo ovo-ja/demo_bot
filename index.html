@@ -3,1784 +3,1798 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎯 Triple Bounce v4 - Auto Cycle</title>
+    <title>Hybrid Martingale Over/Under Bot</title>
     <style>
-        :root{--bg:#0a0e17;--card:#1a2235;--border:#2a3549;--text:#f1f5f9;--muted:#64748b;--green:#10b981;--red:#ef4444;--cyan:#06b6d4;--yellow:#f59e0b;--purple:#a855f7;--orange:#f97316}
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);padding:10px;font-size:13px}
-        .container{max-width:900px;margin:0 auto}
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
         
-        .header{text-align:center;padding:15px;border-bottom:3px solid var(--purple);margin-bottom:15px}
-        .header h1{font-size:26px;color:var(--purple);margin-bottom:5px}
-        .header .subtitle{color:var(--green);font-size:12px;font-weight:600}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         
-        .phase-banner{padding:20px;border-radius:10px;text-align:center;margin-bottom:15px;transition:all 0.3s}
-        .phase-banner.observe{background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(245,158,11,0.1));border:3px solid var(--yellow)}
-        .phase-banner.trade{background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(16,185,129,0.1));border:3px solid var(--green);animation:tradePulse 1s infinite}
-        .phase-banner.cooldown{background:linear-gradient(135deg,rgba(6,182,212,0.2),rgba(6,182,212,0.1));border:3px solid var(--cyan)}
-        .phase-banner.stopped{background:linear-gradient(135deg,rgba(100,116,139,0.2),rgba(100,116,139,0.1));border:3px solid var(--muted)}
-        @keyframes tradePulse{0%,100%{box-shadow:0 0 0 rgba(16,185,129,0)}50%{box-shadow:0 0 30px rgba(16,185,129,0.3)}}
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1f2937;
+            --accent-green: #10b981;
+            --accent-green-dim: #065f46;
+            --accent-red: #ef4444;
+            --accent-red-dim: #7f1d1d;
+            --accent-blue: #3b82f6;
+            --accent-yellow: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-dim: #6b7280;
+            --border-color: #374151;
+        }
         
-        .phase-icon{font-size:40px;margin-bottom:8px}
-        .phase-title{font-size:22px;font-weight:700;margin-bottom:5px}
-        .phase-sub{font-size:13px;color:var(--muted)}
-        .phase-timer{font-family:monospace;font-size:28px;font-weight:700;margin-top:10px;color:var(--cyan)}
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
         
-        .status-bar{display:flex;justify-content:center;align-items:center;gap:15px;padding:12px;background:var(--card);border-radius:8px;margin-bottom:15px;flex-wrap:wrap}
-        .status-item{text-align:center;min-width:70px}
-        .status-item .label{font-size:9px;color:var(--muted);text-transform:uppercase}
-        .status-item .value{font-size:15px;font-weight:700;font-family:monospace}
-        .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);display:inline-block}
-        .dot.on{background:var(--green);box-shadow:0 0 10px var(--green)}
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
         
-        .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:15px;margin-bottom:12px}
-        .card h3{font-size:11px;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
-        .card.highlight{border:2px solid var(--purple);background:rgba(168,85,247,0.08)}
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
         
-        .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-        .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-        .row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
         
-        label{display:block;font-size:10px;color:var(--muted);margin-bottom:3px}
-        input,select{width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px}
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-blue) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+        }
         
-        button{padding:12px 15px;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px;text-transform:uppercase;transition:all 0.2s}
-        .btn-blue{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;width:100%}
-        .btn-green{background:var(--green);color:white}
-        .btn-red{background:var(--red);color:white}
-        .btn-purple{background:var(--purple);color:white}
-        .btn-yellow{background:var(--yellow);color:#000}
-        .btn-orange{background:var(--orange);color:white}
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
         
-        .digit-display{text-align:center;padding:15px;background:var(--bg);border-radius:10px;margin:10px 0}
-        .current-digit{font-size:60px;font-weight:900;line-height:1;transition:all 0.2s}
-        .streak-indicator{font-size:18px;margin-top:8px;font-weight:600}
-        .streak-indicator.triple{color:var(--purple);animation:pulse 0.5s infinite}
-        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+        .logo span {
+            color: var(--accent-green);
+        }
         
-        .digit-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:10px 0}
-        .digit-box{background:var(--bg);border:2px solid var(--border);border-radius:6px;padding:8px 4px;text-align:center;transition:all 0.2s}
-        .digit-box.active{border-color:var(--yellow);background:rgba(245,158,11,0.2)}
-        .digit-box.tripled{border-color:var(--purple);background:rgba(168,85,247,0.4);animation:glow 0.5s infinite}
-        @keyframes glow{0%,100%{box-shadow:0 0 5px var(--purple)}50%{box-shadow:0 0 20px var(--purple)}}
-        .digit-num{font-size:18px;font-weight:700}
-        .digit-freq{font-size:9px;color:var(--muted)}
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
         
-        .cycle-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:15px}
-        .cycle-stat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
-        .cycle-stat .val{font-size:24px;font-weight:700;font-family:monospace}
-        .cycle-stat .val.green{color:var(--green)}
-        .cycle-stat .val.red{color:var(--red)}
-        .cycle-stat .val.cyan{color:var(--cyan)}
-        .cycle-stat .val.yellow{color:var(--yellow)}
-        .cycle-stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:4px}
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
         
-        .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:10px}
-        .progress-fill{height:100%;border-radius:4px;transition:width 0.3s}
-        .progress-fill.green{background:var(--green)}
-        .progress-fill.cyan{background:var(--cyan)}
-        .progress-fill.yellow{background:var(--yellow)}
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            animation: pulse 2s infinite;
+        }
         
-        .trade-log{max-height:200px;overflow-y:auto;background:var(--bg);border-radius:6px;padding:8px}
-        .trade-entry{display:flex;justify-content:space-between;padding:8px;margin-bottom:4px;border-radius:5px;font-size:11px;border-left:4px solid var(--border)}
-        .trade-entry.win{border-left-color:var(--green);background:rgba(16,185,129,0.1)}
-        .trade-entry.loss{border-left-color:var(--red);background:rgba(239,68,68,0.1)}
+        .status-dot.connected {
+            background: var(--accent-green);
+        }
         
-        .activity-log{max-height:150px;overflow-y:auto;font-family:monospace;font-size:10px;background:var(--bg);padding:8px;border-radius:6px}
-        .activity-log div{padding:2px 0;border-bottom:1px solid var(--border)}
-        .activity-log .win{color:var(--green)}
-        .activity-log .loss{color:var(--red)}
-        .activity-log .info{color:var(--cyan)}
-        .activity-log .alert{color:var(--yellow)}
-        .activity-log .trade{color:var(--purple);font-weight:bold}
-        .activity-log .cooldown{color:var(--cyan)}
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
         
-        .cycle-indicator{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:10px}
-        .cycle-dot{width:12px;height:12px;border-radius:50%;background:var(--border)}
-        .cycle-dot.complete{background:var(--green)}
-        .cycle-dot.current{background:var(--yellow);animation:pulse 1s infinite}
-
-        /* Exit overlay */
-        .exit-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:9999;justify-content:center;align-items:center}
-        .exit-overlay.show{display:flex}
-        .exit-modal{background:var(--card);border:2px solid var(--purple);border-radius:16px;padding:30px;max-width:420px;width:90%;text-align:center}
-        .exit-modal h2{color:var(--purple);margin-bottom:10px;font-size:20px}
-        .exit-modal p{color:var(--muted);margin-bottom:20px;font-size:13px}
-        .exit-modal .data-summary{background:var(--bg);border-radius:8px;padding:12px;margin-bottom:20px;font-family:monospace;font-size:11px;text-align:left}
-        .exit-modal .data-summary div{padding:3px 0;display:flex;justify-content:space-between}
-        .exit-modal .data-summary .val{color:var(--cyan);font-weight:700}
-        .exit-modal .btn-row{display:flex;gap:10px}
-        .exit-modal .btn-row button{flex:1}
+        .reconnect-count {
+            color: var(--accent-yellow);
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr 350px;
+            gap: 20px;
+        }
+        
+        .panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            padding: 16px 20px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-content {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-green) 0%, #059669 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--accent-red) 0%, #dc2626 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: var(--bg-tertiary);
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-card.full-width {
+            grid-column: span 2;
+        }
+        
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .stat-value.profit {
+            color: var(--accent-green);
+        }
+        
+        .stat-value.loss {
+            color: var(--accent-red);
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .phase-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+        
+        .phase-badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .phase-badge.observation {
+            background: var(--accent-blue);
+            color: white;
+        }
+        
+        .phase-badge.analyzing {
+            background: var(--accent-purple);
+            color: white;
+        }
+        
+        .phase-badge.trading {
+            background: var(--accent-green);
+            color: white;
+        }
+        
+        .phase-badge.recovery {
+            background: var(--accent-red);
+            color: white;
+        }
+        
+        .phase-badge.idle {
+            background: var(--text-dim);
+            color: white;
+        }
+        
+        .martingale-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+        
+        .martingale-table th, .martingale-table td {
+            padding: 8px 10px;
+            text-align: right;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .martingale-table th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+        
+        .martingale-table tr.active {
+            background: rgba(59, 130, 246, 0.2);
+        }
+        
+        .martingale-table tr.active td {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+        
+        .digit-distribution {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+        
+        .digit-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .digit-bar-fill {
+            width: 100%;
+            height: 60px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .digit-bar-inner {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: var(--accent-blue);
+            transition: height 0.3s;
+            border-radius: 4px;
+        }
+        
+        .digit-bar-inner.low {
+            background: var(--accent-red);
+        }
+        
+        .digit-bar-inner.high {
+            background: var(--accent-green);
+        }
+        
+        .digit-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .digit-percent {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+        }
+        
+        .trend-indicators {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .trend-card {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .trend-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        
+        .trend-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .log-container {
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+        }
+        
+        .log-time {
+            color: var(--text-dim);
+            min-width: 70px;
+        }
+        
+        .log-type {
+            min-width: 60px;
+            font-weight: 600;
+        }
+        
+        .log-type.info { color: var(--accent-blue); }
+        .log-type.trade { color: var(--accent-green); }
+        .log-type.loss { color: var(--accent-red); }
+        .log-type.signal { color: var(--accent-purple); }
+        .log-type.system { color: var(--accent-yellow); }
+        
+        .log-message {
+            color: var(--text-secondary);
+            flex: 1;
+        }
+        
+        .tick-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+        
+        .current-digit {
+            width: 60px;
+            height: 60px;
+            background: var(--bg-primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .current-digit.low { color: var(--accent-red); }
+        .current-digit.high { color: var(--accent-green); }
+        
+        .tick-info {
+            flex: 1;
+        }
+        
+        .tick-price {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .tick-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .signal-display {
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        
+        .signal-direction {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .signal-direction.over { color: var(--accent-green); }
+        .signal-direction.under { color: var(--accent-red); }
+        .signal-direction.none { color: var(--text-dim); }
+        
+        .signal-confidence {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .export-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        .export-buttons .btn {
+            padding: 10px;
+            font-size: 0.8rem;
+        }
+        
+        .recent-digits {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .recent-digit {
+            width: 28px;
+            height: 28px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .recent-digit.low { background: var(--accent-red-dim); color: var(--accent-red); }
+        .recent-digit.high { background: var(--accent-green-dim); color: var(--accent-green); }
+        
+        .trade-history {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .trade-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+        }
+        
+        .trade-entry.win { border-left: 3px solid var(--accent-green); }
+        .trade-entry.loss { border-left: 3px solid var(--accent-red); }
+        
+        .strategy-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .strategy-btn {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .strategy-btn.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            transition: width 0.3s;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dim);
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header">
-        <h1>🎯 Triple Bounce v4</h1>
-        <div class="subtitle">🔄 Auto Cycle: Observe → Trade → Cooldown → Repeat</div>
-    </div>
-    
-    <!-- Phase Banner -->
-    <div class="phase-banner stopped" id="phaseBanner">
-        <div class="phase-icon" id="phaseIcon">⏹</div>
-        <div class="phase-title" id="phaseTitle">BOT STOPPED</div>
-        <div class="phase-sub" id="phaseSub">Connect and start to begin cycling</div>
-        <div class="phase-timer" id="phaseTimer" style="display:none">00:00</div>
-    </div>
-    
-    <!-- Status Bar -->
-    <div class="status-bar">
-        <div class="status-item">
-            <div class="label">Status</div>
-            <div class="value"><span class="dot" id="dot"></span> <span id="status">Offline</span></div>
-        </div>
-        <div class="status-item">
-            <div class="label">Balance</div>
-            <div class="value" id="balance" style="color:var(--green)">$0.00</div>
-        </div>
-        <div class="status-item">
-            <div class="label">Cycle</div>
-            <div class="value" id="cycleNum" style="color:var(--purple)">#0</div>
-        </div>
-        <div class="status-item">
-            <div class="label">Market</div>
-            <div class="value" id="marketDisplay">--</div>
-        </div>
-        <div class="status-item">
-            <div class="label">Ticks</div>
-            <div class="value" id="tickCount">0</div>
-        </div>
-        <div class="status-item">
-            <div class="label">Reconn</div>
-            <div class="value" id="reconnCount" style="color:var(--orange)">0</div>
-        </div>
-        <div class="status-item">
-            <div class="label">Wake Lock</div>
-            <div class="value" id="wakeLockStatus" style="color:var(--muted)">--</div>
-        </div>
-        <div class="status-item">
-            <div class="label">Auto-Save</div>
-            <div class="value" id="autoSaveStatus" style="color:var(--muted)">Off</div>
-        </div>
-    </div>
-    
-    <!-- Cycle Stats -->
-    <div class="cycle-stats">
-        <div class="cycle-stat">
-            <div class="val cyan" id="totalCycles">0</div>
-            <div class="lbl">Cycles</div>
-        </div>
-        <div class="cycle-stat">
-            <div class="val" id="totalTrades">0</div>
-            <div class="lbl">Trades</div>
-        </div>
-        <div class="cycle-stat">
-            <div class="val green" id="wins">0</div>
-            <div class="lbl">Wins</div>
-        </div>
-        <div class="cycle-stat">
-            <div class="val" id="winRate">0%</div>
-            <div class="lbl">Win Rate</div>
-        </div>
-        <div class="cycle-stat">
-            <div class="val green" id="pnl">$0.00</div>
-            <div class="lbl">P/L</div>
-        </div>
-    </div>
-    
-    <!-- Connection -->
-    <div class="card">
-        <h3>🔌 Connection</h3>
-        <div class="row">
-            <div>
-                <label>API Token</label>
-                <input type="password" id="token" placeholder="Enter your Deriv API token">
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">M+</div>
+                <h1>Hybrid <span>Martingale</span> Bot</h1>
             </div>
-            <div>
-                <label>Symbol</label>
-                <select id="symbol">
-                    <option value="1HZ10V" selected>Volatility 10 (1s)</option>
-                    <option value="1HZ25V">Volatility 25 (1s)</option>
-                    <option value="1HZ50V">Volatility 50 (1s)</option>
-                    <option value="1HZ75V">Volatility 75 (1s)</option>
-                    <option value="1HZ100V">Volatility 100 (1s)</option>
-                </select>
+            <div class="connection-status">
+                <div class="status-indicator" style="background: linear-gradient(135deg, var(--accent-green-dim) 0%, var(--bg-tertiary) 100%); border: 1px solid var(--accent-green);">
+                    <span style="color: var(--text-secondary);">Balance:</span>
+                    <span style="color: var(--accent-green); font-weight: 700; font-size: 1.1rem;" id="accountBalance">$0.00</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Disconnected</span>
+                </div>
+                <div class="status-indicator">
+                    <span>Reconnects: </span>
+                    <span class="reconnect-count" id="reconnectCount">0</span>
+                </div>
             </div>
-        </div>
-        <div style="margin-top:10px">
-            <button class="btn-blue" onclick="connect()" id="connectBtn">🔗 Connect to Deriv</button>
-        </div>
-    </div>
-    
-    <!-- Cycle Settings -->
-    <div class="card">
-        <h3>🔄 Cycle Settings</h3>
-        <div class="row3">
-            <div>
-                <label>Trades Per Cycle</label>
-                <input type="number" id="tradesPerCycle" value="12" min="1" max="20">
-            </div>
-            <div>
-                <label>Cooldown (minutes)</label>
-                <input type="number" id="cooldownMins" value="1" min="1" max="60">
-            </div>
-            <div>
-                <label>Max Cycles (0=∞)</label>
-                <input type="number" id="maxCycles" value="0" min="0">
-            </div>
-        </div>
-        <div class="row" style="margin-top:10px">
-            <div>
-                <label>Stake ($)</label>
-                <input type="number" id="stake" value="10" min="0.35" step="0.01">
-            </div>
-            <div>
-                <label>Max Freq % (skip hot)</label>
-                <input type="number" id="maxFreq" value="16" min="12" max="20" step="1">
-            </div>
-        </div>
-        <div style="margin-top:10px">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" id="stopOnLoss" style="width:auto">
-                <span>Stop entire bot on first loss</span>
-            </label>
-        </div>
-        <div style="margin-top:8px">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" id="resetOnLoss" checked style="width:auto">
-                <span>Reset cycle on loss (restart trade count to 0)</span>
-            </label>
-        </div>
-    </div>
-    
-    <!-- Controls -->
-    <div class="card">
-        <h3>🎮 Controls</h3>
-        <div class="row3">
-            <button class="btn-green" onclick="startBot()" id="startBtn">▶️ START BOT</button>
-            <button class="btn-yellow" onclick="skipPhase1()" id="skipBtn">⏭ SKIP PHASE 1</button>
-            <button class="btn-red" onclick="stopBot()" id="stopBtn">⏹ STOP BOT</button>
-        </div>
-    </div>
-    
-    <!-- Live Display -->
-    <div class="card highlight">
-        <div class="digit-display">
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px">
-                <span>💰 <span id="displayBalance" style="color:var(--green);font-weight:700">$0.00</span></span>
-                <span>📊 <span id="displayPair" style="color:var(--cyan);font-weight:700">--</span></span>
-            </div>
-            <div id="priceDisplay" style="font-size:12px;color:var(--muted);margin-bottom:5px">Price: -.-----</div>
-            <div class="current-digit" id="currentDigit" style="color:var(--yellow)">-</div>
-            <div class="streak-indicator" id="streakIndicator">Waiting for data...</div>
-        </div>
+        </header>
         
-        <div class="digit-grid" id="digitGrid"></div>
-        
-        <!-- Cycle Progress -->
-        <div style="margin-top:15px;padding:10px;background:var(--bg);border-radius:6px">
-            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px">
-                <span id="progressLabel">Cycle Progress</span>
-                <span id="progressText">0/0 trades</span>
+        <div class="main-grid">
+            <!-- Left Panel - Controls -->
+            <div class="panel">
+                <div class="panel-header">Trading Configuration</div>
+                <div class="panel-content">
+                    <div class="form-group">
+                        <label>API Token</label>
+                        <input type="password" id="apiToken" placeholder="Enter your Deriv API token">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Market</label>
+                        <select id="market">
+                            <option value="R_10">Volatility 10 Index</option>
+                            <option value="R_25">Volatility 25 Index</option>
+                            <option value="R_50">Volatility 50 Index</option>
+                            <option value="R_75">Volatility 75 Index</option>
+                            <option value="R_100">Volatility 100 Index</option>
+                            <option value="1HZ10V">Volatility 10 (1s) Index</option>
+                            <option value="1HZ25V">Volatility 25 (1s) Index</option>
+                            <option value="1HZ50V">Volatility 50 (1s) Index</option>
+                            <option value="1HZ75V">Volatility 75 (1s) Index</option>
+                            <option value="1HZ100V">Volatility 100 (1s) Index</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Base Stake ($)</label>
+                            <input type="number" id="baseStake" value="0.35" min="0.35" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>Payout (%)</label>
+                            <input type="number" id="payout" value="95" min="80" max="100" step="1">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Max Martingale Depth</label>
+                            <input type="number" id="maxDepth" value="10" min="1" max="15">
+                        </div>
+                        <div class="form-group">
+                            <label>Observation Ticks</label>
+                            <input type="number" id="observationTicks" value="100" min="10" max="500" step="10">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Entry Strategy</label>
+                        <div class="strategy-toggle">
+                            <button class="strategy-btn active" data-strategy="reversal" id="btnReversal">Reversal</button>
+                            <button class="strategy-btn" data-strategy="trend" id="btnTrend">Trend</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Consecutive Trigger</label>
+                        <input type="number" id="consecutiveTrigger" value="3" min="2" max="10">
+                        <small style="color: var(--text-dim); font-size: 0.75rem;">Consecutive digits before signal</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Stop Loss ($)</label>
+                        <input type="number" id="stopLoss" value="0" min="0" step="10" placeholder="0 = disabled">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Take Profit ($)</label>
+                        <input type="number" id="takeProfit" value="0" min="0" step="10" placeholder="0 = disabled">
+                    </div>
+                    
+                    <button class="btn btn-primary" id="btnStart">
+                        <span>▶</span> Start Bot
+                    </button>
+                    <button class="btn btn-danger" id="btnStop" style="display: none; margin-top: 10px;">
+                        <span>■</span> Stop Bot
+                    </button>
+                    
+                    <div class="export-buttons">
+                        <button class="btn btn-secondary" id="btnExportTicks">Ticks CSV</button>
+                        <button class="btn btn-secondary" id="btnExportTrades">Trades CSV</button>
+                        <button class="btn btn-secondary" id="btnExportLog">Log CSV</button>
+                    </div>
+                </div>
             </div>
-            <div class="progress-bar">
-                <div class="progress-fill green" id="progressFill" style="width:0%"></div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Trade Log -->
-    <div class="card">
-        <h3>💰 Trade History</h3>
-        <div class="trade-log" id="tradeLog">
-            <div style="text-align:center;color:var(--muted);padding:20px">No trades yet</div>
-        </div>
-    </div>
-    
-    <!-- Activity Log -->
-    <div class="card">
-        <h3>📋 Activity Log</h3>
-        <div class="activity-log" id="activityLog"></div>
-    </div>
-    
-    <!-- Export -->
-    <div class="card">
-        <h3>📥 Export Data</h3>
-        <div class="row4">
-            <button class="btn-purple" onclick="exportTrades()">Trades</button>
-            <button class="btn-purple" onclick="exportTicks()">Ticks</button>
-            <button class="btn-purple" onclick="exportTripleAnalysis()">Triples</button>
-            <button class="btn-purple" onclick="exportActivity()">Activity</button>
-        </div>
-        <div style="margin-top:10px">
-            <button class="btn-orange" onclick="exportAll()" style="width:100%">📦 DOWNLOAD ALL SESSION DATA</button>
-        </div>
-    </div>
-</div>
-
-<!-- Exit Overlay -->
-<div class="exit-overlay" id="exitOverlay">
-    <div class="exit-modal">
-        <h2>📊 Unsaved Session Data</h2>
-        <p>You have session data that hasn't been downloaded recently. Save before leaving?</p>
-        <div class="data-summary" id="exitDataSummary"></div>
-        <div class="btn-row">
-            <button class="btn-green" onclick="exportAllAndLeave()">💾 Download & Leave</button>
-            <button class="btn-red" onclick="confirmLeave()">🚪 Leave</button>
-        </div>
-        <div style="margin-top:10px">
-            <button class="btn-purple" onclick="cancelLeave()" style="width:100%">← Stay on Page</button>
-        </div>
-    </div>
-</div>
-
-<script>
-// ============================================================
-// STATE
-// ============================================================
-const state = {
-    ws: null,
-    connected: false,
-    isRunning: false,
-    phase: 'stopped',
-    
-    // Tick data (display buffer - last 500)
-    ticks: [],
-    recentDigits: [],
-    frequencies: Array(10).fill(10),
-    currentStreak: 1,
-    lastDigit: null,
-    
-    // Full session tick archive (never trimmed)
-    allSessionTicks: [],
-    sessionStartTime: null,
-    
-    // Triple event tracking
-    tripleEvents: [],
-    pendingTripleEvent: null,
-    lastTripleTickIndex: 0,
-    lastQuadTickIndex: 0,
-    digitTripleCounts: Array(10).fill(0),
-    digitQuadCounts: Array(10).fill(0),
-    
-    // Observation
-    observedTriple: null,
-    
-    // Trading
-    pendingTrade: null,
-    pendingContracts: new Map(),
-    cycleTradeCount: 0,
-    
-    // Cooldown
-    cooldownEndTime: null,
-    cooldownInterval: null,
-    
-    // Overall stats
-    totalCycles: 0,
-    totalTrades: 0,
-    wins: 0,
-    losses: 0,
-    pnl: 0,
-    winStreak: 0,
-    tradesSinceLoss: 0,
-    lastTradeResult: null,
-    
-    // Export tracking
-    lastDownloadTime: 0,
-    userWantsToLeave: false,
-    
-    // Connection resilience
-    autoReconnect: true,
-    reconnectAttempts: 0,
-    maxReconnectAttempts: 50,
-    reconnectTimer: null,
-    pingInterval: null,
-    lastMessageTime: 0,
-    staleCheckInterval: null,
-    keepAliveWorker: null,
-    savedToken: null,
-    totalReconnects: 0,
-    
-    // Wake Lock
-    wakeLock: null,
-    wakeLockSupported: 'wakeLock' in navigator,
-    
-    // Auto-save
-    autoSaveInterval: null,
-    lastAutoSave: 0,
-    autoSaveEnabled: true,
-    
-    // Logs
-    tradeLog: [],
-    activityLog: []
-};
-
-// ============================================================
-// INITIALIZATION
-// ============================================================
-function initDigitGrid() {
-    const grid = document.getElementById('digitGrid');
-    grid.innerHTML = '';
-    for (let i = 0; i < 10; i++) {
-        const box = document.createElement('div');
-        box.className = 'digit-box';
-        box.id = `digit-${i}`;
-        box.innerHTML = `<div class="digit-num">${i}</div><div class="digit-freq" id="freq-${i}">10.0%</div>`;
-        grid.appendChild(box);
-    }
-}
-initDigitGrid();
-
-setInterval(() => {
-    if (state.phase === 'cooldown' && state.cooldownEndTime) {
-        const remaining = Math.max(0, state.cooldownEndTime - Date.now());
-        const mins = Math.floor(remaining / 60000);
-        const secs = Math.floor((remaining % 60000) / 1000);
-        document.getElementById('phaseTimer').textContent = 
-            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        
-        const cooldownMins = parseInt(document.getElementById('cooldownMins').value) || 10;
-        const totalMs = cooldownMins * 60 * 1000;
-        const elapsed = totalMs - remaining;
-        const pct = (elapsed / totalMs) * 100;
-        document.getElementById('progressFill').style.width = pct + '%';
-        document.getElementById('progressFill').className = 'progress-fill cyan';
-        
-        if (remaining <= 0) endCooldown();
-    }
-}, 1000);
-
-// ============================================================
-// WAKE LOCK (prevents screen/tab discard)
-// ============================================================
-async function requestWakeLock() {
-    if (!state.wakeLockSupported) {
-        document.getElementById('wakeLockStatus').textContent = 'N/A';
-        document.getElementById('wakeLockStatus').style.color = 'var(--muted)';
-        log('⚠️ Wake Lock not supported in this browser', 'alert');
-        return;
-    }
-    
-    try {
-        state.wakeLock = await navigator.wakeLock.request('screen');
-        document.getElementById('wakeLockStatus').textContent = '🟢 ON';
-        document.getElementById('wakeLockStatus').style.color = 'var(--green)';
-        log('🔒 Wake Lock acquired — screen/tab will stay active', 'win');
-        
-        state.wakeLock.addEventListener('release', () => {
-            document.getElementById('wakeLockStatus').textContent = '🔴 OFF';
-            document.getElementById('wakeLockStatus').style.color = 'var(--red)';
-            log('🔓 Wake Lock released', 'alert');
-        });
-    } catch(e) {
-        document.getElementById('wakeLockStatus').textContent = '❌ Fail';
-        document.getElementById('wakeLockStatus').style.color = 'var(--red)';
-        log(`⚠️ Wake Lock failed: ${e.message}`, 'alert');
-    }
-}
-
-async function reacquireWakeLock() {
-    if (state.wakeLockSupported && state.connected && (!state.wakeLock || state.wakeLock.released)) {
-        await requestWakeLock();
-    }
-}
-
-// ============================================================
-// AUTO-SAVE (IndexedDB - survives tab crash/discard)
-// ============================================================
-const DB_NAME = 'TripleBounceV4';
-const DB_STORE = 'sessions';
-const DB_VERSION = 1;
-
-function openDB() {
-    return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onupgradeneeded = (e) => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains(DB_STORE)) {
-                db.createObjectStore(DB_STORE, { keyPath: 'id' });
-            }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-    });
-}
-
-async function autoSave() {
-    if (!state.autoSaveEnabled) return;
-    if (state.allSessionTicks.length === 0 && state.tradeLog.length === 0) return;
-    
-    try {
-        const db = await openDB();
-        const tx = db.transaction(DB_STORE, 'readwrite');
-        const store = tx.objectStore(DB_STORE);
-        
-        const snapshot = {
-            id: 'current_session',
-            savedAt: new Date().toISOString(),
-            savedAtMs: Date.now(),
-            sessionStartTime: state.sessionStartTime,
-            symbol: document.getElementById('symbol').value,
             
-            // Tick data (full archive)
-            allSessionTicks: state.allSessionTicks,
-            recentDigits: state.recentDigits,
-            frequencies: state.frequencies,
+            <!-- Center Panel - Main Display -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Phase & Stats -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Trading Status</span>
+                        <div class="phase-badge idle" id="phaseBadge">IDLE</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="phase-indicator">
+                            <div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Observation Progress</div>
+                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem;" id="observationProgress">0 / 100</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tick-display">
+                            <div class="current-digit" id="currentDigit">-</div>
+                            <div class="tick-info">
+                                <div class="tick-price" id="tickPrice">0.00000</div>
+                                <div class="tick-count">Tick #<span id="tickCount">0</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value" id="totalTrades">0</div>
+                                <div class="stat-label">Total Trades</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="winRate">0%</div>
+                                <div class="stat-label">Win Rate</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="wins">0</div>
+                                <div class="stat-label">Wins</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="losses">0</div>
+                                <div class="stat-label">Losses</div>
+                            </div>
+                            <div class="stat-card full-width">
+                                <div class="stat-value profit" id="profitLoss">$0.00</div>
+                                <div class="stat-label">Profit / Loss</div>
+                            </div>
+                        </div>
+                        
+                        <div class="signal-display">
+                            <div class="signal-direction none" id="signalDirection">WAITING</div>
+                            <div class="signal-confidence" id="signalConfidence">Collecting data...</div>
+                        </div>
+                        
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px;">Recent Digits (Last 30)</div>
+                        <div class="recent-digits" id="recentDigits"></div>
+                    </div>
+                </div>
+                
+                <!-- Pattern Analysis -->
+                <div class="panel">
+                    <div class="panel-header">Pattern Analysis</div>
+                    <div class="panel-content">
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px;">Digit Distribution</div>
+                        <div class="digit-distribution" id="digitDistribution">
+                            <!-- Generated by JS -->
+                        </div>
+                        
+                        <div class="trend-indicators">
+                            <div class="trend-card">
+                                <div class="trend-value" id="lowPercent">50%</div>
+                                <div class="trend-label">Low (0-4)</div>
+                            </div>
+                            <div class="trend-card">
+                                <div class="trend-value" id="highPercent">50%</div>
+                                <div class="trend-label">High (5-9)</div>
+                            </div>
+                            <div class="trend-card">
+                                <div class="trend-value" id="consecutiveLow">0</div>
+                                <div class="trend-label">Consec. Low</div>
+                            </div>
+                            <div class="trend-card">
+                                <div class="trend-value" id="consecutiveHigh">0</div>
+                                <div class="trend-label">Consec. High</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Activity Log -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Activity Log</span>
+                        <button class="btn btn-secondary" style="width: auto; padding: 6px 12px; font-size: 0.75rem;" id="btnClearLog">Clear</button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="log-container" id="logContainer"></div>
+                    </div>
+                </div>
+            </div>
             
-            // Triple events
-            tripleEvents: state.tripleEvents,
-            digitTripleCounts: state.digitTripleCounts,
-            digitQuadCounts: state.digitQuadCounts,
-            lastTripleTickIndex: state.lastTripleTickIndex,
-            lastQuadTickIndex: state.lastQuadTickIndex,
+            <!-- Right Panel - Martingale & Trades -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Martingale Progression</span>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">Level: <span id="currentLevel">0</span></span>
+                    </div>
+                    <div class="panel-content">
+                        <table class="martingale-table" id="martingaleTable">
+                            <thead>
+                                <tr>
+                                    <th>Lvl</th>
+                                    <th>Stake</th>
+                                    <th>Total Risk</th>
+                                    <th>Win Profit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="martingaleBody">
+                                <!-- Generated by JS -->
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 12px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                                <span style="color: var(--text-secondary);">Max Risk:</span>
+                                <span style="font-family: 'JetBrains Mono', monospace; color: var(--accent-red);" id="maxRisk">$0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 6px;">
+                                <span style="color: var(--text-secondary);">Current Stake:</span>
+                                <span style="font-family: 'JetBrains Mono', monospace; color: var(--accent-blue);" id="currentStake">$0.35</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <div class="panel-header">Trade History</div>
+                    <div class="panel-content">
+                        <div class="trade-history" id="tradeHistory">
+                            <div style="text-align: center; color: var(--text-dim); padding: 20px;">No trades yet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // STATE MANAGEMENT
+        // ========================================
+        const state = {
+            // Connection
+            ws: null,
+            connected: false,
+            reconnectAttempts: 0,
+            reconnectTimer: null,
+            keepAliveInterval: null,
+            lastPingTime: null,
             
-            // Trade data
-            tradeLog: state.tradeLog,
+            // Trading
+            isRunning: false,
+            phase: 'idle', // idle, observation, analyzing, trading, recovery
+            currentDirection: null, // 'over' or 'under'
+            martingaleLevel: 0,
+            
+            // Data
+            ticks: [],
+            digits: [],
+            digitCounts: [0,0,0,0,0,0,0,0,0,0],
+            trades: [],
+            activityLog: [],
             
             // Stats
-            totalCycles: state.totalCycles,
-            totalTrades: state.totalTrades,
-            wins: state.wins,
-            losses: state.losses,
-            pnl: state.pnl,
-            winStreak: state.winStreak,
-            tradesSinceLoss: state.tradesSinceLoss,
-            lastTradeResult: state.lastTradeResult,
-            totalReconnects: state.totalReconnects,
+            totalTrades: 0,
+            wins: 0,
+            losses: 0,
+            profitLoss: 0,
             
-            // Activity log (last 300 entries to keep size reasonable)
-            activityLog: state.activityLog.slice(-300),
+            // Pattern
+            consecutiveLow: 0,
+            consecutiveHigh: 0,
             
-            // Settings for context
-            settings: {
-                tradesPerCycle: document.getElementById('tradesPerCycle').value,
-                cooldownMins: document.getElementById('cooldownMins').value,
-                stake: document.getElementById('stake').value,
-                maxFreq: document.getElementById('maxFreq').value,
-                resetOnLoss: document.getElementById('resetOnLoss').checked,
-                stopOnLoss: document.getElementById('stopOnLoss').checked
-            }
+            // Config
+            config: {
+                apiToken: '',
+                market: 'R_10',
+                baseStake: 0.35,
+                payout: 95,
+                maxDepth: 10,
+                observationTicks: 100,
+                strategy: 'reversal',
+                consecutiveTrigger: 3,
+                stopLoss: 0,
+                takeProfit: 0
+            },
+            
+            // Contract tracking
+            currentContractId: null,
+            pendingTrade: null
         };
-        
-        store.put(snapshot);
-        
-        await new Promise((resolve, reject) => {
-            tx.oncomplete = resolve;
-            tx.onerror = () => reject(tx.error);
-        });
-        
-        state.lastAutoSave = Date.now();
-        const size = (JSON.stringify(snapshot).length / 1024).toFixed(0);
-        document.getElementById('autoSaveStatus').textContent = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        document.getElementById('autoSaveStatus').style.color = 'var(--green)';
-        log(`💾 Auto-saved (${size}KB, ${state.allSessionTicks.length} ticks, ${state.tripleEvents.length} triples)`, 'info');
-        
-        db.close();
-    } catch(e) {
-        log(`⚠️ Auto-save failed: ${e.message}`, 'alert');
-        document.getElementById('autoSaveStatus').textContent = '❌ Fail';
-        document.getElementById('autoSaveStatus').style.color = 'var(--red)';
-    }
-}
 
-function startAutoSave() {
-    if (state.autoSaveInterval) clearInterval(state.autoSaveInterval);
-    // Save every 5 minutes
-    state.autoSaveInterval = setInterval(() => autoSave(), 5 * 60 * 1000);
-    state.autoSaveEnabled = true;
-    document.getElementById('autoSaveStatus').textContent = 'Active';
-    document.getElementById('autoSaveStatus').style.color = 'var(--cyan)';
-}
+        // ========================================
+        // DOM ELEMENTS
+        // ========================================
+        const elements = {
+            statusDot: document.getElementById('statusDot'),
+            statusText: document.getElementById('statusText'),
+            reconnectCount: document.getElementById('reconnectCount'),
+            accountBalance: document.getElementById('accountBalance'),
+            btnStart: document.getElementById('btnStart'),
+            btnStop: document.getElementById('btnStop'),
+            phaseBadge: document.getElementById('phaseBadge'),
+            observationProgress: document.getElementById('observationProgress'),
+            progressFill: document.getElementById('progressFill'),
+            currentDigit: document.getElementById('currentDigit'),
+            tickPrice: document.getElementById('tickPrice'),
+            tickCount: document.getElementById('tickCount'),
+            totalTrades: document.getElementById('totalTrades'),
+            winRate: document.getElementById('winRate'),
+            wins: document.getElementById('wins'),
+            losses: document.getElementById('losses'),
+            profitLoss: document.getElementById('profitLoss'),
+            signalDirection: document.getElementById('signalDirection'),
+            signalConfidence: document.getElementById('signalConfidence'),
+            recentDigits: document.getElementById('recentDigits'),
+            digitDistribution: document.getElementById('digitDistribution'),
+            lowPercent: document.getElementById('lowPercent'),
+            highPercent: document.getElementById('highPercent'),
+            consecutiveLow: document.getElementById('consecutiveLow'),
+            consecutiveHigh: document.getElementById('consecutiveHigh'),
+            martingaleBody: document.getElementById('martingaleBody'),
+            currentLevel: document.getElementById('currentLevel'),
+            maxRisk: document.getElementById('maxRisk'),
+            currentStake: document.getElementById('currentStake'),
+            tradeHistory: document.getElementById('tradeHistory'),
+            logContainer: document.getElementById('logContainer')
+        };
 
-async function checkForRecovery() {
-    try {
-        const db = await openDB();
-        const tx = db.transaction(DB_STORE, 'readonly');
-        const store = tx.objectStore(DB_STORE);
-        const req = store.get('current_session');
+        // ========================================
+        // INDEXEDDB FOR PERSISTENCE
+        // ========================================
+        let db = null;
         
-        req.onsuccess = () => {
-            const snapshot = req.result;
-            db.close();
+        async function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('MartingaleBot', 1);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    if (!database.objectStoreNames.contains('ticks')) {
+                        database.createObjectStore('ticks', { keyPath: 'id', autoIncrement: true });
+                    }
+                    if (!database.objectStoreNames.contains('trades')) {
+                        database.createObjectStore('trades', { keyPath: 'id', autoIncrement: true });
+                    }
+                    if (!database.objectStoreNames.contains('state')) {
+                        database.createObjectStore('state', { keyPath: 'key' });
+                    }
+                };
+            });
+        }
+        
+        async function saveToDB(store, data) {
+            if (!db) return;
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(store, 'readwrite');
+                const objectStore = tx.objectStore(store);
+                const request = objectStore.add(data);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+        
+        async function saveState() {
+            if (!db) return;
+            const tx = db.transaction('state', 'readwrite');
+            const store = tx.objectStore('state');
+            store.put({ key: 'appState', value: {
+                profitLoss: state.profitLoss,
+                wins: state.wins,
+                losses: state.losses,
+                totalTrades: state.totalTrades
+            }});
+        }
+
+        // ========================================
+        // LOGGING
+        // ========================================
+        function log(type, message) {
+            const now = new Date();
+            const time = now.toTimeString().slice(0, 8);
+            const entry = { time, type, message, timestamp: now.toISOString() };
             
-            if (!snapshot) return;
+            state.activityLog.push(entry);
             
-            // Only offer recovery if data is less than 24 hours old
-            const age = Date.now() - snapshot.savedAtMs;
-            if (age > 24 * 60 * 60 * 1000) {
-                clearSavedSession();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-type ${type}">${type.toUpperCase()}</span>
+                <span class="log-message">${message}</span>
+            `;
+            
+            elements.logContainer.insertBefore(logEntry, elements.logContainer.firstChild);
+            
+            // Keep only last 200 entries in DOM
+            while (elements.logContainer.children.length > 200) {
+                elements.logContainer.removeChild(elements.logContainer.lastChild);
+            }
+        }
+
+        // ========================================
+        // WEBSOCKET CONNECTION
+        // ========================================
+        function connect() {
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) return;
+            
+            log('system', 'Connecting to Deriv API...');
+            state.ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+            
+            state.ws.onopen = () => {
+                state.connected = true;
+                state.reconnectAttempts = 0;
+                updateConnectionStatus(true);
+                log('system', 'Connected to Deriv API');
+                
+                // Authorize if token exists
+                if (state.config.apiToken) {
+                    authorize();
+                }
+                
+                // Start keep-alive
+                startKeepAlive();
+            };
+            
+            state.ws.onclose = () => {
+                state.connected = false;
+                updateConnectionStatus(false);
+                log('system', 'Disconnected from Deriv API');
+                
+                stopKeepAlive();
+                scheduleReconnect();
+            };
+            
+            state.ws.onerror = (error) => {
+                log('system', 'WebSocket error occurred');
+                console.error('WebSocket error:', error);
+            };
+            
+            state.ws.onmessage = (event) => {
+                handleMessage(JSON.parse(event.data));
+            };
+        }
+        
+        function authorize() {
+            send({ authorize: state.config.apiToken });
+        }
+        
+        function send(data) {
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                state.ws.send(JSON.stringify(data));
+            }
+        }
+        
+        function updateConnectionStatus(connected) {
+            elements.statusDot.classList.toggle('connected', connected);
+            elements.statusText.textContent = connected ? 'Connected' : 'Disconnected';
+        }
+        
+        function updateBalance(balanceData) {
+            const balance = parseFloat(balanceData.balance).toFixed(2);
+            const currency = balanceData.currency || 'USD';
+            elements.accountBalance.textContent = `$${balance}`;
+            log('info', `Balance updated: $${balance} ${currency}`);
+        }
+        
+        function scheduleReconnect() {
+            if (state.reconnectTimer) return;
+            
+            const delay = Math.min(1000 * Math.pow(2, state.reconnectAttempts), 30000);
+            state.reconnectAttempts++;
+            elements.reconnectCount.textContent = state.reconnectAttempts;
+            
+            log('system', `Reconnecting in ${delay/1000}s (attempt ${state.reconnectAttempts})`);
+            
+            state.reconnectTimer = setTimeout(() => {
+                state.reconnectTimer = null;
+                connect();
+            }, delay);
+        }
+        
+        function startKeepAlive() {
+            stopKeepAlive();
+            state.keepAliveInterval = setInterval(() => {
+                if (state.connected) {
+                    send({ ping: 1 });
+                    state.lastPingTime = Date.now();
+                    
+                    // Check for stale connection
+                    setTimeout(() => {
+                        if (state.lastPingTime && Date.now() - state.lastPingTime > 20000) {
+                            log('system', 'Stale connection detected, reconnecting...');
+                            state.ws.close();
+                        }
+                    }, 15000);
+                }
+            }, 15000);
+        }
+        
+        function stopKeepAlive() {
+            if (state.keepAliveInterval) {
+                clearInterval(state.keepAliveInterval);
+                state.keepAliveInterval = null;
+            }
+        }
+
+        // ========================================
+        // MESSAGE HANDLER
+        // ========================================
+        function handleMessage(data) {
+            if (data.error) {
+                log('system', `Error: ${data.error.message}`);
                 return;
             }
             
-            const ageMins = Math.floor(age / 60000);
-            const ageStr = ageMins < 60 
-                ? `${ageMins}m ago` 
-                : `${Math.floor(ageMins/60)}h ${ageMins%60}m ago`;
-            
-            showRecoveryPrompt(snapshot, ageStr);
-        };
-        
-        req.onerror = () => db.close();
-    } catch(e) {
-        // IndexedDB not available, no recovery
-    }
-}
-
-function showRecoveryPrompt(snapshot, ageStr) {
-    const overlay = document.getElementById('exitOverlay');
-    const modal = overlay.querySelector('.exit-modal');
-    
-    modal.innerHTML = `
-        <h2>💾 Recovered Session Found</h2>
-        <p>Found auto-saved data from <strong>${ageStr}</strong>. Recover or start fresh?</p>
-        <div class="data-summary">
-            <div><span>Saved</span><span class="val">${new Date(snapshot.savedAtMs).toLocaleTimeString()}</span></div>
-            <div><span>Symbol</span><span class="val">${snapshot.symbol || '--'}</span></div>
-            <div><span>Ticks</span><span class="val">${snapshot.allSessionTicks?.length?.toLocaleString() || 0}</span></div>
-            <div><span>Triple Events</span><span class="val">${snapshot.tripleEvents?.length || 0}</span></div>
-            <div><span>Trades</span><span class="val">${snapshot.totalTrades || 0} (${snapshot.wins || 0}W / ${snapshot.losses || 0}L)</span></div>
-            <div><span>P/L</span><span class="val" style="color:${(snapshot.pnl||0) >= 0 ? 'var(--green)' : 'var(--red)'}">$${(snapshot.pnl||0).toFixed(2)}</span></div>
-        </div>
-        <div class="btn-row">
-            <button class="btn-green" onclick="recoverSession()">♻️ Recover Data</button>
-            <button class="btn-purple" onclick="downloadRecoveryAndClear()">📥 Download & Clear</button>
-        </div>
-        <div style="margin-top:10px">
-            <button class="btn-red" onclick="clearAndDismiss()" style="width:100%">🗑 Start Fresh</button>
-        </div>
-    `;
-    
-    // Stash snapshot for the recover/download buttons
-    state._recoverySnapshot = snapshot;
-    overlay.classList.add('show');
-}
-
-function recoverSession() {
-    const snap = state._recoverySnapshot;
-    if (!snap) return;
-    
-    // Restore state
-    state.allSessionTicks = snap.allSessionTicks || [];
-    state.recentDigits = snap.recentDigits || [];
-    state.frequencies = snap.frequencies || Array(10).fill(10);
-    state.tripleEvents = snap.tripleEvents || [];
-    state.digitTripleCounts = snap.digitTripleCounts || Array(10).fill(0);
-    state.digitQuadCounts = snap.digitQuadCounts || Array(10).fill(0);
-    state.lastTripleTickIndex = snap.lastTripleTickIndex || 0;
-    state.lastQuadTickIndex = snap.lastQuadTickIndex || 0;
-    state.tradeLog = snap.tradeLog || [];
-    state.totalCycles = snap.totalCycles || 0;
-    state.totalTrades = snap.totalTrades || 0;
-    state.wins = snap.wins || 0;
-    state.losses = snap.losses || 0;
-    state.pnl = snap.pnl || 0;
-    state.winStreak = snap.winStreak || 0;
-    state.tradesSinceLoss = snap.tradesSinceLoss || 0;
-    state.lastTradeResult = snap.lastTradeResult || null;
-    state.totalReconnects = snap.totalReconnects || 0;
-    state.sessionStartTime = snap.sessionStartTime || Date.now();
-    state.activityLog = snap.activityLog || [];
-    
-    // Fill display buffer from archive
-    state.ticks = state.allSessionTicks.slice(-500).map(t => ({ price: t.price, digit: t.digit, epoch: t.epoch }));
-    
-    // Update UI
-    updateStats();
-    document.getElementById('tickCount').textContent = state.allSessionTicks.length;
-    document.getElementById('cycleNum').textContent = '#' + state.totalCycles;
-    document.getElementById('totalCycles').textContent = state.totalCycles;
-    document.getElementById('reconnCount').textContent = state.totalReconnects;
-    
-    // Restore trade log display
-    if (state.tradeLog.length > 0) {
-        const el = document.getElementById('tradeLog');
-        el.innerHTML = '';
-        state.tradeLog.slice(-30).reverse().forEach(t => {
-            const entry = document.createElement('div');
-            const won = t.result === 'WIN';
-            entry.className = `trade-entry ${won ? 'win' : 'loss'}`;
-            entry.innerHTML = `
-                <span>Cycle #${t.cycle} | D${t.digit} (${t.freq}%) - ${t.result} ${won ? '✅' : '❌'}</span>
-                <span style="color:${won ? 'var(--green)' : 'var(--red)'}">${parseFloat(t.profit) >= 0 ? '+' : ''}$${t.profit}</span>
-            `;
-            el.appendChild(entry);
-        });
-    }
-    
-    // Restore activity log display
-    if (state.activityLog.length > 0) {
-        const el = document.getElementById('activityLog');
-        el.innerHTML = '';
-        state.activityLog.slice(-100).reverse().forEach(a => {
-            el.innerHTML += `<div class="${a.type}">[${a.time}] ${a.message}</div>`;
-        });
-    }
-    
-    // Update digit grid
-    for (let i = 0; i < 10; i++) {
-        document.getElementById(`freq-${i}`).textContent = state.frequencies[i].toFixed(1) + '%';
-    }
-    
-    log(`♻️ Session recovered! ${state.allSessionTicks.length} ticks, ${state.tripleEvents.length} triples, ${state.totalTrades} trades`, 'win');
-    
-    delete state._recoverySnapshot;
-    document.getElementById('exitOverlay').classList.remove('show');
-    resetExitModal();
-}
-
-function downloadRecoveryAndClear() {
-    // Temporarily load recovered data so export functions work
-    const snap = state._recoverySnapshot;
-    state.allSessionTicks = snap.allSessionTicks || [];
-    state.tripleEvents = snap.tripleEvents || [];
-    state.tradeLog = snap.tradeLog || [];
-    state.totalTrades = snap.totalTrades || 0;
-    state.wins = snap.wins || 0;
-    state.losses = snap.losses || 0;
-    state.pnl = snap.pnl || 0;
-    state.totalCycles = snap.totalCycles || 0;
-    state.digitTripleCounts = snap.digitTripleCounts || Array(10).fill(0);
-    state.digitQuadCounts = snap.digitQuadCounts || Array(10).fill(0);
-    state.totalReconnects = snap.totalReconnects || 0;
-    state.sessionStartTime = snap.sessionStartTime || Date.now();
-    state.activityLog = snap.activityLog || [];
-    
-    exportAll();
-    
-    // Reset state
-    clearAndDismiss();
-}
-
-async function clearSavedSession() {
-    try {
-        const db = await openDB();
-        const tx = db.transaction(DB_STORE, 'readwrite');
-        tx.objectStore(DB_STORE).delete('current_session');
-        await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
-        db.close();
-    } catch(e) {}
-}
-
-function clearAndDismiss() {
-    clearSavedSession();
-    delete state._recoverySnapshot;
-    document.getElementById('exitOverlay').classList.remove('show');
-    resetExitModal();
-    log('🗑 Starting fresh session', 'info');
-}
-
-function resetExitModal() {
-    // Restore exit modal to its original purpose
-    const modal = document.getElementById('exitOverlay').querySelector('.exit-modal');
-    modal.innerHTML = `
-        <h2>📊 Unsaved Session Data</h2>
-        <p>You have session data that hasn't been downloaded recently. Save before leaving?</p>
-        <div class="data-summary" id="exitDataSummary"></div>
-        <div class="btn-row">
-            <button class="btn-green" onclick="exportAllAndLeave()">💾 Download & Leave</button>
-            <button class="btn-red" onclick="confirmLeave()">🚪 Leave</button>
-        </div>
-        <div style="margin-top:10px">
-            <button class="btn-purple" onclick="cancelLeave()" style="width:100%">← Stay on Page</button>
-        </div>
-    `;
-}
-
-// ============================================================
-// EXIT HANDLER
-// ============================================================
-function hasUnsavedData() {
-    return state.allSessionTicks.length > 0 || state.tripleEvents.length > 0 || state.tradeLog.length > 0;
-}
-
-function recentlyDownloaded() {
-    return (Date.now() - state.lastDownloadTime) < 2 * 60 * 1000;
-}
-
-window.addEventListener('beforeunload', function(e) {
-    // Always try to auto-save on exit
-    if (hasUnsavedData()) {
-        autoSave(); // Fire and forget — IndexedDB write is fast
-    }
-    
-    if (hasUnsavedData() && !recentlyDownloaded() && !state.userWantsToLeave) {
-        e.preventDefault();
-        e.returnValue = '';
-        showExitOverlay();
-        return '';
-    }
-});
-
-function showExitOverlay() {
-    const summary = document.getElementById('exitDataSummary');
-    const dur = state.sessionStartTime ? Math.floor((Date.now() - state.sessionStartTime) / 1000) : 0;
-    const mins = Math.floor(dur / 60);
-    const secs = dur % 60;
-    
-    summary.innerHTML = `
-        <div><span>Session Duration</span><span class="val">${mins}m ${secs}s</span></div>
-        <div><span>Total Ticks</span><span class="val">${state.allSessionTicks.length.toLocaleString()}</span></div>
-        <div><span>Triple Events</span><span class="val">${state.tripleEvents.length}</span></div>
-        <div><span>Trades</span><span class="val">${state.totalTrades}</span></div>
-        <div><span>Win Rate</span><span class="val">${state.totalTrades > 0 ? (state.wins/state.totalTrades*100).toFixed(1) : 0}%</span></div>
-        <div><span>P/L</span><span class="val" style="color:${state.pnl >= 0 ? 'var(--green)' : 'var(--red)'}">$${state.pnl.toFixed(2)}</span></div>
-    `;
-    document.getElementById('exitOverlay').classList.add('show');
-}
-
-function exportAllAndLeave() {
-    exportAll();
-    setTimeout(() => {
-        state.userWantsToLeave = true;
-        document.getElementById('exitOverlay').classList.remove('show');
-    }, 500);
-}
-
-function confirmLeave() {
-    state.userWantsToLeave = true;
-    document.getElementById('exitOverlay').classList.remove('show');
-}
-
-function cancelLeave() {
-    document.getElementById('exitOverlay').classList.remove('show');
-}
-
-// ============================================================
-// LOGGING
-// ============================================================
-function log(msg, type = 'info') {
-    const time = new Date().toLocaleTimeString('en-US', { hour12: false });
-    const el = document.getElementById('activityLog');
-    el.innerHTML = `<div class="${type}">[${time}] ${msg}</div>` + el.innerHTML;
-    if (el.children.length > 150) el.removeChild(el.lastChild);
-    state.activityLog.push({ time, message: msg, type });
-}
-
-// ============================================================
-// CONNECTION (with auto-reconnect + Web Worker keep-alive)
-// ============================================================
-
-// --- Web Worker for background-tab-proof pings ---
-// Browsers throttle setInterval in background tabs to ~1/min.
-// Web Workers run on a separate thread and are NOT throttled.
-function createKeepAliveWorker() {
-    if (state.keepAliveWorker) state.keepAliveWorker.terminate();
-    
-    const workerCode = `
-        let interval = null;
-        self.onmessage = function(e) {
-            if (e.data === 'start') {
-                if (interval) clearInterval(interval);
-                interval = setInterval(() => self.postMessage('ping'), 15000);
-            } else if (e.data === 'stop') {
-                if (interval) clearInterval(interval);
-                interval = null;
+            if (data.msg_type === 'authorize') {
+                log('system', 'Authorization successful');
+                // Subscribe to balance updates
+                send({ balance: 1, subscribe: 1 });
+                subscribeToTicks();
             }
-        };
-    `;
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    state.keepAliveWorker = new Worker(URL.createObjectURL(blob));
-    
-    state.keepAliveWorker.onmessage = () => {
-        // Worker fires every 15s regardless of tab visibility
-        if (state.ws?.readyState === WebSocket.OPEN) {
-            state.ws.send(JSON.stringify({ ping: 1 }));
-        }
-    };
-}
-
-// --- Stale connection detection ---
-// If we haven't received ANY message (including pongs) in 45s, connection is dead
-function startStaleCheck() {
-    if (state.staleCheckInterval) clearInterval(state.staleCheckInterval);
-    state.staleCheckInterval = setInterval(() => {
-        if (!state.connected) return;
-        const staleSec = (Date.now() - state.lastMessageTime) / 1000;
-        if (staleSec > 45) {
-            log(`⚠️ Connection stale (${staleSec.toFixed(0)}s no data) — forcing reconnect`, 'alert');
-            state.ws?.close();
-        }
-    }, 10000);
-}
-
-// --- Visibility API: check connection + re-acquire wake lock when tab becomes visible ---
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        // Re-acquire wake lock (it gets released when tab goes background in some browsers)
-        reacquireWakeLock();
-        
-        if (state.savedToken) {
-            const staleSec = (Date.now() - state.lastMessageTime) / 1000;
-            if (staleSec > 30 && state.connected) {
-                log(`👁️ Tab refocused — connection may be stale (${staleSec.toFixed(0)}s), checking...`, 'info');
-                try { state.ws?.send(JSON.stringify({ ping: 1 })); } catch(e) { /* will trigger reconnect */ }
-            } else if (!state.connected && state.autoReconnect) {
-                log('👁️ Tab refocused — reconnecting...', 'info');
-                attemptReconnect();
+            
+            if (data.msg_type === 'balance') {
+                updateBalance(data.balance);
+            }
+            
+            if (data.msg_type === 'tick') {
+                handleTick(data.tick);
+            }
+            
+            if (data.msg_type === 'buy') {
+                handleBuyResponse(data);
+            }
+            
+            if (data.msg_type === 'proposal_open_contract') {
+                handleContractUpdate(data.proposal_open_contract);
+            }
+            
+            if (data.msg_type === 'ping') {
+                state.lastPingTime = null; // Reset stale detection
             }
         }
-    }
-});
-
-// --- Auto-reconnect with exponential backoff ---
-function getReconnectDelay() {
-    // 2s, 4s, 8s, 16s, 30s (capped)
-    return Math.min(2000 * Math.pow(2, state.reconnectAttempts), 30000);
-}
-
-function attemptReconnect() {
-    if (state.reconnectTimer) clearTimeout(state.reconnectTimer);
-    if (!state.savedToken || !state.autoReconnect) return;
-    if (state.reconnectAttempts >= state.maxReconnectAttempts) {
-        log(`🛑 Max reconnect attempts (${state.maxReconnectAttempts}) reached. Click Connect to retry.`, 'loss');
-        return;
-    }
-    
-    const delay = getReconnectDelay();
-    state.reconnectAttempts++;
-    log(`🔄 Reconnecting in ${(delay/1000).toFixed(0)}s (attempt ${state.reconnectAttempts}/${state.maxReconnectAttempts})...`, 'alert');
-    document.getElementById('status').textContent = `Reconnecting (${state.reconnectAttempts})...`;
-    
-    state.reconnectTimer = setTimeout(() => {
-        connectWithToken(state.savedToken);
-    }, delay);
-}
-
-function connect() {
-    const token = document.getElementById('token').value;
-    if (!token) return log('Please enter API token', 'alert');
-    
-    state.savedToken = token;
-    state.reconnectAttempts = 0;
-    state.autoReconnect = true;
-    
-    connectWithToken(token);
-}
-
-function connectWithToken(token) {
-    // Clean up old connection
-    if (state.pingInterval) { clearInterval(state.pingInterval); state.pingInterval = null; }
-    if (state.ws) {
-        state.ws.onclose = null; // prevent triggering reconnect from intentional close
-        if (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING) {
-            state.ws.close();
+        
+        function subscribeToTicks() {
+            send({
+                ticks: state.config.market,
+                subscribe: 1
+            });
+            log('info', `Subscribed to ${state.config.market}`);
         }
-    }
-    
-    log('Connecting...', 'info');
-    document.getElementById('status').textContent = 'Connecting...';
-    
-    try {
-        state.ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
-    } catch(e) {
-        log(`❌ WebSocket creation failed: ${e.message}`, 'loss');
-        attemptReconnect();
-        return;
-    }
-    
-    state.ws.onopen = () => {
-        state.ws.send(JSON.stringify({ authorize: token }));
         
-        // Start Web Worker keep-alive (background-tab proof)
-        createKeepAliveWorker();
-        state.keepAliveWorker.postMessage('start');
-        
-        // Also keep a regular ping as backup (works when tab is focused)
-        if (state.pingInterval) clearInterval(state.pingInterval);
-        state.pingInterval = setInterval(() => {
-            if (state.ws?.readyState === WebSocket.OPEN) {
-                state.ws.send(JSON.stringify({ ping: 1 }));
+        function handleTick(tick) {
+            const price = parseFloat(tick.quote);
+            const digit = parseInt(price.toString().slice(-1));
+            const timestamp = new Date(tick.epoch * 1000).toISOString();
+            
+            // Store tick data
+            const tickData = { timestamp, price, digit, epoch: tick.epoch };
+            state.ticks.push(tickData);
+            saveToDB('ticks', tickData);
+            
+            // Keep only last 5000 ticks in memory
+            if (state.ticks.length > 5000) {
+                state.ticks.shift();
             }
-        }, 20000);
-        
-        // Start stale connection monitoring
-        state.lastMessageTime = Date.now();
-        startStaleCheck();
-    };
-    
-    state.ws.onmessage = (e) => {
-        state.lastMessageTime = Date.now();
-        
-        const data = JSON.parse(e.data);
-        if (data.ping || data.pong) return;
-        
-        if (data.authorize) {
-            state.connected = true;
-            state.reconnectAttempts = 0; // Reset on successful auth
-            if (!state.sessionStartTime) state.sessionStartTime = Date.now();
             
-            document.getElementById('dot').classList.add('on');
+            // Update digits
+            state.digits.push(digit);
+            state.digitCounts[digit]++;
             
-            if (state.totalReconnects > 0) {
-                document.getElementById('status').textContent = `Connected (R:${state.totalReconnects})`;
-                log(`✅ Reconnected! (${state.totalReconnects} total reconnects)`, 'win');
+            // Keep only relevant digits in memory
+            if (state.digits.length > 1000) {
+                const removed = state.digits.shift();
+                state.digitCounts[removed]--;
+            }
+            
+            // Update consecutive counters
+            if (digit <= 4) {
+                state.consecutiveLow++;
+                state.consecutiveHigh = 0;
             } else {
-                document.getElementById('status').textContent = 'Connected';
-                log('✅ Connected!', 'win');
+                state.consecutiveHigh++;
+                state.consecutiveLow = 0;
             }
             
-            document.getElementById('balance').textContent = '$' + parseFloat(data.authorize.balance).toFixed(2);
-            document.getElementById('displayBalance').textContent = '$' + parseFloat(data.authorize.balance).toFixed(2);
-            subscribeTicks();
+            // Update UI
+            updateTickDisplay(price, digit);
+            updateDigitDistribution();
+            updateRecentDigits();
+            updateTrendIndicators();
             
-            // Activate wake lock + auto-save on connection
-            requestWakeLock();
-            startAutoSave();
-        }
-        
-        if (data.tick) processTick(data.tick);
-        if (data.buy) handleBuyResponse(data);
-        if (data.proposal_open_contract) handleContractUpdate(data.proposal_open_contract);
-        if (data.balance) {
-            document.getElementById('balance').textContent = '$' + parseFloat(data.balance.balance).toFixed(2);
-            document.getElementById('displayBalance').textContent = '$' + parseFloat(data.balance.balance).toFixed(2);
-        }
-    };
-    
-    state.ws.onclose = (e) => {
-        state.connected = false;
-        document.getElementById('dot').classList.remove('on');
-        
-        // Stop worker pings
-        if (state.keepAliveWorker) state.keepAliveWorker.postMessage('stop');
-        if (state.pingInterval) { clearInterval(state.pingInterval); state.pingInterval = null; }
-        
-        if (state.autoReconnect && state.savedToken) {
-            state.totalReconnects++;
-            document.getElementById('reconnCount').textContent = state.totalReconnects;
-            log(`🔴 Disconnected (code: ${e.code}) — auto-reconnecting...`, 'loss');
-            document.getElementById('status').textContent = 'Reconnecting...';
-            attemptReconnect();
-        } else {
-            document.getElementById('status').textContent = 'Disconnected';
-            log('🔴 Disconnected', 'loss');
-        }
-    };
-    
-    state.ws.onerror = (e) => {
-        log('⚠️ WebSocket error', 'alert');
-    };
-}
-
-function subscribeTicks() {
-    const symbol = document.getElementById('symbol').value;
-    state.ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
-    state.ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
-    state.ws.send(JSON.stringify({ proposal_open_contract: 1, subscribe: 1 }));
-    document.getElementById('marketDisplay').textContent = symbol;
-    document.getElementById('displayPair').textContent = symbol;
-    log(`📡 Subscribed to ${symbol}`, 'info');
-}
-
-// ============================================================
-// TICK PROCESSING
-// ============================================================
-function processTick(tick) {
-    const price = parseFloat(tick.quote);
-    const digit = parseInt(tick.quote.toString().slice(-1));
-    const prevDigit = state.lastDigit;
-    
-    // Display buffer
-    state.ticks.push({ price, digit, epoch: tick.epoch });
-    if (state.ticks.length > 500) state.ticks.shift();
-    
-    state.recentDigits.push(digit);
-    if (state.recentDigits.length > 200) state.recentDigits.shift();
-    
-    // Rolling frequencies (last 100)
-    const recent = state.recentDigits.slice(-100);
-    const counts = Array(10).fill(0);
-    recent.forEach(d => counts[d]++);
-    state.frequencies = counts.map(c => (c / recent.length) * 100);
-    
-    // Streak calculation
-    let streak = 1;
-    for (let i = state.recentDigits.length - 2; i >= 0; i--) {
-        if (state.recentDigits[i] === digit) streak++;
-        else break;
-    }
-    state.currentStreak = streak;
-    state.lastDigit = digit;
-    
-    // === FULL SESSION ARCHIVE ===
-    const tickIndex = state.allSessionTicks.length;
-    state.allSessionTicks.push({
-        epoch: tick.epoch,
-        price: price,
-        digit: digit,
-        prevDigit: prevDigit,
-        streak: streak,
-        freqs: [...state.frequencies],
-        isTripleStart: (streak === 3),
-        isQuad: (streak === 4),
-        isQuintPlus: (streak >= 5),
-        elapsed: state.sessionStartTime ? ((Date.now() - state.sessionStartTime) / 1000).toFixed(1) : '0'
-    });
-    
-    // === TRIPLE EVENT TRACKING ===
-    trackTripleEvent(digit, streak, tick.epoch, tickIndex, prevDigit);
-    
-    // Update UI
-    updateDigitDisplay(digit, price, streak >= 3);
-    document.getElementById('tickCount').textContent = state.allSessionTicks.length;
-    
-    // Phase logic
-    if (!state.isRunning || state.phase === 'stopped' || state.phase === 'cooldown') return;
-    
-    if (state.phase === 'observe' && state.observedTriple) {
-        checkObservationResult(digit);
-    }
-    
-    if (!state.pendingTrade && streak >= 3) {
-        handleTriple(digit, streak);
-    }
-}
-
-// ============================================================
-// TRIPLE EVENT TRACKING
-// ============================================================
-function trackTripleEvent(digit, streak, epoch, tickIndex, prevDigit) {
-    
-    if (streak === 3 && !state.pendingTripleEvent) {
-        // === NEW TRIPLE ===
-        state.digitTripleCounts[digit]++;
-        
-        const minFreq = Math.min(...state.frequencies);
-        const maxFreq = Math.max(...state.frequencies);
-        const coldDigits = state.frequencies.filter(f => f <= 8).length;
-        const hotDigits = state.frequencies.filter(f => f >= 12).length;
-        
-        // Distribution entropy (uniformity measure)
-        const entropy = -state.frequencies.reduce((sum, f) => {
-            const p = f / 100;
-            return sum + (p > 0 ? p * Math.log2(p) : 0);
-        }, 0);
-        
-        // Sequence context
-        const prev30 = state.recentDigits.slice(-33, -3);
-        const last20 = state.recentDigits.slice(-23, -3);
-        const uniqueIn20 = new Set(last20).size;
-        
-        // What digit came right before the triple started
-        const digitBeforeTriple = prev30.length > 0 ? prev30[prev30.length - 1] : null;
-        
-        state.pendingTripleEvent = {
-            id: state.tripleEvents.length + 1,
-            epoch: epoch,
-            time: new Date().toISOString(),
-            digit: digit,
-            digitBeforeTriple: digitBeforeTriple,
-            
-            // Frequency context
-            digitFreq: state.frequencies[digit],
-            allFreqs: [...state.frequencies],
-            digitRank: [...state.frequencies].sort((a,b) => a-b).indexOf(state.frequencies[digit]) + 1,
-            coldestDigit: state.frequencies.indexOf(minFreq),
-            coldestFreq: minFreq,
-            hottestDigit: state.frequencies.indexOf(maxFreq),
-            hottestFreq: maxFreq,
-            coldDigitCount: coldDigits,
-            hotDigitCount: hotDigits,
-            entropy: entropy,
-            
-            // Sequence context
-            prev30Digits: prev30.join(''),
-            uniqueDigitsInLast20: uniqueIn20,
-            
-            // Gap / temporal
-            tickIndex: tickIndex,
-            ticksSinceLastTriple: tickIndex - state.lastTripleTickIndex,
-            ticksSinceLastQuad: tickIndex - state.lastQuadTickIndex,
-            digitTripleCount: state.digitTripleCounts[digit],
-            digitQuadCount: state.digitQuadCounts[digit],
-            sessionElapsedSec: state.sessionStartTime ? Math.floor((Date.now() - state.sessionStartTime) / 1000) : 0,
-            hourOfDay: new Date().getHours(),
-            minuteOfHour: new Date().getMinutes(),
-            
-            // Trading context
-            phase: state.phase,
-            cycleNum: state.totalCycles,
-            cycleTradeNum: state.cycleTradeCount,
-            runningWinRate: state.totalTrades > 0 ? (state.wins / state.totalTrades * 100) : 0,
-            currentWinStreak: state.winStreak,
-            tradesSinceLoss: state.tradesSinceLoss,
-            lastTradeResult: state.lastTradeResult,
-            totalTradesAtTime: state.totalTrades,
-            runningPnl: state.pnl,
-            
-            // Outcome (filled on resolution)
-            maxStreak: 3,
-            outcome: 'pending',
-            nextDigit: null,
-            resolutionEpoch: null,
-            wasTradedOn: false,
-            tradeProfit: null
-        };
-        
-        state.lastTripleTickIndex = tickIndex;
-        
-    } else if (state.pendingTripleEvent) {
-        if (digit === state.pendingTripleEvent.digit) {
-            // Extending streak
-            state.pendingTripleEvent.maxStreak = streak;
-            if (streak === 4) {
-                state.pendingTripleEvent.outcome = 'quad';
-                state.digitQuadCounts[digit]++;
-                state.lastQuadTickIndex = tickIndex;
+            // Process trading logic
+            if (state.isRunning) {
+                processTrading(digit);
             }
-        } else {
-            // Streak broke — resolve
-            if (state.pendingTripleEvent.outcome === 'pending') {
-                state.pendingTripleEvent.outcome = 'bounce';
+        }
+
+        // ========================================
+        // TRADING LOGIC
+        // ========================================
+        function processTrading(digit) {
+            const observationCount = Math.min(state.digits.length, state.config.observationTicks);
+            
+            switch (state.phase) {
+                case 'observation':
+                    // Still collecting data
+                    updateObservationProgress(observationCount);
+                    
+                    if (observationCount >= state.config.observationTicks) {
+                        state.phase = 'analyzing';
+                        setPhase('analyzing');
+                        log('info', 'Observation complete, analyzing patterns...');
+                    }
+                    break;
+                    
+                case 'analyzing':
+                    // Look for entry signal
+                    const signal = analyzePattern();
+                    if (signal) {
+                        state.currentDirection = signal.direction;
+                        state.phase = 'trading';
+                        setPhase('trading');
+                        updateSignalDisplay(signal);
+                        log('signal', `Entry signal: ${signal.direction.toUpperCase()} (confidence: ${signal.confidence}%)`);
+                        placeTrade();
+                    }
+                    break;
+                    
+                case 'trading':
+                case 'recovery':
+                    // Wait for contract result
+                    break;
             }
-            state.pendingTripleEvent.nextDigit = digit;
-            state.pendingTripleEvent.resolutionEpoch = epoch;
-            state.tripleEvents.push(state.pendingTripleEvent);
-            state.pendingTripleEvent = null;
-        }
-    }
-}
-
-// ============================================================
-// UI: Digit Display
-// ============================================================
-function updateDigitDisplay(digit, price, isTriple) {
-    document.getElementById('priceDisplay').textContent = `Price: ${price.toFixed(5)}`;
-    document.getElementById('currentDigit').textContent = digit;
-    document.getElementById('currentDigit').style.color = isTriple ? 'var(--purple)' : 'var(--yellow)';
-    
-    const streakEl = document.getElementById('streakIndicator');
-    if (isTriple) {
-        streakEl.textContent = `🔥 TRIPLE! (${state.currentStreak}x D${digit})`;
-        streakEl.className = 'streak-indicator triple';
-    } else if (state.currentStreak === 2) {
-        streakEl.textContent = `⚡ Double (2x D${digit})`;
-        streakEl.className = 'streak-indicator';
-        streakEl.style.color = 'var(--orange)';
-    } else {
-        streakEl.textContent = `Single (D${digit})`;
-        streakEl.className = 'streak-indicator';
-        streakEl.style.color = 'var(--muted)';
-    }
-    
-    for (let i = 0; i < 10; i++) {
-        const box = document.getElementById(`digit-${i}`);
-        const freqEl = document.getElementById(`freq-${i}`);
-        freqEl.textContent = state.frequencies[i].toFixed(1) + '%';
-        box.className = 'digit-box';
-        if (i === digit) box.classList.add(isTriple ? 'tripled' : 'active');
-    }
-}
-
-// ============================================================
-// PHASE: OBSERVATION
-// ============================================================
-function checkObservationResult(currentDigit) {
-    const observed = state.observedTriple;
-    if (currentDigit === observed.digit) {
-        if (state.currentStreak >= 4) {
-            log(`💥 QUAD! D${observed.digit} x${state.currentStreak} - Loss scenario observed!`, 'loss');
-            state.observedTriple = null;
-            startTradingPhase();
-        }
-    } else {
-        log(`👁️ D${observed.digit} triple → D${currentDigit} (would be WIN, still waiting for loss)`, 'info');
-        state.observedTriple = null;
-    }
-}
-
-function handleTriple(digit, streak) {
-    const maxFreq = parseFloat(document.getElementById('maxFreq').value) || 16;
-    const freq = state.frequencies[digit];
-    
-    if (freq >= maxFreq) {
-        log(`⚠️ Triple D${digit} skipped (freq ${freq.toFixed(1)}% ≥ ${maxFreq}%)`, 'alert');
-        return;
-    }
-    
-    if (state.phase === 'observe') {
-        state.observedTriple = { digit, freq, streak };
-        log(`👁️ OBSERVING: Triple D${digit} (${freq.toFixed(1)}%)...`, 'info');
-        updatePhaseBanner();
-    } else if (state.phase === 'trade') {
-        const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 12;
-        if (state.cycleTradeCount >= tradesPerCycle) { startCooldown(); return; }
-        
-        state.cycleTradeCount++;
-        
-        // Mark pending triple event as traded
-        if (state.pendingTripleEvent && state.pendingTripleEvent.digit === digit) {
-            state.pendingTripleEvent.wasTradedOn = true;
         }
         
-        log(`🎯 TRADE #${state.cycleTradeCount}/${tradesPerCycle}: DIFFERS D${digit} (${freq.toFixed(1)}%)`, 'trade');
-        placeTrade(digit, freq);
-        updateProgress();
-    }
-}
-
-// ============================================================
-// SKIP PHASE 1
-// ============================================================
-function skipPhase1() {
-    if (!state.connected) { log('Please connect first!', 'alert'); return; }
-    if (state.ticks.length < 50) { log(`Need more ticks (${state.ticks.length}/50). Wait...`, 'alert'); return; }
-    if (state.phase === 'trade') { log('⚠️ Already in trading phase', 'alert'); return; }
-    
-    if (!state.isRunning) {
-        state.isRunning = true;
-        document.getElementById('startBtn').disabled = true;
-        log('▶️ Bot started (skipping Phase 1)...', 'trade');
-    } else {
-        log('⏭ Skipping Phase 1 → jumping to trading!', 'alert');
-    }
-    
-    state.cooldownEndTime = null;
-    document.getElementById('phaseTimer').style.display = 'none';
-    startTradingPhase();
-}
-
-// ============================================================
-// PHASE: TRADING
-// ============================================================
-function startTradingPhase() {
-    state.phase = 'trade';
-    state.cycleTradeCount = 0;
-    state.totalCycles++;
-    
-    document.getElementById('cycleNum').textContent = '#' + state.totalCycles;
-    document.getElementById('totalCycles').textContent = state.totalCycles;
-    
-    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 12;
-    log(`✅ PHASE 2: Trading ${tradesPerCycle} trades (Cycle #${state.totalCycles})`, 'win');
-    
-    updatePhaseBanner();
-    updateProgress();
-}
-
-function placeTrade(digit, freq) {
-    const stake = parseFloat(document.getElementById('stake').value) || 1;
-    state.pendingTrade = { digit, freq, stake, time: new Date().toISOString() };
-    
-    state.ws.send(JSON.stringify({
-        buy: 1,
-        price: stake,
-        parameters: {
-            amount: stake,
-            basis: 'stake',
-            contract_type: 'DIGITDIFF',
-            currency: 'USD',
-            duration: 1,
-            duration_unit: 't',
-            symbol: document.getElementById('symbol').value,
-            barrier: digit.toString()
-        }
-    }));
-}
-
-function handleBuyResponse(data) {
-    if (data.error) { log(`❌ Error: ${data.error.message}`, 'loss'); state.pendingTrade = null; return; }
-    if (data.buy) {
-        state.pendingContracts.set(data.buy.contract_id, state.pendingTrade);
-        log(`📤 Contract ${data.buy.contract_id} placed`, 'info');
-    }
-}
-
-function handleContractUpdate(contract) {
-    const info = state.pendingContracts.get(contract.contract_id);
-    if (!info) return;
-    if (contract.status !== 'won' && contract.status !== 'lost') return;
-    
-    state.pendingContracts.delete(contract.contract_id);
-    state.pendingTrade = null;
-    
-    const won = contract.status === 'won';
-    const profit = parseFloat(contract.profit) || (won ? info.stake * 0.0965 : -info.stake);
-    
-    state.totalTrades++;
-    state.pnl += profit;
-    state.lastTradeResult = won ? 'win' : 'loss';
-    
-    if (won) {
-        state.wins++;
-        state.winStreak++;
-        state.tradesSinceLoss++;
-        log(`✅ WIN! D${info.digit} → +$${profit.toFixed(2)} [${state.cycleTradeCount}/${document.getElementById('tradesPerCycle').value}]`, 'win');
-        linkTradeToTripleEvent(info.digit, profit);
-    } else {
-        state.losses++;
-        state.winStreak = 0;
-        state.tradesSinceLoss = 0;
-        log(`❌ LOSS! D${info.digit} became quad → -$${Math.abs(profit).toFixed(2)}`, 'loss');
-        linkTradeToTripleEvent(info.digit, profit);
-        
-        if (document.getElementById('stopOnLoss').checked) {
-            log('🛑 Stopping on loss (conservative mode)', 'alert');
-            stopBot();
-            return;
+        function analyzePattern() {
+            const trigger = state.config.consecutiveTrigger;
+            const strategy = state.config.strategy;
+            
+            // Calculate recent bias
+            const recentDigits = state.digits.slice(-50);
+            const lowCount = recentDigits.filter(d => d <= 4).length;
+            const highCount = recentDigits.length - lowCount;
+            const lowPercent = (lowCount / recentDigits.length) * 100;
+            const highPercent = (highCount / recentDigits.length) * 100;
+            
+            let signal = null;
+            
+            if (strategy === 'reversal') {
+                // Wait for consecutive pattern, then bet on reversal
+                if (state.consecutiveLow >= trigger) {
+                    signal = {
+                        direction: 'over',
+                        confidence: Math.min(50 + (state.consecutiveLow - trigger + 1) * 10, 85),
+                        reason: `${state.consecutiveLow} consecutive low digits`
+                    };
+                } else if (state.consecutiveHigh >= trigger) {
+                    signal = {
+                        direction: 'under',
+                        confidence: Math.min(50 + (state.consecutiveHigh - trigger + 1) * 10, 85),
+                        reason: `${state.consecutiveHigh} consecutive high digits`
+                    };
+                }
+            } else {
+                // Trend following
+                if (state.consecutiveLow >= trigger) {
+                    signal = {
+                        direction: 'under',
+                        confidence: Math.min(50 + (lowPercent - 50) * 2, 75),
+                        reason: `Trend: ${state.consecutiveLow} consecutive lows`
+                    };
+                } else if (state.consecutiveHigh >= trigger) {
+                    signal = {
+                        direction: 'over',
+                        confidence: Math.min(50 + (highPercent - 50) * 2, 75),
+                        reason: `Trend: ${state.consecutiveHigh} consecutive highs`
+                    };
+                }
+            }
+            
+            return signal;
         }
         
-        if (document.getElementById('resetOnLoss').checked && state.phase === 'trade') {
-            const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 12;
-            log(`🔄 LOSS RESET: Was ${state.cycleTradeCount}/${tradesPerCycle} → restarting cycle at 0/${tradesPerCycle}`, 'alert');
-            state.cycleTradeCount = 0;
-            addTradeEntry(info.digit, info.freq, won, profit);
+        function placeTrade() {
+            const stake = calculateStake();
+            const barrier = state.currentDirection === 'over' ? '4' : '5';
+            const contractType = state.currentDirection === 'over' ? 'DIGITOVER' : 'DIGITUNDER';
+            
+            state.pendingTrade = {
+                direction: state.currentDirection,
+                stake: stake,
+                level: state.martingaleLevel,
+                timestamp: new Date().toISOString()
+            };
+            
+            log('trade', `Placing ${state.currentDirection.toUpperCase()} trade - Stake: $${stake.toFixed(2)} (Level ${state.martingaleLevel})`);
+            
+            send({
+                buy: 1,
+                price: stake,
+                parameters: {
+                    contract_type: contractType,
+                    symbol: state.config.market,
+                    duration: 1,
+                    duration_unit: 't',
+                    basis: 'stake',
+                    amount: stake,
+                    currency: 'USD',
+                    barrier: barrier
+                }
+            });
+            
+            elements.currentStake.textContent = `$${stake.toFixed(2)}`;
+        }
+        
+        function calculateStake() {
+            const multiplier = 100 / state.config.payout; // ~1.053 for 95% payout
+            const adjustedMultiplier = multiplier + 0.05; // Add buffer for profit
+            return parseFloat((state.config.baseStake * Math.pow(adjustedMultiplier * 2, state.martingaleLevel)).toFixed(2));
+        }
+        
+        function handleBuyResponse(data) {
+            if (data.buy) {
+                state.currentContractId = data.buy.contract_id;
+                log('info', `Contract opened: ${state.currentContractId}`);
+                
+                // Subscribe to contract updates
+                send({
+                    proposal_open_contract: 1,
+                    contract_id: state.currentContractId,
+                    subscribe: 1
+                });
+            }
+        }
+        
+        function handleContractUpdate(contract) {
+            if (contract.is_sold) {
+                const won = contract.status === 'won';
+                const profit = parseFloat(contract.profit);
+                
+                processTrade(won, profit, contract);
+            }
+        }
+        
+        function processTrade(won, profit, contract) {
+            state.totalTrades++;
+            state.profitLoss += profit;
+            
+            const trade = {
+                ...state.pendingTrade,
+                won,
+                profit,
+                balance: state.profitLoss,
+                contractId: contract?.contract_id,
+                timestamp: new Date().toISOString()
+            };
+            
+            state.trades.push(trade);
+            saveToDB('trades', trade);
+            saveState();
+            
+            if (won) {
+                state.wins++;
+                log('trade', `WIN! Profit: $${profit.toFixed(2)} | Total: $${state.profitLoss.toFixed(2)}`);
+                
+                // Reset martingale and go back to analyzing
+                state.martingaleLevel = 0;
+                state.phase = 'analyzing';
+                setPhase('analyzing');
+                updateMartingaleHighlight();
+            } else {
+                state.losses++;
+                log('loss', `LOSS! Loss: $${profit.toFixed(2)} | Total: $${state.profitLoss.toFixed(2)}`);
+                
+                // Check if max depth reached
+                if (state.martingaleLevel >= state.config.maxDepth - 1) {
+                    log('system', 'Max martingale depth reached! Resetting...');
+                    state.martingaleLevel = 0;
+                    state.phase = 'analyzing';
+                    setPhase('analyzing');
+                } else {
+                    // Continue martingale recovery
+                    state.martingaleLevel++;
+                    state.phase = 'recovery';
+                    setPhase('recovery');
+                    updateMartingaleHighlight();
+                    
+                    // Place recovery trade immediately
+                    setTimeout(() => {
+                        if (state.isRunning && state.phase === 'recovery') {
+                            placeTrade();
+                        }
+                    }, 500);
+                }
+            }
+            
+            // Check stop loss / take profit
+            if (state.config.stopLoss > 0 && state.profitLoss <= -state.config.stopLoss) {
+                log('system', `Stop loss hit! Stopping bot.`);
+                stopBot();
+            }
+            
+            if (state.config.takeProfit > 0 && state.profitLoss >= state.config.takeProfit) {
+                log('system', `Take profit hit! Stopping bot.`);
+                stopBot();
+            }
+            
             updateStats();
-            updateProgress();
-            updatePhaseBanner();
-            return;
+            updateTradeHistory(trade);
         }
-    }
-    
-    addTradeEntry(info.digit, info.freq, won, profit);
-    updateStats();
-    
-    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 12;
-    if (state.cycleTradeCount >= tradesPerCycle) {
-        log(`🏁 Cycle #${state.totalCycles} complete: ${state.cycleTradeCount} trades`, 'info');
-        const maxCycles = parseInt(document.getElementById('maxCycles').value) || 0;
-        if (maxCycles > 0 && state.totalCycles >= maxCycles) {
-            log(`🎯 Max cycles (${maxCycles}) reached!`, 'win');
-            stopBot();
-            return;
+
+        // ========================================
+        // UI UPDATES
+        // ========================================
+        function updateTickDisplay(price, digit) {
+            elements.tickPrice.textContent = price.toFixed(5);
+            elements.currentDigit.textContent = digit;
+            elements.currentDigit.className = 'current-digit ' + (digit <= 4 ? 'low' : 'high');
+            elements.tickCount.textContent = state.ticks.length;
         }
-        startCooldown();
-    }
-}
-
-function linkTradeToTripleEvent(digit, profit) {
-    for (let i = state.tripleEvents.length - 1; i >= 0; i--) {
-        const te = state.tripleEvents[i];
-        if (te.digit === digit && te.wasTradedOn && te.tradeProfit === null) {
-            te.tradeProfit = profit;
-            return;
-        }
-    }
-    if (state.pendingTripleEvent && state.pendingTripleEvent.digit === digit && state.pendingTripleEvent.wasTradedOn) {
-        state.pendingTripleEvent.tradeProfit = profit;
-    }
-}
-
-// ============================================================
-// PHASE: COOLDOWN
-// ============================================================
-function startCooldown() {
-    state.phase = 'cooldown';
-    const cooldownMins = parseInt(document.getElementById('cooldownMins').value) || 10;
-    state.cooldownEndTime = Date.now() + (cooldownMins * 60 * 1000);
-    log(`❄️ COOLDOWN: ${cooldownMins} minutes before next cycle`, 'cooldown');
-    document.getElementById('phaseTimer').style.display = 'block';
-    document.getElementById('progressLabel').textContent = 'Cooldown Progress';
-    document.getElementById('progressText').textContent = `${cooldownMins}:00 remaining`;
-    updatePhaseBanner();
-}
-
-function endCooldown() {
-    state.cooldownEndTime = null;
-    document.getElementById('phaseTimer').style.display = 'none';
-    log(`✅ Cooldown complete! Starting new observation phase...`, 'win');
-    startObservationPhase();
-}
-
-// ============================================================
-// PHASE: OBSERVATION (Start)
-// ============================================================
-function startObservationPhase() {
-    state.phase = 'observe';
-    state.observedTriple = null;
-    state.cycleTradeCount = 0;
-    
-    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 12;
-    document.getElementById('progressLabel').textContent = 'Cycle Progress';
-    document.getElementById('progressText').textContent = `0/${tradesPerCycle} trades`;
-    document.getElementById('progressFill').style.width = '0%';
-    document.getElementById('progressFill').className = 'progress-fill yellow';
-    
-    log(`👁️ PHASE 1: Observing for quad (loss scenario)...`, 'info');
-    updatePhaseBanner();
-}
-
-// ============================================================
-// BOT CONTROLS
-// ============================================================
-function startBot() {
-    if (!state.connected) { log('Please connect first!', 'alert'); return; }
-    if (state.ticks.length < 50) { log(`Need more ticks (${state.ticks.length}/50). Wait...`, 'alert'); return; }
-    
-    state.isRunning = true;
-    state.cycleTradeCount = 0;
-    state.observedTriple = null;
-    document.getElementById('startBtn').disabled = true;
-    log('▶️ Bot started! Beginning observation phase...', 'trade');
-    startObservationPhase();
-}
-
-function stopBot() {
-    state.isRunning = false;
-    state.phase = 'stopped';
-    state.pendingTrade = null;
-    state.observedTriple = null;
-    state.cooldownEndTime = null;
-    document.getElementById('startBtn').disabled = false;
-    document.getElementById('phaseTimer').style.display = 'none';
-    updatePhaseBanner();
-    log('⏹ Bot stopped', 'info');
-}
-
-// ============================================================
-// UI UPDATES
-// ============================================================
-function updatePhaseBanner() {
-    const banner = document.getElementById('phaseBanner');
-    const icon = document.getElementById('phaseIcon');
-    const title = document.getElementById('phaseTitle');
-    const sub = document.getElementById('phaseSub');
-    const timer = document.getElementById('phaseTimer');
-    
-    banner.className = 'phase-banner ' + state.phase;
-    
-    switch (state.phase) {
-        case 'stopped':
-            icon.textContent = '⏹'; title.textContent = 'BOT STOPPED';
-            sub.textContent = 'Start to begin cycling'; timer.style.display = 'none'; break;
-        case 'observe':
-            icon.textContent = '👁️'; title.textContent = 'PHASE 1: OBSERVING';
-            sub.textContent = state.observedTriple 
-                ? `Watching D${state.observedTriple.digit} triple...`
-                : 'Waiting to observe a quad (loss scenario)';
-            timer.style.display = 'none'; break;
-        case 'trade':
-            const tpc = parseInt(document.getElementById('tradesPerCycle').value) || 12;
-            icon.textContent = '🎯'; title.textContent = 'PHASE 2: TRADING';
-            sub.textContent = `Trade ${state.cycleTradeCount}/${tpc} | Cycle #${state.totalCycles}`;
-            timer.style.display = 'none'; break;
-        case 'cooldown':
-            icon.textContent = '❄️'; title.textContent = 'PHASE 3: COOLDOWN';
-            sub.textContent = 'Waiting before next cycle...'; timer.style.display = 'block'; break;
-    }
-}
-
-function updateProgress() {
-    const tradesPerCycle = parseInt(document.getElementById('tradesPerCycle').value) || 12;
-    const pct = (state.cycleTradeCount / tradesPerCycle) * 100;
-    document.getElementById('progressFill').style.width = pct + '%';
-    document.getElementById('progressFill').className = 'progress-fill green';
-    document.getElementById('progressText').textContent = `${state.cycleTradeCount}/${tradesPerCycle} trades`;
-    updatePhaseBanner();
-}
-
-function updateStats() {
-    document.getElementById('totalTrades').textContent = state.totalTrades;
-    document.getElementById('wins').textContent = state.wins;
-    document.getElementById('winRate').textContent = state.totalTrades > 0 
-        ? (state.wins / state.totalTrades * 100).toFixed(1) + '%' : '0%';
-    document.getElementById('pnl').textContent = '$' + state.pnl.toFixed(2);
-    document.getElementById('pnl').className = 'val ' + (state.pnl >= 0 ? 'green' : 'red');
-}
-
-function addTradeEntry(digit, freq, won, profit) {
-    const el = document.getElementById('tradeLog');
-    if (state.totalTrades === 1) el.innerHTML = '';
-    const entry = document.createElement('div');
-    entry.className = `trade-entry ${won ? 'win' : 'loss'}`;
-    entry.innerHTML = `
-        <span>Cycle #${state.totalCycles} | D${digit} (${freq.toFixed(1)}%) - ${won ? 'WIN ✅' : 'LOSS ❌'}</span>
-        <span style="color:${won ? 'var(--green)' : 'var(--red)'}">${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}</span>
-    `;
-    el.insertBefore(entry, el.firstChild);
-    state.tradeLog.push({ cycle: state.totalCycles, time: new Date().toISOString(), digit, freq: freq.toFixed(1), result: won ? 'WIN' : 'LOSS', profit: profit.toFixed(2) });
-}
-
-// ============================================================
-// EXPORT FUNCTIONS
-// ============================================================
-function markDownloadTime() { state.lastDownloadTime = Date.now(); }
-
-// --- Trades CSV ---
-function exportTrades() {
-    if (!state.tradeLog.length) return log('No trades to export', 'alert');
-    const csv = ['cycle,time,digit,freq,result,profit', ...state.tradeLog.map(t => 
-        `${t.cycle},${t.time},${t.digit},${t.freq},${t.result},${t.profit}`)].join('\n');
-    download(csv, `tb4_trades_${Date.now()}.csv`);
-    markDownloadTime();
-    log('📥 Trades exported', 'info');
-}
-
-// --- Comprehensive Ticks CSV ---
-function exportTicks() {
-    if (!state.allSessionTicks.length) return log('No tick data to export', 'alert');
-    
-    const header = [
-        'tick_num','epoch','elapsed_sec','price','digit','prev_digit','streak',
-        'is_double','is_triple_start','is_quad','is_quint_plus',
-        'freq_d0','freq_d1','freq_d2','freq_d3','freq_d4',
-        'freq_d5','freq_d6','freq_d7','freq_d8','freq_d9',
-        'digit_freq','digit_rank','coldest_digit','hottest_digit',
-        'ticks_since_last_triple','ticks_since_last_quad'
-    ].join(',');
-    
-    let lastTri = 0, lastQuad = 0;
-    
-    const rows = state.allSessionTicks.map((t, i) => {
-        const f = t.freqs || Array(10).fill(10);
-        const digitFreq = f[t.digit];
-        const sorted = [...f].sort((a,b) => a - b);
-        const rank = sorted.indexOf(f[t.digit]) + 1;
-        const coldest = f.indexOf(Math.min(...f));
-        const hottest = f.indexOf(Math.max(...f));
-        const sinceTri = i - lastTri;
-        const sinceQuad = i - lastQuad;
-        if (t.isTripleStart) lastTri = i;
-        if (t.isQuad) lastQuad = i;
         
-        return [
-            i, t.epoch, t.elapsed, t.price, t.digit,
-            t.prevDigit !== null ? t.prevDigit : '',
-            t.streak,
-            t.streak === 2 ? 1 : 0,
-            t.isTripleStart ? 1 : 0,
-            t.isQuad ? 1 : 0,
-            t.isQuintPlus ? 1 : 0,
-            ...f.map(v => v.toFixed(1)),
-            digitFreq.toFixed(1), rank, coldest, hottest,
-            sinceTri, sinceQuad
-        ].join(',');
-    });
-    
-    download([header, ...rows].join('\n'), `tb4_ticks_${Date.now()}.csv`);
-    markDownloadTime();
-    log(`📥 Ticks exported (${state.allSessionTicks.length} ticks, 27 columns)`, 'info');
-}
-
-// --- Triple Analysis CSV (the gold data for pattern analysis) ---
-function exportTripleAnalysis() {
-    if (!state.tripleEvents.length) return log('No triple events to export', 'alert');
-    
-    const header = [
-        'id','epoch','time','digit',
-        'digit_freq','digit_rank',
-        'freq_d0','freq_d1','freq_d2','freq_d3','freq_d4',
-        'freq_d5','freq_d6','freq_d7','freq_d8','freq_d9',
-        'coldest_digit','coldest_freq','hottest_digit','hottest_freq',
-        'cold_digit_count','hot_digit_count','distribution_entropy',
-        'digit_before_triple','prev_30_digits','unique_in_last_20',
-        'tick_index','ticks_since_last_triple','ticks_since_last_quad',
-        'digit_triple_count','digit_quad_count',
-        'session_elapsed_sec','hour','minute',
-        'phase','cycle_num','cycle_trade_num',
-        'running_win_rate','win_streak','trades_since_loss',
-        'last_trade_result','total_trades','running_pnl',
-        'outcome','max_streak','next_digit',
-        'was_traded','trade_profit'
-    ].join(',');
-    
-    const rows = state.tripleEvents.map(te => {
-        const f = te.allFreqs || Array(10).fill(10);
-        const sorted = [...f].sort((a,b) => a - b);
-        const rank = sorted.indexOf(f[te.digit]) + 1;
-        
-        return [
-            te.id, te.epoch, te.time, te.digit,
-            te.digitFreq.toFixed(1), rank,
-            ...f.map(v => v.toFixed(1)),
-            te.coldestDigit, te.coldestFreq.toFixed(1),
-            te.hottestDigit, te.hottestFreq.toFixed(1),
-            te.coldDigitCount, te.hotDigitCount, te.entropy.toFixed(3),
-            te.digitBeforeTriple !== null ? te.digitBeforeTriple : '',
-            te.prev30Digits,
-            te.uniqueDigitsInLast20,
-            te.tickIndex, te.ticksSinceLastTriple, te.ticksSinceLastQuad,
-            te.digitTripleCount, te.digitQuadCount,
-            te.sessionElapsedSec, te.hourOfDay, te.minuteOfHour,
-            te.phase, te.cycleNum, te.cycleTradeNum,
-            te.runningWinRate.toFixed(1), te.currentWinStreak, te.tradesSinceLoss,
-            te.lastTradeResult || '', te.totalTradesAtTime, te.runningPnl.toFixed(2),
-            te.outcome, te.maxStreak,
-            te.nextDigit !== null ? te.nextDigit : '',
-            te.wasTradedOn ? 1 : 0,
-            te.tradeProfit !== null ? te.tradeProfit.toFixed(2) : ''
-        ].join(',');
-    });
-    
-    download([header, ...rows].join('\n'), `tb4_triples_${Date.now()}.csv`);
-    markDownloadTime();
-    log(`📥 Triple analysis exported (${state.tripleEvents.length} events, 45 features)`, 'info');
-}
-
-// --- Activity Log ---
-function exportActivity() {
-    if (!state.activityLog.length) return log('No activity to export', 'alert');
-    const txt = state.activityLog.map(a => `[${a.time}] ${a.message}`).join('\n');
-    download(txt, `tb4_activity_${Date.now()}.txt`);
-    markDownloadTime();
-    log('📥 Activity exported', 'info');
-}
-
-// --- Export All (session summary + all files) ---
-function exportAll() {
-    const ts = Date.now();
-    let count = 0;
-    
-    // Session summary JSON
-    const bounces = state.tripleEvents.filter(e => e.outcome === 'bounce').length;
-    const quads = state.tripleEvents.filter(e => e.outcome === 'quad').length;
-    
-    const summary = {
-        sessionStart: state.sessionStartTime ? new Date(state.sessionStartTime).toISOString() : null,
-        sessionEnd: new Date().toISOString(),
-        durationSec: state.sessionStartTime ? Math.floor((Date.now() - state.sessionStartTime) / 1000) : 0,
-        symbol: document.getElementById('symbol').value,
-        totalTicks: state.allSessionTicks.length,
-        totalTriples: state.tripleEvents.length,
-        totalBounces: bounces,
-        totalQuads: quads,
-        bounceRate: state.tripleEvents.length > 0 ? (bounces / state.tripleEvents.length * 100).toFixed(1) + '%' : 'N/A',
-        totalTrades: state.totalTrades,
-        wins: state.wins,
-        losses: state.losses,
-        winRate: state.totalTrades > 0 ? (state.wins / state.totalTrades * 100).toFixed(1) + '%' : 'N/A',
-        pnl: state.pnl.toFixed(2),
-        totalCycles: state.totalCycles,
-        totalReconnects: state.totalReconnects,
-        digitTripleCounts: Object.fromEntries(state.digitTripleCounts.map((c,i) => [`d${i}`, c])),
-        digitQuadCounts: Object.fromEntries(state.digitQuadCounts.map((c,i) => [`d${i}`, c])),
-        digitBounceRates: Object.fromEntries(state.digitTripleCounts.map((tc, i) => {
-            const qc = state.digitQuadCounts[i];
-            return [`d${i}`, tc > 0 ? ((tc - qc) / tc * 100).toFixed(1) + '%' : 'N/A'];
-        })),
-        settings: {
-            tradesPerCycle: document.getElementById('tradesPerCycle').value,
-            cooldownMins: document.getElementById('cooldownMins').value,
-            stake: document.getElementById('stake').value,
-            maxFreq: document.getElementById('maxFreq').value,
-            resetOnLoss: document.getElementById('resetOnLoss').checked,
-            stopOnLoss: document.getElementById('stopOnLoss').checked
+        function updateDigitDistribution() {
+            const total = state.digits.length || 1;
+            let html = '';
+            
+            for (let i = 0; i < 10; i++) {
+                const percent = (state.digitCounts[i] / total * 100);
+                const heightPercent = Math.min(percent * 5, 100);
+                const colorClass = i <= 4 ? 'low' : 'high';
+                
+                html += `
+                    <div class="digit-bar">
+                        <div class="digit-bar-fill">
+                            <div class="digit-bar-inner ${colorClass}" style="height: ${heightPercent}%"></div>
+                        </div>
+                        <div class="digit-label">${i}</div>
+                        <div class="digit-percent">${percent.toFixed(1)}%</div>
+                    </div>
+                `;
+            }
+            
+            elements.digitDistribution.innerHTML = html;
         }
-    };
-    download(JSON.stringify(summary, null, 2), `tb4_summary_${ts}.json`);
-    count++;
-    
-    if (state.allSessionTicks.length > 0) { exportTicks(); count++; }
-    if (state.tripleEvents.length > 0) { exportTripleAnalysis(); count++; }
-    if (state.tradeLog.length > 0) { exportTrades(); count++; }
-    if (state.activityLog.length > 0) { exportActivity(); count++; }
-    
-    markDownloadTime();
-    clearSavedSession();
-    log(`📦 All session data exported (${count} files)`, 'win');
-}
+        
+        function updateRecentDigits() {
+            const recent = state.digits.slice(-30);
+            let html = '';
+            
+            recent.forEach(d => {
+                const colorClass = d <= 4 ? 'low' : 'high';
+                html += `<div class="recent-digit ${colorClass}">${d}</div>`;
+            });
+            
+            elements.recentDigits.innerHTML = html;
+        }
+        
+        function updateTrendIndicators() {
+            const recent = state.digits.slice(-100);
+            const lowCount = recent.filter(d => d <= 4).length;
+            const highCount = recent.length - lowCount;
+            const total = recent.length || 1;
+            
+            elements.lowPercent.textContent = `${(lowCount / total * 100).toFixed(1)}%`;
+            elements.highPercent.textContent = `${(highCount / total * 100).toFixed(1)}%`;
+            elements.consecutiveLow.textContent = state.consecutiveLow;
+            elements.consecutiveHigh.textContent = state.consecutiveHigh;
+        }
+        
+        function updateObservationProgress(count) {
+            const target = state.config.observationTicks;
+            const percent = Math.min((count / target) * 100, 100);
+            
+            elements.observationProgress.textContent = `${count} / ${target}`;
+            elements.progressFill.style.width = `${percent}%`;
+        }
+        
+        function updateSignalDisplay(signal) {
+            if (signal) {
+                elements.signalDirection.textContent = signal.direction.toUpperCase();
+                elements.signalDirection.className = `signal-direction ${signal.direction}`;
+                elements.signalConfidence.textContent = signal.reason;
+            } else {
+                elements.signalDirection.textContent = 'WAITING';
+                elements.signalDirection.className = 'signal-direction none';
+                elements.signalConfidence.textContent = 'Analyzing patterns...';
+            }
+        }
+        
+        function updateStats() {
+            elements.totalTrades.textContent = state.totalTrades;
+            elements.wins.textContent = state.wins;
+            elements.losses.textContent = state.losses;
+            elements.winRate.textContent = state.totalTrades > 0 
+                ? `${(state.wins / state.totalTrades * 100).toFixed(1)}%` 
+                : '0%';
+            
+            const pl = state.profitLoss;
+            elements.profitLoss.textContent = `$${pl >= 0 ? '' : ''}${pl.toFixed(2)}`;
+            elements.profitLoss.className = `stat-value ${pl >= 0 ? 'profit' : 'loss'}`;
+        }
+        
+        function updateMartingaleTable() {
+            const baseStake = state.config.baseStake;
+            const payout = state.config.payout / 100;
+            const maxDepth = state.config.maxDepth;
+            const multiplier = (100 / state.config.payout) + 0.05;
+            
+            let html = '';
+            let totalRisk = 0;
+            
+            for (let i = 0; i < maxDepth; i++) {
+                const stake = parseFloat((baseStake * Math.pow(multiplier * 2, i)).toFixed(2));
+                totalRisk += stake;
+                const winProfit = stake * payout - totalRisk + stake;
+                
+                html += `
+                    <tr data-level="${i}">
+                        <td>${i + 1}</td>
+                        <td>$${stake.toFixed(2)}</td>
+                        <td>$${totalRisk.toFixed(2)}</td>
+                        <td>$${winProfit.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+            
+            elements.martingaleBody.innerHTML = html;
+            elements.maxRisk.textContent = `$${totalRisk.toFixed(2)}`;
+            elements.currentStake.textContent = `$${baseStake.toFixed(2)}`;
+        }
+        
+        function updateMartingaleHighlight() {
+            const rows = elements.martingaleBody.querySelectorAll('tr');
+            rows.forEach((row, i) => {
+                row.classList.toggle('active', i === state.martingaleLevel);
+            });
+            elements.currentLevel.textContent = state.martingaleLevel;
+        }
+        
+        function updateTradeHistory(trade) {
+            if (state.trades.length === 1) {
+                elements.tradeHistory.innerHTML = '';
+            }
+            
+            const entry = document.createElement('div');
+            entry.className = `trade-entry ${trade.won ? 'win' : 'loss'}`;
+            entry.innerHTML = `
+                <span>${trade.direction.toUpperCase()} L${trade.level + 1}</span>
+                <span>${trade.won ? '+' : ''}$${trade.profit.toFixed(2)}</span>
+            `;
+            
+            elements.tradeHistory.insertBefore(entry, elements.tradeHistory.firstChild);
+            
+            // Keep only last 50 in DOM
+            while (elements.tradeHistory.children.length > 50) {
+                elements.tradeHistory.removeChild(elements.tradeHistory.lastChild);
+            }
+        }
+        
+        function setPhase(phase) {
+            state.phase = phase;
+            const badge = elements.phaseBadge;
+            badge.className = `phase-badge ${phase}`;
+            badge.textContent = phase.toUpperCase();
+        }
 
-function download(content, filename) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
-    a.download = filename;
-    a.click();
-}
+        // ========================================
+        // BOT CONTROLS
+        // ========================================
+        function startBot() {
+            // Read config
+            state.config.apiToken = document.getElementById('apiToken').value;
+            state.config.market = document.getElementById('market').value;
+            state.config.baseStake = parseFloat(document.getElementById('baseStake').value);
+            state.config.payout = parseFloat(document.getElementById('payout').value);
+            state.config.maxDepth = parseInt(document.getElementById('maxDepth').value);
+            state.config.observationTicks = parseInt(document.getElementById('observationTicks').value);
+            state.config.consecutiveTrigger = parseInt(document.getElementById('consecutiveTrigger').value);
+            state.config.stopLoss = parseFloat(document.getElementById('stopLoss').value) || 0;
+            state.config.takeProfit = parseFloat(document.getElementById('takeProfit').value) || 0;
+            
+            if (!state.config.apiToken) {
+                log('system', 'Please enter your API token');
+                return;
+            }
+            
+            state.isRunning = true;
+            state.phase = 'observation';
+            state.martingaleLevel = 0;
+            
+            setPhase('observation');
+            updateMartingaleTable();
+            updateMartingaleHighlight();
+            
+            elements.btnStart.style.display = 'none';
+            elements.btnStop.style.display = 'block';
+            
+            log('system', 'Bot started');
+            log('info', `Strategy: ${state.config.strategy} | Trigger: ${state.config.consecutiveTrigger} consec.`);
+            log('info', `Base stake: $${state.config.baseStake} | Max depth: ${state.config.maxDepth}`);
+            
+            if (!state.connected) {
+                connect();
+            } else {
+                subscribeToTicks();
+            }
+            
+            // Request wake lock
+            requestWakeLock();
+        }
+        
+        function stopBot() {
+            state.isRunning = false;
+            state.phase = 'idle';
+            setPhase('idle');
+            
+            elements.btnStart.style.display = 'block';
+            elements.btnStop.style.display = 'none';
+            
+            log('system', 'Bot stopped');
+            saveState();
+        }
 
-log('🎯 Triple Bounce v4 ready. Connect to start.', 'info');
+        // ========================================
+        // WAKE LOCK API
+        // ========================================
+        let wakeLock = null;
+        
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    log('system', 'Wake lock acquired');
+                    
+                    wakeLock.addEventListener('release', () => {
+                        log('system', 'Wake lock released');
+                    });
+                }
+            } catch (err) {
+                log('system', `Wake lock failed: ${err.message}`);
+            }
+        }
+        
+        // Re-acquire wake lock on visibility change
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible' && state.isRunning) {
+                await requestWakeLock();
+                
+                // Check connection
+                if (!state.connected) {
+                    log('system', 'Page visible, reconnecting...');
+                    connect();
+                }
+            }
+        });
 
-// Check for recoverable session on load
-checkForRecovery();
-</script>
+        // ========================================
+        // CSV EXPORT
+        // ========================================
+        function exportCSV(data, filename, headers) {
+            const csv = [
+                headers.join(','),
+                ...data.map(row => headers.map(h => {
+                    const val = row[h.toLowerCase().replace(/ /g, '')];
+                    return typeof val === 'string' && val.includes(',') ? `"${val}"` : val;
+                }).join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        document.getElementById('btnExportTicks').addEventListener('click', () => {
+            const headers = ['timestamp', 'price', 'digit', 'epoch'];
+            exportCSV(state.ticks, `ticks_${Date.now()}.csv`, headers);
+            log('system', `Exported ${state.ticks.length} ticks`);
+        });
+        
+        document.getElementById('btnExportTrades').addEventListener('click', () => {
+            const headers = ['timestamp', 'direction', 'stake', 'level', 'won', 'profit', 'balance'];
+            exportCSV(state.trades, `trades_${Date.now()}.csv`, headers);
+            log('system', `Exported ${state.trades.length} trades`);
+        });
+        
+        document.getElementById('btnExportLog').addEventListener('click', () => {
+            const headers = ['timestamp', 'type', 'message'];
+            exportCSV(state.activityLog, `log_${Date.now()}.csv`, headers);
+            log('system', `Exported ${state.activityLog.length} log entries`);
+        });
+
+        // ========================================
+        // EVENT LISTENERS
+        // ========================================
+        elements.btnStart.addEventListener('click', startBot);
+        elements.btnStop.addEventListener('click', stopBot);
+        
+        document.getElementById('btnClearLog').addEventListener('click', () => {
+            elements.logContainer.innerHTML = '';
+            state.activityLog = [];
+            log('system', 'Log cleared');
+        });
+        
+        // Strategy toggle
+        document.querySelectorAll('.strategy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.strategy-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.config.strategy = btn.dataset.strategy;
+                log('info', `Strategy changed to: ${state.config.strategy}`);
+            });
+        });
+        
+        // Update martingale table on config change
+        ['baseStake', 'payout', 'maxDepth'].forEach(id => {
+            document.getElementById(id).addEventListener('change', updateMartingaleTable);
+        });
+
+        // ========================================
+        // INITIALIZATION
+        // ========================================
+        async function init() {
+            await initDB();
+            
+            // Initialize digit distribution display
+            for (let i = 0; i < 10; i++) {
+                state.digitCounts[i] = 0;
+            }
+            updateDigitDistribution();
+            updateMartingaleTable();
+            
+            log('system', 'Hybrid Martingale Bot initialized');
+            log('info', 'Enter your API token and click Start to begin');
+        }
+        
+        init();
+    </script>
 </body>
 </html>
