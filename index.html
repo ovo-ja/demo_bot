@@ -1457,10 +1457,15 @@
             updateRecentDigits();
             updateTrendIndicators();
             
-            // Update observation progress when watching or running
+            // ALWAYS update observation progress (no condition)
+            const observationCount = state.digits.length;
+            const target = state.config.observationTicks || 100;
+            console.log('Observation:', observationCount, '/', target);  // DEBUG
+            document.getElementById('observationProgress').textContent = `${observationCount} / ${target}`;
+            document.getElementById('progressFill').style.width = `${Math.min((observationCount / target) * 100, 100)}%`;
+            
+            // Update snipe UI when watching or running
             if (state.isWatching || state.isRunning) {
-                const observationCount = Math.min(state.digits.length, state.config.observationTicks);
-                updateObservationProgress(observationCount);
                 updateSnipeModeUI();
             }
             
